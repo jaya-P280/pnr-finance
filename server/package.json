@@ -2,12 +2,21 @@
   "name": "server",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "src/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "lint": "eslint .",
+    "format": "prettier --write ."
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "microfinance",
+    "loan-management",
+    "express",
+    "mysql"
+  ],
+  "author": "Paslem Jaya Prakash Goud",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
@@ -24,5 +33,12 @@
     "mysql2": "^3.22.5",
     "uuid": "^14.0.1",
     "winston": "^3.19.0"
+  },
+  "devDependencies": {
+    "eslint": "^10.6.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.6",
+    "nodemon": "^3.1.14",
+    "prettier": "^3.9.4"
   }
 }
