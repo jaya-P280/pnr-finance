@@ -4,6 +4,9 @@ import helmet from "helmet";
 import compression from "compression";
 import cookieParser from 'cookie-parser';
 import morgan from "morgan";
+import notFoundMiddleware from './middleware/notFound.middleware.js';
+import errorMiddleWare from './middleware/error.middleware.js';
+import routes from './routes/index.js';
 
 const app = express();
 
@@ -14,12 +17,11 @@ app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use(cookieParser())
 app.use(morgan("dev"))
+app.use("/api/v1",routes );
 
-app.get("/api/v1/health", (rea,res)=>{
-    res.status(200).json({
-        success: true,
-        message: "PNG Finance API Running"
-    });
-});
+app.use(notFoundMiddleware);
+app.use(errorMiddleWare);
+
+
 
 export default app;
