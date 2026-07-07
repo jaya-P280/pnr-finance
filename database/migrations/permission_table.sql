@@ -1,0 +1,24 @@
+-- creating permission table
+
+CREATE TABLE permission(
+	permission_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    permission_name VARCHAR(150) UNIQUE NOT NULL,
+    module_name VARCHAR(100) NOT NULL,
+    description VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO permission
+(permission_name,module_name)
+VALUES
+('USER_CREATE','USER'),
+('USER_UPDATE','USER'),
+('USER_DELETE','USER'),
+('CUSTOMER_CREATE','CUSTOMER'),
+('CUSTOMER_UPDATE','CUSTOMER'),
+('CUSTOMER_DELETE','CUSTOMER'),
+('LOAN_APPROVE','LOAN'),
+('LOAN_REJECT','LOAN'),
+('VIEW_REPORTS','REPORT'),
+('MANAGE_BRANCH','BRANCH');
+    

@@ -1,0 +1,47 @@
+-- creating users table
+
+CREATE TABLE users(
+
+user_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+
+branch_id BIGINT,
+
+role_id BIGINT NOT NULL,
+
+employee_code VARCHAR(30) UNIQUE NOT NULL,
+
+first_name VARCHAR(100) NOT NULL,
+
+last_name VARCHAR(100),
+
+email VARCHAR(150) UNIQUE NOT NULL,
+
+phone VARCHAR(20) UNIQUE,
+
+password_hash VARCHAR(255) NOT NULL,
+
+status ENUM(
+
+'ACTIVE',
+
+'INACTIVE',
+
+'SUSPENDED'
+
+)
+
+DEFAULT 'ACTIVE',
+
+last_login TIMESTAMP NULL,
+
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+ON UPDATE CURRENT_TIMESTAMP,
+
+FOREIGN KEY(role_id)
+
+REFERENCES roles(role_id)
+
+);
+
