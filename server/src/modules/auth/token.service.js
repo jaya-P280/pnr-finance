@@ -39,6 +39,14 @@ class TokenService {
         );
     }
 
+    verifyRefreshToken(token){
+
+        return jwt.verify(
+            token,
+            env.JWT.REFRESH_SECRET
+        );
+    }
+
     hashRefreshToken(refreshToken){
         return crypto
                 .createHash("sha256")

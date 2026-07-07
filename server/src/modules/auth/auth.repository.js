@@ -60,6 +60,7 @@ class AuthRepository{
                 user_id,
                 token_hash,
                 expires_at
+                is_revoked
             )
             VALUES
             (?,?,?);
@@ -67,8 +68,32 @@ class AuthRepository{
             [
                 userId,
                 tokenHash,
-                expireAt
+                expireAt,
+                false
             ]
+        );
+    }
+
+    async findRefreshToken(hash){
+        const [rows] = await pool.execute(
+            `
+            SELECT * 
+            FROM refresh_tokens
+            WHERE token_hash=?
+            AND is_revoked ;
+            `,
+            [hash]
+        );
+        return rows[0];
+    }
+
+    async revokeRefreshToken(hash){
+        await pool.execute(
+            `
+            UPDATE refresh_tokens
+            SET is_revoked = true
+            WHERE token_hash= ?;
+            `,[hash]
         );
     }
 
