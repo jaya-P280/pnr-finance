@@ -1,7 +1,7 @@
-import authRepository from "./auth.repository";
-import passwordService from "./password.service";
-import tokenService from "./token.service";
-import ApiError from "../../shared/ApiError";
+import authRepository from "./auth.repository.js";
+import passwordService from "./password.service.js";
+import tokenService from "./token.service.js";
+import ApiError from "../../shared/ApiError.jssh ";
 
 class AuthService {
     async login(email, password) {

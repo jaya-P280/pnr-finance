@@ -15,12 +15,36 @@ class AuthRepository{
                 r.role_name
             FROM users u
             INNER JOIN roles r
-            on r.roles_id = u.role.id
+            on r.role_id = u.role_id
             WHERE u.email = ?
-            AND u.status = 'ACTIVE'
+            AND u.status = 'ACTIVE;'
             `,[email]
         );
 
+        return rows[0];
+    }
+
+    async findUserById(UserId){
+        const [rows] = await pool.execute(
+            `
+            SELECT 
+                u.user_id,
+                u.first_name,
+                u.last_name,
+                u.email,
+                u.role_id,
+                u.branch_id,
+                r.role_name
+            FROM users u
+            INNER JOIN roles r
+            ON r.role_id = u.role_id
+            WHERE 
+                u.user_id = ?
+             AND
+             u.status = 'Active';`,
+             [UserId]
+        );
+        
         return rows[0];
     }
 
@@ -38,7 +62,7 @@ class AuthRepository{
                 expires_at
             )
             VALUES
-            (?,?,?)
+            (?,?,?);
             `,
             [
                 userId,

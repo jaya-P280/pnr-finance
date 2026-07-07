@@ -6,6 +6,6 @@ import authRoutes from "../modules/auth/auth.routes.js"
 const router = express.Router();
 
 router.use("/health",healthRoutes);
-router.use
+router.use("/auth",authRoutes);
 
 export default router;

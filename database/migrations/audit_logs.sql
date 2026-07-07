@@ -1,25 +1,23 @@
 -- creating audit logs table
 
-CREATE TABLE audit_logs(
+CREATE TABLE audit_logs (
 
-audit_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    audit_log_id BIGINT PRIMARY KEY AUTO_INCREMENT,
 
-user_id BIGINT,
+    user_id BIGINT NULL,
 
-module_name VARCHAR(100),
+    action VARCHAR(100) NOT NULL,
 
-action VARCHAR(100),
+    module VARCHAR(100) NOT NULL,
 
-record_id BIGINT,
+    description TEXT,
 
-ip_address VARCHAR(50),
+    ip_address VARCHAR(50),
 
-user_agent TEXT,
+    user_agent TEXT,
 
-created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-FOREIGN KEY(user_id)
-
-REFERENCES users(user_id)
-
+    FOREIGN KEY(user_id)
+        REFERENCES users(user_id)
 );
