@@ -5,7 +5,7 @@ import authRepository from "./auth.repository.js"
 
 const authenticate = async (req, res, next)=> {
     try{
-        const authHeader = req.header.Authorization;
+        const authHeader = req.headers.authorization;
         if(!authHeader){
             throw new ApiError(
                 401,
@@ -25,7 +25,7 @@ const authenticate = async (req, res, next)=> {
             token,
             env.JWT.ACCESS_SECRET
         );
-        const user = authRepository.findUserById(
+        const user = await authRepository.findUserById(
             decode.sub
         );
 

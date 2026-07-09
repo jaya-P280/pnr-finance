@@ -1,10 +1,11 @@
 import authRepository from "./auth.repository.js";
 import passwordService from "./password.service.js";
 import tokenService from "./token.service.js";
-import ApiError from "../../shared/ApiError.jssh ";
+import ApiError from "../../shared/ApiError.js";
+import auditService from "../audit/audit.service.js"
 
 class AuthService {
-    async login(email, password,metadata) {
+    async login(email, password, metadata) {
         const user = await authRepository.findUserByEmail(
             email
         );
@@ -15,6 +16,7 @@ class AuthService {
                 "Invalid Email"
             );
         }
+        console.log(user)
 
         const matched = await passwordService.compare(
             password,
@@ -51,6 +53,7 @@ class AuthService {
             ipAddress: metadata.ipAddress,
             userAgent: metadata.userAgent
         });
+        
 
         return {
             user,
@@ -73,18 +76,16 @@ class AuthService {
             );
         }
 
-        const user = await authRepository.findUserById(payload.user_id);
+        const user = await authRepository.findUserById(payload.sub);
 
         const newAccess = tokenService.generateAccessToken(user);
         const newRefresh = tokenService.generateRefreshToken(user);
-
-        await authRepository.revokeRefreshToken(hash);
 
         const newHash = tokenService.hashRefreshToken(
             newRefresh
         );
 
-        await authRepository.saveRefreshToken(
+        await authRepository.updateRefreshToken(
             user.user_id,
             newHash,
             new Date(
@@ -94,21 +95,40 @@ class AuthService {
 
         return {
             accessToken: newAccess,
-            refreshToken: newHash
+            refreshToken: newRefresh
         };
 
     }
 
 
 
-    async logout(refreshToken,metadata) {
-        const hash = tokenService.hashRefreshToken(refreshToken);
-        await authRepository.revokeRefreshToken(hash);
+    async logout(refreshToken, metadata) {
+        const payload =
+            tokenService.verifyRefreshToken(refreshToken);
+
+        const hash =
+            tokenService.hashRefreshToken(refreshToken);
+
+        const stored =
+            await authRepository.findRefreshToken(hash);
+
+        if (!stored) {
+
+            throw new ApiError(
+                401,
+                "Invalid Refresh Token"
+            );
+
+        }
+
+        await authRepository.revokeRefreshToken(
+            payload.sub
+        );
         await auditService.log({
-            userId: user.user_id,
-            action: "LOGIN_SUCCESS",
+            userId:payload.sub,
+            action: "LOGOUT_SUCCESS",
             module: "AUTH",
-            description: "User logged in successfully",
+            description: "User logged out successfully",
             ipAddress: metadata.ipAddress,
             userAgent: metadata.userAgent
         });

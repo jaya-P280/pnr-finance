@@ -48,8 +48,9 @@ class AuthController {
     logout = asyncHandler(
         async (req, res) => {
             const { refreshToken } = req.body;
+            console.log(req)
             await authService.logout(
-                refreshToken, 
+                refreshToken,
                 {
                     ipAddress: req.ip,
                     userAgent: req.get("User-Agent")

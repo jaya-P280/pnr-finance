@@ -22,6 +22,8 @@ class TokenService {
         return jwt.sign(
             {
                 sub:user.user_id,
+                roleId: user.role_id,
+                branchId: user.branch_id,
                 type: "refresh"
             },
             env.JWT.REFRESH_SECRET,

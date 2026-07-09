@@ -1,7 +1,7 @@
 import pool from "../../database/db.js"
 
-class AuthRepository{
-    async findUserByEmail(email){
+class AuthRepository {
+    async findUserByEmail(email) {
         const [rows] = await pool.execute(
             `
             SELECT 
@@ -15,16 +15,16 @@ class AuthRepository{
                 r.role_name
             FROM users u
             INNER JOIN roles r
-            on r.role_id = u.role_id
-            WHERE u.email = ?
-            AND u.status = 'ACTIVE;'
-            `,[email]
+                on r.role_id = u.role_id
+            WHERE u.email = (?)
+            AND u.status = 'ACTIVE'
+            `, [email]
         );
 
         return rows[0];
     }
 
-    async findUserById(UserId){
+    async findUserById(UserId) {
         const [rows] = await pool.execute(
             `
             SELECT 
@@ -37,14 +37,14 @@ class AuthRepository{
                 r.role_name
             FROM users u
             INNER JOIN roles r
-            ON r.role_id = u.role_id
+                ON r.role_id = u.role_id
             WHERE 
                 u.user_id = ?
              AND
-             u.status = 'Active';`,
-             [UserId]
+             u.status = 'ACTIVE';`,
+            [UserId]
         );
-        
+
         return rows[0];
     }
 
@@ -52,48 +52,65 @@ class AuthRepository{
         userId,
         tokenHash,
         expireAt
-    ){
+    ) {
         await pool.execute(
             `
             INSERT INTO refresh_tokens
             (
                 user_id,
-                token_hash,
-                expires_at
-                is_revoked
-            )
-            VALUES
-            (?,?,?);
+                token_hash ,
+                expires_at 
+            ) VALUES (?,?,?)
             `,
             [
                 userId,
                 tokenHash,
-                expireAt,
-                false
+                expireAt
             ]
         );
     }
 
-    async findRefreshToken(hash){
+    async findRefreshToken(hash) {
         const [rows] = await pool.execute(
             `
             SELECT * 
             FROM refresh_tokens
             WHERE token_hash=?
-            AND is_revoked ;
+            AND is_revoked = FALSE ;
             `,
             [hash]
         );
         return rows[0];
     }
 
-    async revokeRefreshToken(hash){
+    async updateRefreshToken(
+        userId,
+        tokenHash,
+        expireAt
+    ) {
         await pool.execute(
             `
             UPDATE refresh_tokens
-            SET is_revoked = true
-            WHERE token_hash= ?;
-            `,[hash]
+            SET
+                token_hash = ?,
+                expires_at = ?,
+                updated_at = NOW()
+            WHERE user_id = ?; 
+            `,
+            [
+                tokenHash,
+                expireAt,
+                userId
+            ]
+        );
+    }
+
+    async revokeRefreshToken(userId) {
+        await pool.execute(
+            `
+            DELETE FROM refresh_tokens 
+            WHERE user_id = ? ;
+            `, [userId]
         );
     }
 
