@@ -2,7 +2,7 @@ import winston from "winston";
 import env from "./env.js";
 
 const logger = winston.createLogger({
-    level:env.level,
+    level:env.LOG_LEVEL,
 
     format : winston.format.combine(
         winston.format.timestamp(),

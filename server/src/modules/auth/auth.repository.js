@@ -53,21 +53,28 @@ class AuthRepository {
         tokenHash,
         expireAt
     ) {
-        await pool.execute(
-            `
-            INSERT INTO refresh_tokens
-            (
-                user_id,
-                token_hash ,
-                expires_at 
-            ) VALUES (?,?,?)
-            `,
-            [
-                userId,
-                tokenHash,
-                expireAt
-            ]
-        );
+        const [row] = await pool.execute(`
+            SELECT COUNT(*) as USERS FROM refresh_tokens where user_id = ?`, [userId]);
+
+        if (row[0]['USERS'] == 1) {
+           await this.updateRefreshToken(userId, tokenHash, expireAt);
+        } else {
+            await pool.execute(
+                `
+                    INSERT INTO refresh_tokens
+                    (
+                        user_id,
+                        token_hash ,
+                        expires_at 
+                    ) VALUES (?,?,?)
+                `,
+                [
+                    userId,
+                    tokenHash,
+                    expireAt
+                ]
+            );
+        }
     }
 
     async findRefreshToken(hash) {
