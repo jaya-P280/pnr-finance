@@ -23,7 +23,7 @@ export async function connectDatabase() {
         logger.info("MYSQL is Connected");
         connection.release();
     }catch(error){
-        logger.error(error.message);
+        logger.error(error.stack || error);
         process.exit(1);
     }
 

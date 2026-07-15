@@ -1,4 +1,5 @@
 import passwordResetService from "./password-reset.service.js";
+import ApiError from "../../../shared/ApiError.js";
 
 class PasswordResetController {
 
@@ -16,7 +17,12 @@ class PasswordResetController {
 
                 password: req.body.password
 
-            });
+            },
+                {
+                    ipAddress: req.ip,
+                    userAgent: req.get("User-Agent")
+                }
+            );
 
             return res.status(200).json({
 
@@ -51,13 +57,13 @@ class PasswordResetController {
 
             if (!token) {
 
-                return res.status(400).json({
+                throw new ApiError(
 
-                    success: false,
+                    400,
 
-                    message: "Invalid or expired token."
+                    "Invalid or expired password setup link."
 
-                });
+                );
 
             }
 
@@ -71,7 +77,7 @@ class PasswordResetController {
 
         }
 
-        catch(error){
+        catch (error) {
 
             next(error);
 

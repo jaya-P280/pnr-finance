@@ -9,6 +9,10 @@ class AuthService {
         const user = await authRepository.findUserByEmail(
             email
         );
+        const permissions =
+            await authRepository.getUserPermissions(
+                user.user_id
+            );
 
         if (!user) {
             throw new ApiError(
@@ -16,7 +20,6 @@ class AuthService {
                 "Invalid Email"
             );
         }
-        console.log(user)
 
         const matched = await passwordService.compare(
             password,
@@ -30,8 +33,21 @@ class AuthService {
             );
         }
 
-        const accessToken = tokenService.generateAccessToken(user);
-        const refreshToken = tokenService.generateRefreshToken(user);
+        const accessToken =
+            tokenService.generateAccessToken({
+
+                ...user,
+
+                permissions
+
+            });
+        const refreshToken = tokenService.generateRefreshToken({
+
+            ...user,
+
+            permissions
+
+        });
         const refreshHash = tokenService.hashRefreshToken(refreshToken);
         const expireAt = new Date(
             Date.now() + 7 * 24 * 60 * 60 * 1000
@@ -44,6 +60,7 @@ class AuthService {
         );
 
         delete user.password_hash;
+        user.permissions = permissions ;
 
         await auditService.log({
             userId: user.user_id,
@@ -53,7 +70,7 @@ class AuthService {
             ipAddress: metadata.ipAddress,
             userAgent: metadata.userAgent
         });
-        
+
 
         return {
             user,
@@ -77,9 +94,13 @@ class AuthService {
         }
 
         const user = await authRepository.findUserById(payload.sub);
+        const permissions =
+            await authRepository.getUserPermissions(
+                user.user_id
+            );
 
-        const newAccess = tokenService.generateAccessToken(user);
-        const newRefresh = tokenService.generateRefreshToken(user);
+        const newAccess = tokenService.generateAccessToken(...user,permissions);
+        const newRefresh = tokenService.generateRefreshToken(...user,permissions);
 
         const newHash = tokenService.hashRefreshToken(
             newRefresh
@@ -125,7 +146,7 @@ class AuthService {
             payload.sub
         );
         await auditService.log({
-            userId:payload.sub,
+            userId: payload.sub,
             action: "LOGOUT_SUCCESS",
             module: "AUTH",
             description: "User logged out successfully",

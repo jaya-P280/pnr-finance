@@ -1,6 +1,7 @@
 import authService from "./auth.service.js"
 import ApiResponse from "../../shared/ApiResponse.js"
 import asyncHandler from "../../shared/asyncHandler.js"
+import { da } from "zod/locales";
 
 class AuthController {
     login = asyncHandler(
@@ -18,6 +19,8 @@ class AuthController {
                     userAgent: req.get("User-Agent")
                 }
             );
+
+            req.user = data;
 
             return res.status(200).json(
                 new ApiResponse(

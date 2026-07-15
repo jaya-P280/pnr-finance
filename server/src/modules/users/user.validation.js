@@ -131,3 +131,20 @@ export const userListValidation = [
         .isInt({ min: 1 })
 
 ];
+
+export const deleteUserValidation = [
+
+    param("id")
+
+        .isInt({ min: 1 })
+
+        .withMessage("Invalid User Id.")
+
+];
+
+export const uploadProfileValidation = [
+
+    param("id")
+        .isInt({ min: 1 })
+        .withMessage("Invalid User Id.")
+];

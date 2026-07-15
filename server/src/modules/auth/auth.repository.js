@@ -57,7 +57,7 @@ class AuthRepository {
             SELECT COUNT(*) as USERS FROM refresh_tokens where user_id = ?`, [userId]);
 
         if (row[0]['USERS'] == 1) {
-           await this.updateRefreshToken(userId, tokenHash, expireAt);
+            await this.updateRefreshToken(userId, tokenHash, expireAt);
         } else {
             await pool.execute(
                 `
@@ -121,6 +121,26 @@ class AuthRepository {
         );
     }
 
+    async getUserPermissions(userId) {
+
+        const [rows] = await pool.execute(
+            `
+        SELECT
+            p.permission_name
+        FROM users u
+        INNER JOIN role_permissions rp
+            ON rp.role_id = u.role_id
+        INNER JOIN permission p
+            ON p.permission_id = rp.permission_id
+        WHERE
+            u.user_id = ?
+        `,
+            [userId]
+        );
+
+        return rows.map(row => row.permission_name);
+
+    }
 }
 
 export default new AuthRepository();

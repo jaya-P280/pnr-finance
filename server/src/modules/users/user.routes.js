@@ -1,9 +1,10 @@
 import userController from "./user.controller.js";
 import express from "express";
-import { createUserValidation, updateUserValidation, userIdValidation, userListValidation, userStatusValidation } from "./user.validation.js";
+import { createUserValidation, updateUserValidation, userIdValidation, userListValidation, userStatusValidation, deleteUserValidation, uploadProfileValidation } from "./user.validation.js";
 import validateRequest from "../../middleware/validation.middleware.js";
 import authenticate from "../../modules/auth/auth.middleware.js";
 import authorize from "../../middleware/authorize.middleware.js";
+import upload from "../../shared/storage/multer.js"
 
 const router = express.Router();
 
@@ -48,5 +49,33 @@ router.patch("/:id/status",
     validateRequest,
     userController.updateUserStatus
 );
+
+router.delete(
+
+    "/:id",
+    authenticate,
+    authorize("SUPER_ADMIN"),
+    deleteUserValidation,
+    validateRequest,
+    userController.deleteUser
+);
+
+router.patch(
+    "/:id/profile-image",
+    authenticate,
+    authorize("USER_UPDATE"),
+    (req, res, next) => {
+        console.log(req.headers["content-type"]);
+        next();
+    },
+    upload.single("profileImage"),
+    (req, res, next) => {
+        console.log(req.file);
+        next();
+    },
+    uploadProfileValidation,
+    validateRequest,
+    userController.uploadProfileImage
+)
 
 export default router;

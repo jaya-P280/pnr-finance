@@ -237,7 +237,7 @@ class UserRepository {
             limit,
             (page - 1) * limit
         );
-        console.log(sql,values)
+        console.log(sql, values)
         console.log(values.map(v => ({
             value: v,
             type: typeof v
@@ -337,7 +337,7 @@ class UserRepository {
 
     }
 
-    async getUserById(UserId){
+    async getUserById(UserId) {
         const [rows] = await pool.execute(`
             SELECT
                 u.user_id,
@@ -362,12 +362,12 @@ class UserRepository {
             WHERE 
                 u.user_id = ?
                 AND u.deleted_at IS NULL
-            LIMIT 1`,[UserId]);
+            LIMIT 1`, [UserId]);
 
         return rows[0] || null;
     }
 
-    async findUserByEmail(email){
+    async findUserByEmail(email) {
         const [row] = await pool.query(`
             SELECT 
                 user_id
@@ -378,10 +378,10 @@ class UserRepository {
             [email]
         )
 
-        return row[0] || null ;
+        return row[0] || null;
     }
 
-    async findUserByPhone(phone){
+    async findUserByPhone(phone) {
         const [row] = await pool.execute(
             `
             SELECT 
@@ -393,12 +393,12 @@ class UserRepository {
             `,
             [phone]
         );
-        return row[0]||null;
+        return row[0] || null;
     }
 
     //Update the user
 
-    async updateUser(connection, user){
+    async updateUser(connection, user) {
         await connection.execute(`
             UPDATE users
             SET
@@ -414,20 +414,20 @@ class UserRepository {
                 user_id = ?
             AND
                 deleted_at IS NULL
-            `,[
-                user.firstName,
-                user.lastName,
-                user.email,
-                user.phone,
-                user.roleId,
-                user.branchId,
-                user.profileImage,
-                user.userId
-            ]
+            `, [
+            user.firstName,
+            user.lastName,
+            user.email,
+            user.phone,
+            user.roleId,
+            user.branchId,
+            user.profileImage,
+            user.userId
+        ]
         );
     }
 
-    async updateUserStatus(connection, userId, status){
+    async updateUserStatus(connection, userId, status) {
         await connection.execute(
             `
             UPDATE users
@@ -438,11 +438,159 @@ class UserRepository {
                 user_id = ?
             AND 
                 deleted_at IS NULL
-            `,[
-                status,
+            `, [
+            status,
+            userId
+        ]
+        );
+    }
+
+    async updatePassword(
+        connection,
+        userId,
+        passwordHash
+    ) {
+
+        await connection.execute(
+
+            `
+        UPDATE users
+
+        SET
+
+            password_hash = ?,
+
+            must_change_password = FALSE,
+
+            updated_at = CURRENT_TIMESTAMP
+
+        WHERE
+
+            user_id = ?
+
+        AND
+
+            deleted_at IS NULL
+        `,
+
+            [
+
+                passwordHash,
+
+                userId
+
+            ]
+
+        );
+
+    }
+
+    async countActiveSuperAdmins(connection) {
+
+        const [rows] = await connection.execute(
+            `
+        SELECT COUNT(*) AS total
+
+        FROM users
+
+        WHERE
+
+            role_id = (
+                SELECT role_id
+                FROM roles
+                WHERE role_name = 'SUPER_ADMIN'
+            )
+
+        AND status = 'ACTIVE'
+
+        AND deleted_at IS NULL
+        `
+        );
+
+        return rows[0].total;
+
+    }
+
+    async softDeleteUser(
+        connection,
+        userId,
+        deletedBy
+    ) {
+
+        await connection.execute(
+            `
+        UPDATE users
+
+        SET
+
+            status = 'INACTIVE',
+
+            deleted_at = CURRENT_TIMESTAMP,
+
+            deleted_by = ?,
+
+            updated_at = CURRENT_TIMESTAMP
+
+        WHERE
+
+            user_id = ?
+
+        AND
+
+            deleted_at IS NULL
+        `,
+            [
+                deletedBy,
                 userId
             ]
         );
+
+
+    }
+
+    async updateProfileImage(
+        connection,
+        userId,
+        profileImage
+    ) {
+
+        await connection.execute(
+            `
+        UPDATE users
+        SET
+            profile_image = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE
+            user_id = ?
+        AND
+            deleted_at IS NULL
+        `,
+            [
+                profileImage,
+                userId
+            ]
+        );
+
+    }
+
+    async getProfileImage(userId) {
+
+        const [rows] = await pool.execute(
+            `
+        SELECT
+            profile_image
+        FROM users
+        WHERE
+            user_id = ?
+        AND
+            deleted_at IS NULL
+        LIMIT 1
+        `,
+            [userId]
+        );
+
+        return rows[0] || null;
+
     }
 
 }

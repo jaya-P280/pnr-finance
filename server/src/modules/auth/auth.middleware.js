@@ -3,16 +3,16 @@ import env from "../../config/env.js"
 import ApiError from "../../shared/ApiError.js"
 import authRepository from "./auth.repository.js"
 
-const authenticate = async (req, res, next)=> {
-    try{
+const authenticate = async (req, res, next) => {
+    try {
         const authHeader = req.headers.authorization;
-        if(!authHeader){
+        if (!authHeader) {
             throw new ApiError(
                 401,
                 "Authorization header missing"
             );
         }
-        if(!authHeader.startsWith("Bearer ")){
+        if (!authHeader.startsWith("Bearer ")) {
             throw new ApiError(
                 401,
                 "Invalid authorization format"
@@ -29,15 +29,18 @@ const authenticate = async (req, res, next)=> {
             decode.sub
         );
 
-        if(!user){
+        if (!user) {
             throw new ApiError(
                 401,
                 "User not Found"
             );
         }
-        req.user = user;
+        req.user = {
+            ...user,
+            permissions: decode.permissions
+        };
         next();
-    }catch(error){
+    } catch (error) {
         next(error);
     }
 };

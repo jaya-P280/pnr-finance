@@ -9,6 +9,9 @@ import pool from "../../database/db.js";
 import passwordResetService from "../auth/password-reset/password-reset.service.js";
 import emailService from "../../shared/email.service.js";
 import passwordSetupTemplate from "../../shared/templates/password-setup.template.js";
+import path from "path";
+import fs from "fs/promises";
+import auditService from "../audit/audit.service.js"
 
 class UserService {
     generateEmployeeCode(employeeCode) {
@@ -25,7 +28,7 @@ class UserService {
             EMPLOYEE.PAD_LENGTH, "0")}`;
     }
 
-    async createUser(data, createdBy) {
+    async createUser(data, createdBy, metadata) {
         const connection = await userRepository.beginTransaction();
         try {
             const emailExists = await userRepository.emailExists(connection, data.email);
@@ -107,6 +110,14 @@ class UserService {
             });
 
             await userRepository.commit(connection);
+            await auditService.log({
+                userId: userId,
+                action: "CREATE",
+                module: "USER",
+                description: `User ${employeeCode} created.`,
+                ipAddress: metadata.ipAddress,
+                userAgent: metadata.userAgent
+            });
 
             logger.info(`User Created :${employeeCode}`);
             return {
@@ -119,6 +130,84 @@ class UserService {
             throw error;
 
         }
+    }
+
+    async deleteUser(userId, currentUser,metadata) {
+
+        const connection =
+            await userRepository.beginTransaction();
+
+        try {
+
+            const user =
+                await userRepository.getUserById(userId);
+
+            if (!user) {
+
+                throw new ApiError(
+                    404,
+                    USER_MESSAGES.NOT_FOUND
+                );
+
+            }
+
+            if (user.user_id === currentUser.user_id) {
+
+                throw new ApiError(
+                    400,
+                    USER_MESSAGES.CANNOT_DELETE_SELF
+                );
+
+            }
+
+            if (user.role_name === "SUPER_ADMIN") {
+
+                const total =
+                    await userRepository.countActiveSuperAdmins(
+                        connection
+                    );
+
+                if (total <= 1) {
+
+                    throw new ApiError(
+                        400,
+                        USER_MESSAGES.LAST_SUPER_ADMIN
+                    );
+
+                }
+
+            }
+
+            await userRepository.softDeleteUser(
+
+                connection,
+
+                userId,
+
+                currentUser.user_id
+
+            );
+
+            await userRepository.commit(connection);
+            await auditService.log({
+                userId: userId,
+                action: "DELETE",
+                module: "USER",
+                description: `User soft Deleted. `,
+                ipAddress: metadata.ipAddress,
+                userAgent: metadata.userAgent
+            });
+
+        }
+
+        catch (error) {
+
+            await userRepository.rollback(connection);
+
+            throw error;
+
+        }
+
     }
 
     async getUsers(query) {
@@ -192,7 +281,7 @@ class UserService {
         }
     };
 
-    async updateUser(userId, data) {
+    async updateUser(userId, data,metadata) {
         const connection = await userRepository.beginTransaction();
 
         try {
@@ -205,7 +294,7 @@ class UserService {
                 );
             }
             const email = await userRepository.findUserByEmail(data.email)
-            if (!email && email.user_id !== userId) {
+            if (email && email.user_id !== userId) {
                 throw new ApiError(
                     409,
                     USER_MESSAGES.EMAIL_EXISTS
@@ -246,6 +335,14 @@ class UserService {
             )
 
             await userRepository.commit(connection);
+            await auditService.log({
+                userId: userId,
+                action: "UPDATE",
+                module: "USER",
+                description: `user details updated.`,
+                ipAddress: metadata.ipAddress,
+                userAgent: metadata.userAgent
+            });
             return;
 
 
@@ -256,7 +353,7 @@ class UserService {
         }
     }
 
-    async updateUserStatus(userId, status, currentUser) {
+    async updateUserStatus(userId, status, currentUser, metadata) {
         const connection = await userRepository.beginTransaction();
 
         try {
@@ -286,6 +383,74 @@ class UserService {
             )
 
             await userRepository.commit(connection);
+            await auditService.log({
+                userId: userId,
+                action: "STATUS_CHANGE",
+                module: "USER",
+                description: `User status changed to ${status}.`,
+                ipAddress: metadata.ipAddress,
+                userAgent: metadata.userAgent
+            });
+        } catch (error) {
+            await userRepository.rollback(connection);
+            throw error;
+        }
+    }
+
+    async uploadProfileImage(
+        userId,
+        file,
+        currentUser,
+        metadata
+    ) {
+        const connection = await userRepository.beginTransaction();
+        try {
+            const user = await userRepository.getUserById(userId);
+
+            if (!user) {
+                throw new ApiError(
+                    404,
+                    USER_MESSAGES.NOT_FOUND
+                );
+            }
+
+            const oldImage = await userRepository.getProfileImage(userId);
+            await userRepository.updateProfileImage(
+                connection,
+                userId,
+                file.filename
+            );
+
+            await userRepository.commit(connection);
+            if (oldImage?.profile_image &&
+                oldImage.profile_image !== file.filename
+            ) {
+                const filePath = path.join(
+                    process.cwd(),
+                    "src",
+                    "uploads",
+                    "users",
+                    oldImage.profile_image
+                );
+                try {
+                    await fs.unlink(filePath);
+                } catch {
+
+                }
+            }
+
+            await auditService.log({
+                userId: userId,
+                action: "UPDATE",
+                module: "USER",
+                description: `User Profile IMAGE is Updated`,
+                ipAddress: metadata.ipAddress,
+                userAgent: metadata.userAgent
+            });
+            return {
+                profileImage: file.filename
+            };
+
         } catch (error) {
             await userRepository.rollback(connection);
             throw error;

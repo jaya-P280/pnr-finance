@@ -34,6 +34,8 @@ class AuditRepository{
         ]);
     }
 
+    
+
 }
 
 export default new AuditRepository();

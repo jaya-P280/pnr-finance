@@ -1,12 +1,12 @@
-export const USER_STATUS =Object.freeze({
-    ACTIVE:"ACTIVE",
-    INACTIVE:"INACTIVE",
-    LOCKED:"LOCKED",
+export const USER_STATUS = Object.freeze({
+    ACTIVE: "ACTIVE",
+    INACTIVE: "INACTIVE",
+    LOCKED: "LOCKED",
 });
 
 export const EMPLOYEE = Object.freeze({
-    PREFIX:"EMP",
-    PAD_LENGTH:6,
+    PREFIX: "EMP",
+    PAD_LENGTH: 6,
 })
 
 export const USER_MESSAGES = Object.freeze({
@@ -29,16 +29,26 @@ export const USER_MESSAGES = Object.freeze({
     INVALID_STATUS: "Invalid user status.",
 
     PASSWORD_CHANGED: "Password changed successfully.",
-    PASSWORD_RESET: "Password reset successfully."
+    PASSWORD_RESET: "Password reset successfully.",
+
+    CANNOT_DELETE_SELF:
+        "You cannot delete your own account.",
+
+    LAST_SUPER_ADMIN:
+        "Cannot delete the last active Super Admin.",
+
+    USER_DELETED:
+        "User deleted successfully."
+
 });
 
 export const PASSWORD = Object.freeze({
-    LENGTH:8,
+    LENGTH: 8,
 });
 
 export const IMAGE = Object.freeze({
-    MAX_SIZE:2*1024*1024,
-    TYPES:[
+    MAX_SIZE: 2 * 1024 * 1024,
+    TYPES: [
         "image/jpeg",
         "image/png",
         "image/webp"
@@ -46,7 +56,7 @@ export const IMAGE = Object.freeze({
 });
 
 export const PAGINATION = Object.freeze({
-    DEFAULT_PAGE:1,
-    DEFAULT_LIMIT:10,
-    MAX_LIMIT:100
+    DEFAULT_PAGE: 1,
+    DEFAULT_LIMIT: 10,
+    MAX_LIMIT: 100
 });

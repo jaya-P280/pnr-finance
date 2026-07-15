@@ -1,8 +1,9 @@
 import crypto from "crypto";
-
 import env from "../../../config/env.js";
-
+import userRepository from "../../users/user.repository.js";
 import passwordResetRepository from "./password-reset.repository.js";
+import ApiError from "../../../shared/ApiError.js";
+import passwordService from "../../auth/password.service.js"
 
 class PasswordResetService {
 
@@ -119,6 +120,52 @@ class PasswordResetService {
 
     }
 
+
+    async setupPassword({ token, password },metadata) {
+        const connection = await userRepository.beginTransaction();
+
+        try {
+            const tokenHash = this.hashToken(token);
+
+            const resetToken = await passwordResetRepository.findValidToken(tokenHash);
+
+            if (!resetToken) {
+                throw new ApiError(
+                    400,
+                    "Invalid or expired password setup Link."
+                );
+            }
+            const passwordHash = await passwordService.hash(password);
+            await userRepository.updatePassword(
+                connection,
+                resetToken.user_id,
+                passwordHash
+            );
+
+            await passwordResetRepository.markTokenUsed(
+                connection,
+                resetToken.token_id,
+            );
+            await userRepository.commit(connection);
+
+            await auditService.log({
+                userId:  resetToken.user_id,
+                action: "PASSWORD_SETUP",
+                module: "AUTH",
+                description: `Password Created Successfully`,
+                ipAddress: metadata.ipAddress,
+                userAgent: metadata.userAgent
+            });
+
+        }
+        catch (error) {
+
+            await userRepository.rollback(connection);
+
+            throw error;
+
+        }
+    }
 }
 
 export default new PasswordResetService();

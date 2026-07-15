@@ -120,6 +120,54 @@ class PasswordResetRepository {
 
     }
 
+    async getUserByToken(tokenHash) {
+
+        const [rows] = await pool.execute(
+
+            `
+        SELECT
+
+            prt.token_id,
+
+            prt.user_id,
+
+            prt.purpose,
+
+            u.email,
+
+            u.first_name,
+
+            u.last_name
+
+        FROM password_reset_tokens prt
+
+        INNER JOIN users u
+
+            ON u.user_id = prt.user_id
+
+        WHERE
+
+            prt.token_hash = ?
+
+        AND
+
+            prt.used_at IS NULL
+
+        AND
+
+            prt.expires_at > NOW()
+
+        LIMIT 1
+        `,
+
+            [tokenHash]
+
+        );
+
+        return rows[0] || null;
+
+    }
+
 }
 
 export default new PasswordResetRepository();
