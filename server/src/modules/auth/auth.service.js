@@ -14,6 +14,8 @@ class AuthService {
                 user.user_id
             );
 
+            console.log(`${user.user_id} at authservice`)
+
         if (!user) {
             throw new ApiError(
                 401,

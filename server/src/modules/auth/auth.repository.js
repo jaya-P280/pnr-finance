@@ -137,6 +137,7 @@ class AuthRepository {
         `,
             [userId]
         );
+        console.log(rows)
 
         return rows.map(row => row.permission_name);
 

@@ -2,6 +2,7 @@ import ApiError from "../../shared/ApiError.js";
 import logger from "../../config/logger.js";
 import branchRepository from "./branch.repository.js";
 import { BRANCH, BRANCH_MESSAGES } from "./branch.constants.js";
+import auditService from "../audit/audit.service.js";
 
 class BranchService {
 
@@ -33,6 +34,8 @@ class BranchService {
             await branchRepository.beginTransaction();
 
         try {
+
+            
 
             const email =
                 await branchRepository.existsByEmail(
