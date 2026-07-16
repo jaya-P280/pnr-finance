@@ -15,8 +15,8 @@ class BranchController {
             return res.status(201).json(
                 new ApiResponse(
                     201,
-                    result,
-                    "Branch created successfully."
+                    "Branch created successfully.",
+                    result
                 )
             );
 
@@ -41,9 +41,9 @@ class BranchController {
 
                     200,
 
-                    result,
+                    "Branches fetched successfully.",
 
-                    "Branches fetched successfully."
+                    result
 
                 )
 
@@ -76,9 +76,9 @@ class BranchController {
 
                     200,
 
-                    result,
+                    "Branch fetched successfully.",
 
-                    "Branch fetched successfully."
+                    result
 
                 )
 
@@ -113,8 +113,6 @@ class BranchController {
                 new ApiResponse(
 
                     200,
-
-                    null,
 
                     "Branch updated successfully."
 
@@ -152,8 +150,6 @@ class BranchController {
 
                     200,
 
-                    null,
-
                     "Branch status updated successfully."
 
                 )
@@ -185,8 +181,6 @@ class BranchController {
                 new ApiResponse(
 
                     200,
-
-                    null,
 
                     "Branch deleted successfully."
 

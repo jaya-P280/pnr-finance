@@ -6,22 +6,16 @@ import auditService from "../audit/audit.service.js"
 
 class AuthService {
     async login(email, password, metadata) {
-        const user = await authRepository.findUserByEmail(
-            email
-        );
-        const permissions =
-            await authRepository.getUserPermissions(
-                user.user_id
-            );
-
-            console.log(`${user.user_id} at authservice`)
-
+        
+        const user = await authRepository.findUserByEmail(email);
         if (!user) {
             throw new ApiError(
                 401,
                 "Invalid Email"
             );
         }
+
+        const permissions = await authRepository.getUserPermissions(user.user_id);
 
         const matched = await passwordService.compare(
             password,
@@ -62,7 +56,7 @@ class AuthService {
         );
 
         delete user.password_hash;
-        user.permissions = permissions ;
+        user.permissions = permissions;
 
         await auditService.log({
             userId: user.user_id,
@@ -101,8 +95,8 @@ class AuthService {
                 user.user_id
             );
 
-        const newAccess = tokenService.generateAccessToken(...user,permissions);
-        const newRefresh = tokenService.generateRefreshToken(...user,permissions);
+        const newAccess = tokenService.generateAccessToken(...user, permissions);
+        const newRefresh = tokenService.generateRefreshToken(...user, permissions);
 
         const newHash = tokenService.hashRefreshToken(
             newRefresh
