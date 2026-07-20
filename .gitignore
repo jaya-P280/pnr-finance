@@ -21,9 +21,10 @@ build/
 coverage/
 
 # Uploads
-uploads/*
-!uploads/.gitkeep
-
+# Ignore uploaded files
+uploads/
+server/src/uploads/*
+!server/src/uploads/.gitkeep
 # OS
 .DS_Store
 Thumbs.db
