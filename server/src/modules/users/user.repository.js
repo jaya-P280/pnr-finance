@@ -237,14 +237,8 @@ class UserRepository {
             limit,
             (page - 1) * limit
         );
-        console.log(sql, values)
-        console.log(values.map(v => ({
-            value: v,
-            type: typeof v
-        })))
 
         const [rows] = await pool.query(sql, values);
-        console.log(rows)
 
         return rows;
     }
@@ -408,7 +402,6 @@ class UserRepository {
                 phone = ?,
                 role_id = ?,
                 branch_id = ?,
-                profile_image = ?,
                 updated_at = CURRENT_TIMESTAMP
             WHERE
                 user_id = ?
@@ -421,7 +414,6 @@ class UserRepository {
             user.phone,
             user.roleId,
             user.branchId,
-            user.profileImage,
             user.userId
         ]
         );

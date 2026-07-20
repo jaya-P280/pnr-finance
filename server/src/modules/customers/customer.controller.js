@@ -16,8 +16,9 @@ class CustomerController {
             return res.status(201).json(
                 new ApiResponse(
                     201,
+                    "Customer created successfully.",
+                    
                     result,
-                    "Customer created successfully."
                 )
             );
 
@@ -40,8 +41,8 @@ class CustomerController {
             return res.status(200).json(
                 new ApiResponse(
                     200,
+                    "Customers fetched successfully.",
                     result,
-                    "Customers fetched successfully."
                 )
             );
 
@@ -64,8 +65,8 @@ class CustomerController {
             return res.status(200).json(
                 new ApiResponse(
                     200,
+                    "Customer fetched successfully.",
                     result,
-                    "Customer fetched successfully."
                 )
             );
 
@@ -95,7 +96,6 @@ class CustomerController {
 
                 new ApiResponse(
                     200,
-                    null,
                     CUSTOMER_MESSAGES.UPDATED
                 )
 
@@ -127,7 +127,6 @@ class CustomerController {
 
                 new ApiResponse(
                     200,
-                    null,
                     CUSTOMER_MESSAGES.STATUS_UPDATED
                 )
 
@@ -157,7 +156,6 @@ class CustomerController {
 
                 new ApiResponse(
                     200,
-                    null,
                     CUSTOMER_MESSAGES.DELETED
                 )
 

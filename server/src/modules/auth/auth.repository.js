@@ -1,9 +1,9 @@
-import pool from "../../database/db.js"
+import pool from "../../database/db.js";
 
 class AuthRepository {
-    async findUserByEmail(email) {
-        const [rows] = await pool.execute(
-            `
+  async findUserByEmail(email) {
+    const [rows] = await pool.execute(
+      `
             SELECT 
                 u.user_id,
                 u.first_name,
@@ -12,21 +12,24 @@ class AuthRepository {
                 u.password_hash,
                 u.branch_id,
                 u.role_id,
-                r.role_name
+                r.role_name,
+                u.profile_image
+                
             FROM users u
             INNER JOIN roles r
                 on r.role_id = u.role_id
             WHERE u.email = (?)
             AND u.status = 'ACTIVE'
-            `, [email]
-        );
+            `,
+      [email],
+    );
 
-        return rows[0];
-    }
+    return rows[0];
+  }
 
-    async findUserById(UserId) {
-        const [rows] = await pool.execute(
-            `
+  async findUserById(UserId) {
+    const [rows] = await pool.execute(
+      `
             SELECT 
                 u.user_id,
                 u.first_name,
@@ -34,7 +37,8 @@ class AuthRepository {
                 u.email,
                 u.role_id,
                 u.branch_id,
-                r.role_name
+                r.role_name,
+                u.profile_image
             FROM users u
             INNER JOIN roles r
                 ON r.role_id = u.role_id
@@ -42,25 +46,24 @@ class AuthRepository {
                 u.user_id = ?
              AND
              u.status = 'ACTIVE';`,
-            [UserId]
-        );
+      [UserId],
+    );
 
-        return rows[0];
-    }
+    return rows[0];
+  }
 
-    async saveRefreshToken(
-        userId,
-        tokenHash,
-        expireAt
-    ) {
-        const [row] = await pool.execute(`
-            SELECT COUNT(*) as USERS FROM refresh_tokens where user_id = ?`, [userId]);
+  async saveRefreshToken(userId, tokenHash, expireAt) {
+    const [row] = await pool.execute(
+      `
+            SELECT COUNT(*) as USERS FROM refresh_tokens where user_id = ?`,
+      [userId],
+    );
 
-        if (row[0]['USERS'] == 1) {
-            await this.updateRefreshToken(userId, tokenHash, expireAt);
-        } else {
-            await pool.execute(
-                `
+    if (row[0]["USERS"] == 1) {
+      await this.updateRefreshToken(userId, tokenHash, expireAt);
+    } else {
+      await pool.execute(
+        `
                     INSERT INTO refresh_tokens
                     (
                         user_id,
@@ -68,35 +71,27 @@ class AuthRepository {
                         expires_at 
                     ) VALUES (?,?,?)
                 `,
-                [
-                    userId,
-                    tokenHash,
-                    expireAt
-                ]
-            );
-        }
+        [userId, tokenHash, expireAt],
+      );
     }
+  }
 
-    async findRefreshToken(hash) {
-        const [rows] = await pool.execute(
-            `
+  async findRefreshToken(hash) {
+    const [rows] = await pool.execute(
+      `
             SELECT * 
             FROM refresh_tokens
             WHERE token_hash=?
             AND is_revoked = FALSE ;
             `,
-            [hash]
-        );
-        return rows[0];
-    }
+      [hash],
+    );
+    return rows[0];
+  }
 
-    async updateRefreshToken(
-        userId,
-        tokenHash,
-        expireAt
-    ) {
-        await pool.execute(
-            `
+  async updateRefreshToken(userId, tokenHash, expireAt) {
+    await pool.execute(
+      `
             UPDATE refresh_tokens
             SET
                 token_hash = ?,
@@ -104,27 +99,23 @@ class AuthRepository {
                 updated_at = NOW()
             WHERE user_id = ?; 
             `,
-            [
-                tokenHash,
-                expireAt,
-                userId
-            ]
-        );
-    }
+      [tokenHash, expireAt, userId],
+    );
+  }
 
-    async revokeRefreshToken(userId) {
-        await pool.execute(
-            `
+  async revokeRefreshToken(userId) {
+    await pool.execute(
+      `
             DELETE FROM refresh_tokens 
             WHERE user_id = ? ;
-            `, [userId]
-        );
-    }
+            `,
+      [userId],
+    );
+  }
 
-    async getUserPermissions(userId) {
-
-        const [rows] = await pool.execute(
-            `
+  async getUserPermissions(userId) {
+    const [rows] = await pool.execute(
+      `
         SELECT
             p.permission_name
         FROM users u
@@ -135,13 +126,11 @@ class AuthRepository {
         WHERE
             u.user_id = ?
         `,
-            [userId]
-        );
-        console.log(rows)
+      [userId],
+    );
 
-        return rows.map(row => row.permission_name);
-
-    }
+    return rows.map((row) => row.permission_name);
+  }
 }
 
 export default new AuthRepository();

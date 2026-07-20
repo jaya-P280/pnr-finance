@@ -16,14 +16,12 @@ router.post(
 );
 
 router.post(
-    "/refresh-token",
-    authenticate,
+    "/refresh",
     authController.refresh
 );
 
 router.post(
     "/logout",
-    authenticate,
     authController.logout
 )
 

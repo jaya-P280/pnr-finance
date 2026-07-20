@@ -267,6 +267,8 @@ class UserService {
 
         return {
             userId: user.user_id,
+            roleId: user.role_id,
+            branchId: user.branch_id,
             employeeCode: user.employee_code,
             firstName: user.first_name,
             lastName: user.last_name,
@@ -330,7 +332,7 @@ class UserService {
             await userRepository.updateUser(connection,
                 {
                     userId,
-                    ...data
+                    ...data,
                 }
             )
 

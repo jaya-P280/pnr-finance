@@ -2,199 +2,117 @@ import branchService from "./branch.service.js";
 import ApiResponse from "../../shared/ApiResponse.js";
 
 class BranchController {
+  async createBranch(req, res, next) {
+    try {
+      const result = await branchService.createBranch(req.body, req.user);
 
-    async createBranch(req, res, next) {
-
-        try {
-
-            const result = await branchService.createBranch(
-                req.body,
-                req.user
-            );
-
-            return res.status(201).json(
-                new ApiResponse(
-                    201,
-                    "Branch created successfully.",
-                    result
-                )
-            );
-
-        } catch (error) {
-
-            next(error);
-
-        }
-
+      return res
+        .status(201)
+        .json(new ApiResponse(201, "Branch created successfully.", result));
+    } catch (error) {
+      next(error);
     }
+  }
 
-    async getBranches(req, res, next) {
+  async getBranches(req, res, next) {
+    try {
+      const result = await branchService.getBranches(req.query);
 
-        try {
+      return res.status(200).json(
+        new ApiResponse(
+          200,
 
-            const result =
-                await branchService.getBranches(req.query);
+          "Branches fetched successfully.",
 
-            return res.status(200).json(
-
-                new ApiResponse(
-
-                    200,
-
-                    "Branches fetched successfully.",
-
-                    result
-
-                )
-
-            );
-
-        }
-
-        catch (error) {
-
-            next(error);
-
-        }
-
+          result,
+        ),
+      );
+    } catch (error) {
+      next(error);
     }
+  }
 
-    async getBranchById(req, res, next) {
+  async getBranchById(req, res, next) {
+    try {
+      const result = await branchService.getBranchById(Number(req.params.id));
 
-        try {
+      return res.status(200).json(
+        new ApiResponse(
+          200,
 
-            const result =
-                await branchService.getBranchById(
+          "Branch fetched successfully.",
 
-                    Number(req.params.id)
-
-                );
-
-            return res.status(200).json(
-
-                new ApiResponse(
-
-                    200,
-
-                    "Branch fetched successfully.",
-
-                    result
-
-                )
-
-            );
-
-        }
-
-        catch (error) {
-
-            next(error);
-
-        }
-
+          result,
+        ),
+      );
+    } catch (error) {
+      next(error);
     }
+  }
 
-    async updateBranch(req, res, next) {
+  async updateBranch(req, res, next) {
+    try {
+      await branchService.updateBranch(
+        Number(req.params.id),
 
-        try {
+        req.body,
 
-            await branchService.updateBranch(
+        req.user,
+      );
 
-                Number(req.params.id),
+      return res.status(200).json(
+        new ApiResponse(
+          200,
 
-                req.body,
-
-                req.user
-
-            );
-
-            return res.status(200).json(
-
-                new ApiResponse(
-
-                    200,
-
-                    "Branch updated successfully."
-
-                )
-
-            );
-
-        }
-        catch (error) {
-
-            next(error);
-
-        }
-
+          "Branch updated successfully.",
+        ),
+      );
+    } catch (error) {
+      next(error);
     }
+  }
 
+  async updateBranchStatus(req, res, next) {
+    try {
+      await branchService.updateBranchStatus(
+        Number(req.params.id),
 
-    async updateBranchStatus(req, res, next) {
+        req.body.status,
 
-        try {
+        req.user,
+      );
 
-            await branchService.updateBranchStatus(
+      return res.status(200).json(
+        new ApiResponse(
+          200,
 
-                Number(req.params.id),
-
-                req.body.status,
-
-                req.user
-
-            );
-
-            return res.status(200).json(
-
-                new ApiResponse(
-
-                    200,
-
-                    "Branch status updated successfully."
-
-                )
-
-            );
-
-        } catch (error) {
-
-            next(error);
-
-        }
-
+          "Branch status updated successfully.",
+        ),
+      );
+    } catch (error) {
+      next(error);
     }
+  }
 
-    async deleteBranch(req, res, next) {
+  async deleteBranch(req, res, next) {
+    try {
+      await branchService.deleteBranch(
+        Number(req.params.id),
 
-        try {
+        req.user,
+      );
 
-            await branchService.deleteBranch(
+      return res.status(200).json(
+        new ApiResponse(
+          200,
 
-                Number(req.params.id),
-
-                req.user
-
-            );
-
-            return res.status(200).json(
-
-                new ApiResponse(
-
-                    200,
-
-                    "Branch deleted successfully."
-
-                )
-
-            );
-
-        } catch (error) {
-
-            next(error);
-
-        }
-
+          "Branch deleted successfully.",
+        ),
+      );
+    } catch (error) {
+      next(error);
     }
+  }
 }
 
 export default new BranchController();

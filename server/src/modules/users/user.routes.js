@@ -64,15 +64,7 @@ router.patch(
     "/:id/profile-image",
     authenticate,
     authorize("USER_UPDATE"),
-    (req, res, next) => {
-        console.log(req.headers["content-type"]);
-        next();
-    },
     upload.single("profileImage"),
-    (req, res, next) => {
-        console.log(req.file);
-        next();
-    },
     uploadProfileValidation,
     validateRequest,
     userController.uploadProfileImage

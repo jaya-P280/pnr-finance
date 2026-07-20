@@ -1,6 +1,7 @@
 import userService from "./user.service.js";
 import ApiResponse from "../../shared/ApiResponse.js";
 import { USER_MESSAGES } from "./user.constants.js"
+import { getFullImageUrl } from "../../utils/url.js";
 class UserController {
     async createUser(req, res, next) {
 
@@ -81,8 +82,7 @@ class UserController {
     async getUserById(req, res, next) {
         try {
             const user = await userService.getUserById(
-                Number(req.params.id)
-            );
+                Number(req.params.id));
             return res.status(200).json(
                 new ApiResponse(
                     200,
@@ -162,7 +162,8 @@ class UserController {
                     {
                         ipAddress: req.ip,
                         userAgent: req.get("User-Agent")
-                    }
+                    },
+
 
                 );
 
