@@ -12,22 +12,9 @@ import passwordSetupTemplate from "../../shared/templates/password-setup.templat
 import path from "path";
 import fs from "fs/promises";
 import auditService from "../audit/audit.service.js"
+import CodeGenerator from "../../shared/codeGenerator.helper.js";
 
 class UserService {
-    generateEmployeeCode(employeeCode) {
-        if (!employeeCode) {
-            return `${EMPLOYEE.PREFIX}${String(1).padStart(
-                EMPLOYEE.PAD_LENGTH, "0"
-            )}`;
-        }
-        const number = Number(
-            employeeCode.replace(EMPLOYEE.PREFIX, "")
-        );
-
-        return `${EMPLOYEE.PREFIX}${String(number + 1).padStart(
-            EMPLOYEE.PAD_LENGTH, "0")}`;
-    }
-
     async createUser(data, createdBy, metadata) {
         const connection = await userRepository.beginTransaction();
         try {
@@ -64,7 +51,7 @@ class UserService {
             }
 
             const lastEmployee = await userRepository.getLastEmployeeCode(connection);
-            const employeeCode = this.generateEmployeeCode(lastEmployee?.employee_code);
+            const employeeCode = CodeGenerator(EMPLOYEE.PREFIX,lastEmployee?.employee_code,EMPLOYEE.PAD_LENGTH);
             const userId = await userRepository.createUser(
                 connection,
                 {
@@ -221,7 +208,7 @@ class UserService {
             branchId: query.branchId ? Number(query.branchId) : null,
             status: query.status || null,
             sortBy: query.sortBy || "created_at",
-            sortOrder: query.sortOrder || "DESC"
+            sortOrder: query.sortOrder || "ASC"
         };
 
         const users = await userRepository.getUsers(filters);

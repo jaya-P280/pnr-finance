@@ -6,6 +6,7 @@ import passwordResetRoutes from "../modules/auth/password-reset/password-reset.r
 import branchRoutes from "../modules/branches/branch.routes.js";
 import customerRoutes from "../modules/customers/customer.routes.js"
 import roleRoutes from "../modules/roles/role.routes.js";
+import loanRouter from "../modules/loan-products/loanProducts.routes.js"
 
 
 const router = express.Router();
@@ -17,5 +18,6 @@ router.use("/password",passwordResetRoutes)
 router.use("/branches",branchRoutes)
 router.use("/customers",customerRoutes)
 router.use("/roles", roleRoutes);
+router.use("/loan-products",loanRouter)
 
 export default router;

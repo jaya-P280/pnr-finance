@@ -19,7 +19,10 @@ app.use(
 app.use("/uploads", express.static(path.join(import.meta.dirname, "uploads")));
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: [
+      "http://localhost:5173", // Vite dev server
+      "http://localhost:4173", // Vite preview server
+    ],
     credentials: true,
   }),
 );

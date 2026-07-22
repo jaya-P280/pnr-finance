@@ -3,36 +3,10 @@ import logger from "../../config/logger.js";
 import branchRepository from "./branch.repository.js";
 import { BRANCH, BRANCH_MESSAGES } from "./branch.constants.js";
 import auditService from "../audit/audit.service.js";
+import CodeGenerator from "../../shared/codeGenerator.helper.js";
+import PaginationHelper from "../../shared/pagination.helper.js";
 
 class BranchService {
-  generateBranchCode(lastBranchCode) {
-
-    if (!lastBranchCode) {
-        return `${BRANCH.PREFIX}${String(1).padStart(
-            BRANCH.PAD_LENGTH,
-            "0"
-        )}`;
-    }
-
-    console.log("Previous Branch Code:", lastBranchCode);
-
-    const number = parseInt(
-        String(lastBranchCode).replace(/\D/g, ""),
-        10
-    );
-
-    if (Number.isNaN(number)) {
-        throw new Error(
-            `Invalid branch code found in database: ${lastBranchCode}`
-        );
-    }
-
-    return `${BRANCH.PREFIX}${String(number + 1).padStart(
-        BRANCH.PAD_LENGTH,
-        "0"
-    )}`;
-}
-
   async createBranch(data, currentUser) {
     const connection = await branchRepository.beginTransaction();
 
@@ -57,7 +31,11 @@ class BranchService {
 
       const lastBranch = await branchRepository.getLastBranchCode();
 
-      const branchCode = this.generateBranchCode(lastBranch?.branch_code);
+      const branchCode = CodeGenerator(
+        BRANCH.PREFIX,
+        lastBranch?.branch_code,
+        BRANCH.PAD_LENGTH,
+      );
 
       const branchId = await branchRepository.createBranch(connection, {
         branchCode,
@@ -88,9 +66,7 @@ class BranchService {
   }
 
   async getBranches(query) {
-    const page = Number(query.page) || 1;
-
-    const limit = Number(query.limit) || 10;
+    const { page, limit } = PaginationHelper.build(query);
 
     const filters = {
       page,
@@ -103,7 +79,7 @@ class BranchService {
 
       sortBy: query.sortBy || "created_at",
 
-      sortOrder: query.sortOrder || "DESC",
+      sortOrder: query.sortOrder || "ASC",
     };
 
     const branches = await branchRepository.getBranches(filters);
@@ -113,19 +89,7 @@ class BranchService {
     return {
       branches,
 
-      pagination: {
-        page,
-
-        limit,
-
-        totalRecords,
-
-        totalPages: Math.ceil(totalRecords / limit),
-
-        hasNext: page < Math.ceil(totalRecords / limit),
-
-        hasPrevious: page > 1,
-      },
+      pagination: PaginationHelper.metadata(page, limit, totalRecords),
     };
   }
 

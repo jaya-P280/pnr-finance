@@ -2,24 +2,11 @@ import ApiError from "../../shared/ApiError.js";
 import logger from "../../config/logger.js";
 import customerRepository from "./customer.repository.js";
 import { CUSTOMER_MESSAGES, CUSTOMER } from "./customers.constants.js";
+import CodeGenerator from "../../shared/codeGenerator.helper.js";
+import PaginationHelper from "../../shared/pagination.helper.js";
 
 class CustomerService {
-  generateCustomerCode(lastCustomerCode) {
-    if (!lastCustomerCode) {
-      return `${CUSTOMER.PREFIX}${String(1).padStart(
-        CUSTOMER.PAD_LENGTH,
-        "0",
-      )}`;
-    }
-
-    const number = Number(lastCustomerCode.replace(CUSTOMER.PREFIX, ""));
-
-    return `${CUSTOMER.PREFIX}${String(number + 1).padStart(
-      CUSTOMER.PAD_LENGTH,
-      "0",
-    )}`;
-  }
-
+  
   async createCustomer(data, currentUser) {
     const connection = await customerRepository.beginTransaction();
 
@@ -56,9 +43,7 @@ class CustomerService {
       const lastCustomer =
         await customerRepository.getLastCustomerCode(connection);
 
-      const customerCode = this.generateCustomerCode(
-        lastCustomer?.customer_code,
-      );
+      const customerCode = CodeGenerator(CUSTOMER.PREFIX,lastCustomer?.customer_code,CUSTOMER.PAD_LENGTH);
 
       const customerId = await customerRepository.createCustomer(connection, {
         customerCode,
@@ -98,9 +83,7 @@ class CustomerService {
   }
 
   async getCustomers(query) {
-    const page = Number(query.page) || 1;
-
-    const limit = Number(query.limit) || 10;
+    const {page, limit} = PaginationHelper.build(query);
 
     const filters = {
       page,
@@ -115,7 +98,7 @@ class CustomerService {
 
       sortBy: query.sortBy || "created_at",
 
-      sortOrder: query.sortOrder || "DESC",
+      sortOrder: query.sortOrder || "ASC",
     };
 
     const customers = await customerRepository.getCustomers(filters);
@@ -125,19 +108,7 @@ class CustomerService {
     return {
       customers,
 
-      pagination: {
-        page,
-
-        limit,
-
-        totalRecords,
-
-        totalPages: Math.ceil(totalRecords / limit),
-
-        hasNext: page < Math.ceil(totalRecords / limit),
-
-        hasPrevious: page > 1,
-      },
+      pagination: PaginationHelper.metadata(page,limit,totalRecords),
     };
   }
 
