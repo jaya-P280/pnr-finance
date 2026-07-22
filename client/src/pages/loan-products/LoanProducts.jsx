@@ -1,9 +1,18 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Alert,
   Box,
   Button,
+  Checkbox,
+  Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControlLabel,
+  MenuItem,
   Paper,
   Stack,
   Table,
@@ -14,239 +23,286 @@ import {
   TableRow,
   TextField,
   Typography,
-  Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Grid,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  InputAdornment,
 } from "@mui/material";
-import { Add as AddIcon, Search as SearchIcon, Edit as EditIcon, Delete as DeleteIcon, Percent as PercentIcon } from "@mui/icons-material";
+import { Add as AddIcon, Search as SearchIcon } from "@mui/icons-material";
+import toast from "react-hot-toast";
 import SectionPage from "../../components/layout/SectionPage";
+import loanProductService from "../../services/loanProduct.service";
 
-// Mock data
-const mockProducts = [
-  {
-    id: 1,
-    name: "Standard Microloan",
-    minAmount: "₹10,000",
-    maxAmount: "₹5,00,000",
-    tenure: "12-60 months",
-    interestRate: "12%",
-    processingFee: "2%",
-    status: "active",
-  },
-  {
-    id: 2,
-    name: "Agricultural Loan",
-    minAmount: "₹20,000",
-    maxAmount: "₹10,00,000",
-    tenure: "6-36 months",
-    interestRate: "10%",
-    processingFee: "1.5%",
-    status: "active",
-  },
-  {
-    id: 3,
-    name: "Business Expansion",
-    minAmount: "₹50,000",
-    maxAmount: "₹15,00,000",
-    tenure: "24-60 months",
-    interestRate: "14%",
-    processingFee: "2.5%",
-    status: "active",
-  },
+const emptyForm = {
+  name: "", // was productName
+  productType: "INDIVIDUAL",
+  interestType: "FLAT",
+  recoveryType: "", // was recoveryFrequency
+  minAmount: "", // was minimumAmount
+  maxAmount: "", // was maximumAmount
+  minTenure: "", // was minimumTenure
+  maxTenure: "", // was maximumTenure
+  interestRate: "",
+  processingFeeType: "PERCENTAGE",
+  processingFee: "0",
+  insuranceFeeType: "FIXED",
+  insuranceFee: "0",
+  penaltyType: "FIXED",
+  penalty: "0",
+  holidayExcluded: true,
+  includeGst: false,
+  description: "",
+};
+
+const numericFields = [
+  "minAmount",
+  "maxAmount",
+  "minTenure",
+  "maxTenure",
+  "interestRate",
+  "processingFee",
+  "insuranceFee",
+  "penalty",
 ];
+
+const getErrorMessage = (error, fallback) =>
+  error?.response?.data?.message || error?.message || fallback;
+
+const toPayload = (form) => {
+  const payload = { ...form };
+  numericFields.forEach((key) => {
+    payload[key] = Number(payload[key]);
+  });
+  if (!payload.description) delete payload.description;
+  return payload;
+};
 
 export default function LoanProducts() {
   const [search, setSearch] = useState("");
-  const [openDialog, setOpenDialog] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    minAmount: "",
-    maxAmount: "",
-    tenure: "",
-    interestRate: "",
-    processingFee: "",
-    status: "active",
+  const [dialog, setDialog] = useState(null);
+  const [form, setForm] = useState(emptyForm);
+  const queryClient = useQueryClient();
+
+  const productsQuery = useQuery({
+    queryKey: ["loanProducts", search],
+    queryFn: () => loanProductService.getAll({ search }),
   });
 
-  const { data = mockProducts, isLoading } = useQuery({
-    queryKey: ["loan-products", search],
-    queryFn: async () => {
-      // const response = await loanProductService.getAll({ search });
-      // return response.products;
-      return mockProducts;
+  const invalidateProducts = () =>
+    queryClient.invalidateQueries({ queryKey: ["loanProducts"] });
+
+  const saveProduct = useMutation({
+    mutationFn: () => {
+      const payload = toPayload(form);
+      return dialog.mode === "create"
+        ? loanProductService.create(payload)
+        : loanProductService.update(dialog.product.loan_product_id, payload);
     },
-    keepPreviousData: true,
+    onSuccess: () => {
+      toast.success(
+        dialog.mode === "create"
+          ? "Loan product created."
+          : "Loan product updated.",
+      );
+      setDialog(null);
+      invalidateProducts();
+    },
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Unable to save the loan product.")),
   });
 
-  const products = search
-    ? data.filter((product) => product.name.toLowerCase().includes(search.toLowerCase()))
-    : data;
+  const changeStatus = useMutation({
+    mutationFn: ({ id, status }) =>
+      loanProductService.updateStatus(id, { status }),
+    onSuccess: () => {
+      toast.success("Loan product status updated.");
+      invalidateProducts();
+    },
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Unable to update status.")),
+  });
 
-  const handleOpenDialog = (product = null) => {
-    if (product) {
-      setEditingProduct(product);
-      setFormData({ ...product });
-    } else {
-      setEditingProduct(null);
-      setFormData({
-        name: "",
-        minAmount: "",
-        maxAmount: "",
-        tenure: "",
-        interestRate: "",
-        processingFee: "",
-        status: "active",
+  const removeProduct = useMutation({
+    mutationFn: (id) => loanProductService.delete(id),
+    onSuccess: () => {
+      toast.success("Loan product deleted.");
+      setDialog(null);
+      invalidateProducts();
+    },
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Unable to delete the loan product.")),
+  });
+
+  const products = productsQuery.data?.loanProducts || [];
+
+  const openCreate = () => {
+    setForm(emptyForm);
+    setDialog({ mode: "create" });
+  };
+
+  const openEdit = async (product) => {
+    try {
+      const details = await loanProductService.getById(product.loan_product_id);
+      setForm({
+        name: details.product_name || "",
+        productType: details.product_type || "INDIVIDUAL",
+        interestType: details.interest_type || "FLAT",
+        recoveryType: details.recovery_frequency || "",
+        minAmount: String(details.minimum_amount ?? ""),
+        maxAmount: String(details.maximum_amount ?? ""),
+        minTenure: String(details.minimum_tenure ?? ""),
+        maxTenure: String(details.maximum_tenure ?? ""),
+        interestRate: String(details.interest_rate ?? ""),
+        processingFeeType: details.processing_fee_type || "PERCENTAGE",
+        processingFee: String(details.processing_fee ?? "0"),
+        insuranceFeeType: details.insurance_fee_type || "FIXED",
+        insuranceFee: String(details.insurance_fee ?? "0"),
+        penaltyType: details.penalty_type || "FIXED",
+        penalty: String(details.penalty ?? "0"),
+        holidayExcluded: Boolean(details.holiday_excluded),
+        includeGst: Boolean(details.include_gst),
+        description: details.description || "",
       });
+      setDialog({ mode: "edit", product });
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Unable to load the loan product."));
     }
-    setOpenDialog(true);
   };
 
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-    setEditingProduct(null);
-  };
+  const setField = (field) => (event) =>
+    setForm((current) => ({ ...current, [field]: event.target.value }));
+  const setChecked = (field) => (event) =>
+    setForm((current) => ({ ...current, [field]: event.target.checked }));
 
-  const handleSaveProduct = async () => {
-    // TODO: API call to save product
-    console.log("Saving product:", editingProduct ? `Update ${editingProduct.id}` : "Create new", formData);
-    handleCloseDialog();
-  };
+  const requiredFilled =
+    form.name &&
+    form.recoveryType &&
+    form.minAmount &&
+    form.maxAmount &&
+    form.minTenure &&
+    form.maxTenure &&
+    form.interestRate;
 
   return (
     <SectionPage
       title="Loan Products"
-      subtitle="Configure and manage loan products with interest rates, fees, and tenure settings."
+      subtitle="Configure loan product types, interest rates, fees, and eligibility ranges."
       actions={
-        <Stack direction="row" spacing={2} flexWrap="wrap">
+        <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap" }}>
           <TextField
             size="small"
-            placeholder="Search products..."
+            placeholder="Search by name or code..."
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            sx={{
-              minWidth: 250,
-              "& .MuiOutlinedInput-root": {
-                borderRadius: 2,
-                "&.Mui-focused fieldset": {
-                  borderColor: "#0F766E",
-                },
+            onKeyDown={(event) =>
+              event.key === "Enter" && productsQuery.refetch()
+            }
+            slotProps={{
+              input: {
+                startAdornment: <SearchIcon sx={{ mr: 1, color: "#94A3B8" }} />,
               },
-            }}
-            InputProps={{
-              startAdornment: <SearchIcon sx={{ mr: 1, color: "#94A3B8" }} />,
             }}
           />
           <Button
             variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => handleOpenDialog()}
-            sx={{
-              bgcolor: "#2563EB",
-              "&:hover": { bgcolor: "#1D4ED8" },
-              borderRadius: 2,
-            }}
+            onClick={() => productsQuery.refetch()}
+            sx={{ bgcolor: "#0F766E" }}
           >
-            Add Product
+            Search
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={openCreate}
+          >
+            Add Loan Product
           </Button>
         </Stack>
       }
     >
-      <Paper elevation={0} sx={{ border: "1px solid #E2E8F0", borderRadius: 3, overflow: "hidden" }}>
-        {isLoading ? (
+      <Paper
+        elevation={0}
+        sx={{
+          border: "1px solid #E2E8F0",
+          borderRadius: 3,
+          overflow: "hidden",
+        }}
+      >
+        {productsQuery.isLoading ? (
           <Box sx={{ display: "flex", justifyContent: "center", p: 6 }}>
-            <CircularProgress sx={{ color: "#0F766E" }} />
+            <CircularProgress />
+          </Box>
+        ) : productsQuery.isError ? (
+          <Box sx={{ p: 6 }}>
+            <Alert severity="error">
+              Unable to load loan products. Please try again.
+            </Alert>
           </Box>
         ) : products.length === 0 ? (
           <Box sx={{ p: 6, textAlign: "center" }}>
-            <Typography color="#64748B">No products found.</Typography>
+            <Typography color="#64748B">No loan products found.</Typography>
           </Box>
         ) : (
           <TableContainer>
             <Table>
               <TableHead>
-                <TableRow sx={{ bgcolor: "#F8FAFC", borderBottom: "2px solid #E2E8F0" }}>
-                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>Product Name</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>Min Amount</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>Max Amount</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>Tenure</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>Interest Rate</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>Fee</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>Actions</TableCell>
+                <TableRow sx={{ bgcolor: "#F8FAFC" }}>
+                  <TableCell>Code</TableCell>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Type</TableCell>
+                  <TableCell>Recovery</TableCell>
+                  <TableCell>Amount Range</TableCell>
+                  <TableCell>Rate</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {products.map((product) => (
-                  <TableRow
-                    key={product.id}
-                    sx={{
-                      "&:hover": { bgcolor: "#F0F9FF" },
-                      borderBottom: "1px solid #E2E8F0",
-                    }}
-                  >
-                    <TableCell sx={{ color: "#0F172A", fontWeight: 600 }}>
-                      {product.name}
+                  <TableRow key={product.loan_product_id}>
+                    <TableCell>{product.product_code || "-"}</TableCell>
+                    <TableCell>{product.product_name || "-"}</TableCell>
+                    <TableCell>{product.product_type || "-"}</TableCell>
+                    <TableCell>{product.recovery_frequency || "-"}</TableCell>
+                    <TableCell>
+                      {product.minimum_amount ?? "-"} -{" "}
+                      {product.maximum_amount ?? "-"}
                     </TableCell>
-                    <TableCell sx={{ color: "#0F172A" }}>
-                      {product.minAmount}
-                    </TableCell>
-                    <TableCell sx={{ color: "#0F172A" }}>
-                      {product.maxAmount}
-                    </TableCell>
-                    <TableCell sx={{ color: "#0F172A" }}>
-                      {product.tenure}
-                    </TableCell>
+                    <TableCell>{product.interest_rate ?? "-"}%</TableCell>
                     <TableCell>
                       <Chip
-                        icon={<PercentIcon />}
-                        label={product.interestRate}
+                        label={product.status || "-"}
                         size="small"
-                        sx={{
-                          bgcolor: "#FEE2E2",
-                          color: "#991B1B",
-                          fontWeight: 600,
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell sx={{ color: "#0F172A" }}>
-                      {product.processingFee}
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={product.status}
-                        size="small"
-                        sx={{
-                          bgcolor: product.status === "active" ? "#DCFCE7" : "#FEE2E2",
-                          color: product.status === "active" ? "#15803D" : "#991B1B",
-                          fontWeight: 600,
-                        }}
+                        color={
+                          product.status === "ACTIVE" ? "success" : "error"
+                        }
                       />
                     </TableCell>
                     <TableCell>
-                      <Stack direction="row" spacing={1}>
-                        <Button
-                          size="small"
-                          startIcon={<EditIcon />}
-                          variant="text"
-                          onClick={() => handleOpenDialog(product)}
-                          sx={{ color: "#0F766E" }}
-                        >
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        sx={{ flexWrap: "wrap" }}
+                      >
+                        <Button size="small" onClick={() => openEdit(product)}>
                           Edit
                         </Button>
                         <Button
                           size="small"
-                          startIcon={<DeleteIcon />}
-                          variant="text"
-                          sx={{ color: "#EF4444" }}
+                          onClick={() =>
+                            changeStatus.mutate({
+                              id: product.loan_product_id,
+                              status:
+                                product.status === "ACTIVE"
+                                  ? "INACTIVE"
+                                  : "ACTIVE",
+                            })
+                          }
+                        >
+                          {product.status === "ACTIVE"
+                            ? "Deactivate"
+                            : "Activate"}
+                        </Button>
+                        <Button
+                          size="small"
+                          color="error"
+                          onClick={() => setDialog({ mode: "delete", product })}
                         >
                           Delete
                         </Button>
@@ -260,138 +316,234 @@ export default function LoanProducts() {
         )}
       </Paper>
 
-      {/* Product Dialog */}
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ bgcolor: "#F8FAFC", color: "#0F172A", fontWeight: 700 }}>
-          {editingProduct ? "Edit Loan Product" : "Create New Loan Product"}
-        </DialogTitle>
-        <DialogContent sx={{ mt: 2 }}>
-          <Stack spacing={2}>
-            <TextField
-              label="Product Name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              fullWidth
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 2,
-                  "&.Mui-focused fieldset": { borderColor: "#0F766E" },
-                },
-              }}
-            />
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <TextField
-                  label="Min Amount"
-                  value={formData.minAmount}
-                  onChange={(e) => setFormData({ ...formData, minAmount: e.target.value })}
-                  fullWidth
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      borderRadius: 2,
-                      "&.Mui-focused fieldset": { borderColor: "#0F766E" },
-                    },
-                  }}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  label="Max Amount"
-                  value={formData.maxAmount}
-                  onChange={(e) => setFormData({ ...formData, maxAmount: e.target.value })}
-                  fullWidth
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      borderRadius: 2,
-                      "&.Mui-focused fieldset": { borderColor: "#0F766E" },
-                    },
-                  }}
-                />
-              </Grid>
-            </Grid>
-            <TextField
-              label="Tenure"
-              value={formData.tenure}
-              onChange={(e) => setFormData({ ...formData, tenure: e.target.value })}
-              fullWidth
-              placeholder="e.g., 12-60 months"
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 2,
-                  "&.Mui-focused fieldset": { borderColor: "#0F766E" },
-                },
-              }}
-            />
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <TextField
-                  label="Interest Rate"
-                  value={formData.interestRate}
-                  onChange={(e) => setFormData({ ...formData, interestRate: e.target.value })}
-                  fullWidth
-                  InputProps={{
-                    endAdornment: <InputAdornment position="end">%</InputAdornment>,
-                  }}
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      borderRadius: 2,
-                      "&.Mui-focused fieldset": { borderColor: "#0F766E" },
-                    },
-                  }}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  label="Processing Fee"
-                  value={formData.processingFee}
-                  onChange={(e) => setFormData({ ...formData, processingFee: e.target.value })}
-                  fullWidth
-                  InputProps={{
-                    endAdornment: <InputAdornment position="end">%</InputAdornment>,
-                  }}
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      borderRadius: 2,
-                      "&.Mui-focused fieldset": { borderColor: "#0F766E" },
-                    },
-                  }}
-                />
-              </Grid>
-            </Grid>
-            <FormControl fullWidth>
-              <InputLabel>Status</InputLabel>
-              <Select
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                label="Status"
-                sx={{
-                  borderRadius: 2,
-                  "& .MuiOutlinedInput-root": {
-                    "&.Mui-focused fieldset": { borderColor: "#0F766E" },
-                  },
-                }}
+      <Dialog
+        open={Boolean(dialog)}
+        onClose={() =>
+          !saveProduct.isPending && !removeProduct.isPending && setDialog(null)
+        }
+        fullWidth
+        maxWidth="md"
+      >
+        {dialog?.mode === "delete" ? (
+          <>
+            <DialogTitle>Delete loan product?</DialogTitle>
+            <DialogContent>
+              <Typography>
+                This will remove {dialog.product.product_name} from the loan
+                product list.
+              </Typography>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setDialog(null)}>Cancel</Button>
+              <Button
+                color="error"
+                variant="contained"
+                disabled={removeProduct.isPending}
+                onClick={() =>
+                  removeProduct.mutate(dialog.product.loan_product_id)
+                }
               >
-                <MenuItem value="active">Active</MenuItem>
-                <MenuItem value="inactive">Inactive</MenuItem>
-              </Select>
-            </FormControl>
-          </Stack>
-        </DialogContent>
-        <DialogActions sx={{ p: 2, bgcolor: "#F8FAFC" }}>
-          <Button onClick={handleCloseDialog} sx={{ color: "#64748B" }}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSaveProduct}
-            variant="contained"
-            sx={{
-              bgcolor: "#0F766E",
-              "&:hover": { bgcolor: "#0D9488" },
-            }}
-          >
-            {editingProduct ? "Update" : "Create"} Product
-          </Button>
-        </DialogActions>
+                Delete
+              </Button>
+            </DialogActions>
+          </>
+        ) : (
+          <>
+            <DialogTitle>
+              {dialog?.mode === "create"
+                ? "Add Loan Product"
+                : "Edit Loan Product"}
+            </DialogTitle>
+            <DialogContent>
+              <Stack spacing={2} sx={{ pt: 1 }}>
+                <TextField
+                  required
+                  fullWidth
+                  label="Product name"
+                  value={form.name}
+                  onChange={setField("name")}
+                />
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                  <TextField
+                    select
+                    fullWidth
+                    label="Product type"
+                    value={form.productType}
+                    onChange={setField("productType")}
+                  >
+                    <MenuItem value="INDIVIDUAL">Individual</MenuItem>
+                    <MenuItem value="GROUP">Group</MenuItem>
+                  </TextField>
+                  <TextField
+                    select
+                    fullWidth
+                    label="Interest type"
+                    value={form.interestType}
+                    onChange={setField("interestType")}
+                  >
+                    <MenuItem value="FLAT">Flat</MenuItem>
+                    <MenuItem value="REDUCING">Reducing</MenuItem>
+                  </TextField>
+                  <TextField
+                    required
+                    select
+                    fullWidth
+                    label="Recovery frequency"
+                    value={form.recoveryType}
+                    onChange={setField("recoveryType")}
+                  >
+                    <MenuItem value="">Select frequency</MenuItem>
+                    <MenuItem value="DAILY">Daily</MenuItem>
+                    <MenuItem value="WEEKLY">Weekly</MenuItem>
+                    <MenuItem value="BI_WEEKLY">Bi-weekly</MenuItem>
+                    <MenuItem value="MONTHLY">Monthly</MenuItem>
+                    <MenuItem value="YEARLY">Yearly</MenuItem>
+                    <MenuItem value="ONE_TIME">One-time</MenuItem>
+                  </TextField>
+                </Stack>
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                  <TextField
+                    required
+                    fullWidth
+                    type="number"
+                    label="Minimum amount"
+                    value={form.minAmount}
+                    onChange={setField("minAmount")}
+                  />
+                  <TextField
+                    required
+                    fullWidth
+                    type="number"
+                    label="Maximum amount"
+                    value={form.maxAmount}
+                    onChange={setField("maxAmount")}
+                  />
+                  <TextField
+                    required
+                    fullWidth
+                    type="number"
+                    label="Interest rate (%)"
+                    value={form.interestRate}
+                    onChange={setField("interestRate")}
+                  />
+                </Stack>
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                  <TextField
+                    required
+                    fullWidth
+                    type="number"
+                    label="Minimum tenure"
+                    value={form.minTenure}
+                    onChange={setField("minTenure")}
+                  />
+                  <TextField
+                    required
+                    fullWidth
+                    type="number"
+                    label="Maximum tenure"
+                    value={form.maxTenure}
+                    onChange={setField("maxTenure")}
+                  />
+                </Stack>
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                  <TextField
+                    select
+                    fullWidth
+                    label="Processing fee type"
+                    value={form.processingFeeType}
+                    onChange={setField("processingFeeType")}
+                  >
+                    <MenuItem value="FIXED">Fixed</MenuItem>
+                    <MenuItem value="PERCENTAGE">Percentage</MenuItem>
+                  </TextField>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Processing fee"
+                    value={form.processingFee}
+                    onChange={setField("processingFee")}
+                  />
+                </Stack>
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                  <TextField
+                    select
+                    fullWidth
+                    label="Insurance fee type"
+                    value={form.insuranceFeeType}
+                    onChange={setField("insuranceFeeType")}
+                  >
+                    <MenuItem value="FIXED">Fixed</MenuItem>
+                    <MenuItem value="PERCENTAGE">Percentage</MenuItem>
+                  </TextField>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Insurance fee"
+                    value={form.insuranceFee}
+                    onChange={setField("insuranceFee")}
+                  />
+                </Stack>
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                  <TextField
+                    select
+                    fullWidth
+                    label="Penalty type"
+                    value={form.penaltyType}
+                    onChange={setField("penaltyType")}
+                  >
+                    <MenuItem value="FIXED">Fixed</MenuItem>
+                    <MenuItem value="PERCENTAGE">Percentage</MenuItem>
+                  </TextField>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Penalty"
+                    value={form.penalty}
+                    onChange={setField("penalty")}
+                  />
+                </Stack>
+                <Stack direction="row" spacing={2}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={form.holidayExcluded}
+                        onChange={setChecked("holidayExcluded")}
+                      />
+                    }
+                    label="Exclude holidays from recovery"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={form.includeGst}
+                        onChange={setChecked("includeGst")}
+                      />
+                    }
+                    label="Include GST"
+                  />
+                </Stack>
+                <TextField
+                  fullWidth
+                  multiline
+                  minRows={2}
+                  label="Description"
+                  value={form.description}
+                  onChange={setField("description")}
+                />
+              </Stack>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setDialog(null)}>Cancel</Button>
+              <Button
+                variant="contained"
+                disabled={saveProduct.isPending || !requiredFilled}
+                onClick={() => saveProduct.mutate()}
+              >
+                {saveProduct.isPending ? "Saving…" : "Save"}
+              </Button>
+            </DialogActions>
+          </>
+        )}
       </Dialog>
     </SectionPage>
   );

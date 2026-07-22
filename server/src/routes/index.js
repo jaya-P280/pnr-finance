@@ -7,6 +7,7 @@ import branchRoutes from "../modules/branches/branch.routes.js";
 import customerRoutes from "../modules/customers/customer.routes.js"
 import roleRoutes from "../modules/roles/role.routes.js";
 import loanRouter from "../modules/loan-products/loanProducts.routes.js"
+import loanApplicationRouter from "../modules/loan-applications/loanApplications.routes.js"
 
 
 const router = express.Router();
@@ -19,5 +20,6 @@ router.use("/branches",branchRoutes)
 router.use("/customers",customerRoutes)
 router.use("/roles", roleRoutes);
 router.use("/loan-products",loanRouter)
+router.use("/loan-application",loanApplicationRouter)
 
 export default router;

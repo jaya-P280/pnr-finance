@@ -1,7 +1,6 @@
 import db from "../../database/db.js";
 
 class LoanProductRepository {
-
   async beginTransaction() {
     return await db.getConnection();
   }
@@ -36,47 +35,46 @@ class LoanProductRepository {
       AND deleted_at IS NULL
       LIMIT 1
       `,
-      [productName]
+      [productName],
     );
 
     return rows.length > 0;
   }
 
   async create(connection, product) {
-
     const [result] = await connection.execute(
       `
-      INSERT INTO loan_products
-      (
-        product_code,
-        product_name,
-        product_type,
-        interest_type,
-        recovery_frequency,
-        minimum_amount,
-        maximum_amount,
-        minimum_tenure,
-        maximum_tenure,
-        interest_rate,
-        processing_fee_type,
-        processing_fee,
-        insurance_fee_type,
-        insurance_fee,
-        penalty_type,
-        penalty,
-        holiday_excluded,
-        include_gst,
-        description,
-        created_by
-      )
-      VALUES
-      (
-        ?,?,?,?,?,?,
-        ?,?,?,?,?,?,
-        ?,?,?,?,?,?,
-        ?,?,?
-      )
-      `,
+  INSERT INTO loan_products
+  (
+    product_code,
+    product_name,
+    product_type,
+    interest_type,
+    recovery_frequency,
+    minimum_amount,
+    maximum_amount,
+    minimum_tenure,
+    maximum_tenure,
+    interest_rate,
+    processing_fee_type,
+    processing_fee,
+    insurance_fee_type,
+    insurance_fee,
+    penalty_type,
+    penalty,
+    holiday_excluded,
+    include_gst,
+    description,
+    created_by
+  )
+  VALUES
+  (
+    ?,?,?,?,?,?,
+    ?,?,?,?,?,?,
+    ?,?,?,?,?,?,
+    ?,?
+  )
+  `,
       [
         product.productCode,
         product.productName,
@@ -97,15 +95,14 @@ class LoanProductRepository {
         product.holidayExcluded,
         product.includeGst,
         product.description,
-        product.createdBy
-      ]
+        product.createdBy,
+      ],
     );
 
     return result.insertId;
   }
 
   async findAll(filters) {
-
     const params = [];
 
     let sql = `
@@ -132,10 +129,7 @@ class LoanProductRepository {
         OR product_code LIKE ?
       )
       `;
-      params.push(
-        `%${filters.search}%`,
-        `%${filters.search}%`
-      );
+      params.push(`%${filters.search}%`, `%${filters.search}%`);
     }
 
     if (filters.status) {
@@ -158,7 +152,6 @@ class LoanProductRepository {
   }
 
   async count(filters) {
-
     const params = [];
 
     let sql = `
@@ -175,10 +168,7 @@ class LoanProductRepository {
       )
       `;
 
-      params.push(
-        `%${filters.search}%`,
-        `%${filters.search}%`
-      );
+      params.push(`%${filters.search}%`, `%${filters.search}%`);
     }
 
     if (filters.status) {
@@ -192,7 +182,6 @@ class LoanProductRepository {
   }
 
   async findById(id) {
-
     const [rows] = await db.execute(
       `
       SELECT *
@@ -200,14 +189,13 @@ class LoanProductRepository {
       WHERE loan_product_id=?
       AND deleted_at IS NULL
       `,
-      [id]
+      [id],
     );
 
     return rows[0] || null;
   }
 
   async update(connection, product) {
-
     await connection.execute(
       `
       UPDATE loan_products
@@ -253,13 +241,12 @@ class LoanProductRepository {
         product.includeGst,
         product.description,
         product.updatedBy,
-        product.loanProductId
-      ]
+        product.loanProductId,
+      ],
     );
   }
 
   async updateStatus(connection, id, status, updatedBy) {
-
     await connection.execute(
       `
       UPDATE loan_products
@@ -268,12 +255,11 @@ class LoanProductRepository {
         updated_by=?
       WHERE loan_product_id=?
       `,
-      [status, updatedBy, id]
+      [status, updatedBy, id],
     );
   }
 
   async softDelete(connection, id, updatedBy) {
-
     await connection.execute(
       `
       UPDATE loan_products
@@ -282,10 +268,9 @@ class LoanProductRepository {
         updated_by=?
       WHERE loan_product_id=?
       `,
-      [updatedBy, id]
+      [updatedBy, id],
     );
   }
-
 }
 
 export default new LoanProductRepository();

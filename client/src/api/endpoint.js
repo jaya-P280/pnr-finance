@@ -21,6 +21,7 @@ const ENDPOINTS = {
   GROUPS: "/groups",
 
   LOAN_PRODUCTS: "/loan-products",
+  LOAN_APPLICATIONS: "/loan-application",
 
   LOANS: "/loans",
 
