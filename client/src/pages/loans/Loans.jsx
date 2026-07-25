@@ -1,9 +1,16 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Alert,
   Box,
   Button,
+  Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  MenuItem,
   Paper,
   Stack,
   Table,
@@ -14,163 +21,274 @@ import {
   TableRow,
   TextField,
   Typography,
-  Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  LinearProgress,
 } from "@mui/material";
-import { Search as SearchIcon, Edit as EditIcon, Download as DownloadIcon, PauseCircle as ForecastureIcon } from "@mui/icons-material";
+import { Search as SearchIcon } from "@mui/icons-material";
+import toast from "react-hot-toast";
 import SectionPage from "../../components/layout/SectionPage";
+import branchService from "../../services/branch.service";
+import loanApplicationService from "../../services/loanApplication.service";
+import loanService from "../../services/loan.service";
 
-// Mock data
-const mockLoans = [
-  {
-    id: "LN001",
-    customerName: "Rajesh Kumar",
-    loanAmount: "₹2,50,000",
-    disbursedDate: "2026-01-15",
-    emiAmount: "₹5,208",
-    nextDueDate: "2026-08-15",
-    amountPaid: "₹31,250",
-    amountOutstanding: "₹2,18,750",
-    status: "active",
-    daysOverdue: 0,
-  },
-  {
-    id: "LN002",
-    customerName: "Priya Singh",
-    loanAmount: "₹5,00,000",
-    disbursedDate: "2025-06-20",
-    emiAmount: "₹10,417",
-    nextDueDate: "2026-08-20",
-    amountPaid: "₹1,25,000",
-    amountOutstanding: "₹3,75,000",
-    status: "active",
-    daysOverdue: 0,
-  },
-  {
-    id: "LN003",
-    customerName: "Arjun Patel",
-    loanAmount: "₹7,50,000",
-    disbursedDate: "2025-03-10",
-    emiAmount: "₹12,500",
-    nextDueDate: "2026-07-10",
-    amountPaid: "₹3,50,000",
-    amountOutstanding: "₹4,00,000",
-    status: "overdue",
-    daysOverdue: 8,
-  },
-  {
-    id: "LN004",
-    customerName: "Meera Devi",
-    loanAmount: "₹1,50,000",
-    disbursedDate: "2025-12-01",
-    emiAmount: "₹3,125",
-    nextDueDate: "2026-09-01",
-    amountPaid: "₹6,250",
-    amountOutstanding: "₹1,43,750",
-    status: "active",
-    daysOverdue: 0,
-  },
-];
+const emptyForm = {
+  applicationId: "",
+  branchId: "",
+  principalAmount: "",
+  disbursedAmount: "",
+  interestRate: "",
+  totalInterest: "",
+  totalPayable: "",
+  outstandingAmount: "",
+  disbursementDate: "",
+  maturityDate: "",
+  remarks: "",
+};
+
+const STATUS_COLORS = {
+  ACTIVE: "success",
+  CLOSED: "default",
+  FORECLOSED: "info",
+  DEFAULTED: "error",
+};
+
+const getErrorMessage = (error, fallback) =>
+  error?.response?.data?.message || error?.message || fallback;
 
 export default function Loans() {
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [openDialog, setOpenDialog] = useState(false);
-  const [selectedLoan, setSelectedLoan] = useState(null);
+  const [dialog, setDialog] = useState(null);
+  const [form, setForm] = useState(emptyForm);
+  const [appDetails, setAppDetails] = useState(null);
+  const queryClient = useQueryClient();
 
-  const { data = mockLoans, isLoading } = useQuery({
-    queryKey: ["loans", search, statusFilter],
-    queryFn: async () => {
-      // const response = await loanService.getAll({ search, status: statusFilter });
-      // return response.loans;
-      return mockLoans;
-    },
-    keepPreviousData: true,
+  const loansQuery = useQuery({
+    queryKey: ["loans", search],
+    queryFn: () => loanService.getAll({ search }),
   });
 
-  let loans = search
-    ? data.filter(
-        (loan) =>
-          loan.customerName.toLowerCase().includes(search.toLowerCase()) ||
-          loan.id.toLowerCase().includes(search.toLowerCase())
-      )
-    : data;
+  const applicationsQuery = useQuery({
+    queryKey: ["loanApplications", "approved"],
+    queryFn: () => loanApplicationService.getAll({ status: "APPROVED" }),
+    enabled: dialog?.mode === "create",
+  });
 
-  if (statusFilter !== "all") {
-    loans = loans.filter((loan) => loan.status === statusFilter);
-  }
+  const branchesQuery = useQuery({
+    queryKey: ["branches", "form"],
+    queryFn: () => branchService.getAll({ limit: 100, status: "ACTIVE" }),
+    enabled: dialog?.mode === "create",
+  });
 
-  const handleViewDetails = (loan) => {
-    setSelectedLoan(loan);
-    setOpenDialog(true);
+  const invalidateLoans = () =>
+    queryClient.invalidateQueries({ queryKey: ["loans"] });
+
+  const saveLoan = useMutation({
+    mutationFn: () => {
+      if (dialog.mode === "create") {
+        const payload = {
+          applicationId: Number(form.applicationId),
+          branchId: Number(form.branchId),
+          customerId: appDetails?.customer_id,
+          groupId: appDetails?.group_id || undefined,
+          loanProductId: appDetails?.loan_product_id,
+          tenure: appDetails?.tenure,
+          recoveryFrequency: appDetails?.recovery_frequency,
+          principalAmount: Number(form.principalAmount),
+          disbursedAmount: Number(form.disbursedAmount),
+          interestRate: Number(form.interestRate),
+          totalInterest: Number(form.totalInterest),
+          totalPayable: Number(form.totalPayable),
+          outstandingAmount: Number(form.outstandingAmount),
+          disbursementDate: form.disbursementDate,
+        };
+        if (form.maturityDate) payload.maturityDate = form.maturityDate;
+        if (form.remarks) payload.remarks = form.remarks;
+        return loanService.create(payload);
+      }
+      const payload = {
+        principalAmount: Number(form.principalAmount),
+        disbursedAmount: Number(form.disbursedAmount),
+        interestRate: Number(form.interestRate),
+        totalInterest: Number(form.totalInterest),
+        totalPayable: Number(form.totalPayable),
+        outstandingAmount: Number(form.outstandingAmount),
+        disbursementDate: form.disbursementDate,
+      };
+      if (form.maturityDate) payload.maturityDate = form.maturityDate;
+      if (form.remarks) payload.remarks = form.remarks;
+      return loanService.update(dialog.loan.loan_id, payload);
+    },
+    onSuccess: () => {
+      toast.success(
+        dialog.mode === "create" ? "Loan disbursed." : "Loan updated.",
+      );
+      setDialog(null);
+      invalidateLoans();
+    },
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Unable to save the loan.")),
+  });
+
+  const closeLoan = useMutation({
+    mutationFn: (id) => loanService.close(id),
+    onSuccess: () => {
+      toast.success("Loan closed.");
+      invalidateLoans();
+    },
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Unable to close the loan.")),
+  });
+
+  const forecloseLoan = useMutation({
+    mutationFn: (id) => loanService.foreclose(id),
+    onSuccess: () => {
+      toast.success("Loan foreclosed.");
+      invalidateLoans();
+    },
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Unable to foreclose the loan.")),
+  });
+
+  const defaultLoan = useMutation({
+    mutationFn: (id) => loanService.markDefault(id),
+    onSuccess: () => {
+      toast.success("Loan marked as defaulted.");
+      invalidateLoans();
+    },
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Unable to update the loan.")),
+  });
+
+  const loans = loansQuery.data?.loans || [];
+  const applications = applicationsQuery.data?.loanApplications || [];
+  const branches = branchesQuery.data?.branches || [];
+  const formLoading = applicationsQuery.isLoading || branchesQuery.isLoading;
+
+  const openCreate = () => {
+    setForm(emptyForm);
+    setAppDetails(null);
+    setDialog({ mode: "create" });
   };
 
-  const getProgressValue = (loan) => {
-    const totalAmount = parseFloat(loan.loanAmount.replace(/[₹,]/g, ""));
-    const paidAmount = parseFloat(loan.amountPaid.replace(/[₹,]/g, ""));
-    return (paidAmount / totalAmount) * 100;
+  const openEdit = async (loan) => {
+    try {
+      const details = await loanService.getById(loan.loan_id);
+      setForm({
+        applicationId: "",
+        branchId: "",
+        principalAmount: String(details.principal_amount ?? ""),
+        disbursedAmount: String(details.disbursed_amount ?? ""),
+        interestRate: String(details.interest_rate ?? ""),
+        totalInterest: String(details.total_interest ?? ""),
+        totalPayable: String(details.total_payable ?? ""),
+        outstandingAmount: String(details.outstanding_amount ?? ""),
+        disbursementDate: details.disbursement_date
+          ? String(details.disbursement_date).slice(0, 10)
+          : "",
+        maturityDate: details.maturity_date
+          ? String(details.maturity_date).slice(0, 10)
+          : "",
+        remarks: details.remarks || "",
+      });
+      setDialog({ mode: "edit", loan });
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Unable to load the loan."));
+    }
   };
+
+  const onSelectApplication = async (event) => {
+    const applicationId = event.target.value;
+    setForm((current) => ({ ...current, applicationId }));
+    if (!applicationId) {
+      setAppDetails(null);
+      return;
+    }
+    try {
+      const details = await loanApplicationService.getById(
+        Number(applicationId),
+      );
+      setAppDetails(details);
+      setForm((current) => ({
+        ...current,
+        principalAmount: String(
+          details.approved_amount ?? details.requested_amount ?? "",
+        ),
+      }));
+    } catch (error) {
+      toast.error(
+        getErrorMessage(error, "Unable to load application details."),
+      );
+    }
+  };
+
+  const setField = (field) => (event) =>
+    setForm((current) => ({ ...current, [field]: event.target.value }));
+
+  const requiredFilled =
+    dialog?.mode === "create"
+      ? form.applicationId &&
+        form.branchId &&
+        form.principalAmount &&
+        form.disbursedAmount &&
+        form.interestRate &&
+        form.totalInterest &&
+        form.totalPayable &&
+        form.outstandingAmount &&
+        form.disbursementDate
+      : form.principalAmount &&
+        form.disbursedAmount &&
+        form.interestRate &&
+        form.totalInterest &&
+        form.totalPayable &&
+        form.outstandingAmount &&
+        form.disbursementDate;
 
   return (
     <SectionPage
-      title="Loan Management"
-      subtitle="Track active loans, EMI schedules, repayments, and outstanding balances."
+      title="Loans"
+      subtitle="Disburse approved applications and manage active loan accounts."
       actions={
-        <Stack direction="row" spacing={2} flexWrap="wrap">
+        <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap" }}>
           <TextField
             size="small"
-            placeholder="Search loans..."
+            placeholder="Search by loan # or customer..."
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            sx={{
-              minWidth: 250,
-              "& .MuiOutlinedInput-root": {
-                borderRadius: 2,
-                "&.Mui-focused fieldset": {
-                  borderColor: "#0F766E",
-                },
+            onKeyDown={(event) => event.key === "Enter" && loansQuery.refetch()}
+            slotProps={{
+              input: {
+                startAdornment: <SearchIcon sx={{ mr: 1, color: "#94A3B8" }} />,
               },
             }}
-            InputProps={{
-              startAdornment: <SearchIcon sx={{ mr: 1, color: "#94A3B8" }} />,
-            }}
           />
-          <FormControl sx={{ minWidth: 180 }}>
-            <InputLabel>Status Filter</InputLabel>
-            <Select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              label="Status Filter"
-              sx={{
-                borderRadius: 2,
-                "& .MuiOutlinedInput-root": {
-                  "&.Mui-focused fieldset": {
-                    borderColor: "#0F766E",
-                  },
-                },
-              }}
-            >
-              <MenuItem value="all">All Status</MenuItem>
-              <MenuItem value="active">Active</MenuItem>
-              <MenuItem value="overdue">Overdue</MenuItem>
-              <MenuItem value="closed">Closed</MenuItem>
-            </Select>
-          </FormControl>
+          <Button
+            variant="contained"
+            onClick={() => loansQuery.refetch()}
+            sx={{ bgcolor: "#0F766E" }}
+          >
+            Search
+          </Button>
+          <Button variant="contained" onClick={openCreate}>
+            Disburse Loan
+          </Button>
         </Stack>
       }
     >
-      <Paper elevation={0} sx={{ border: "1px solid #E2E8F0", borderRadius: 3, overflow: "hidden" }}>
-        {isLoading ? (
+      <Paper
+        elevation={0}
+        sx={{
+          border: "1px solid #E2E8F0",
+          borderRadius: 3,
+          overflow: "hidden",
+        }}
+      >
+        {loansQuery.isLoading ? (
           <Box sx={{ display: "flex", justifyContent: "center", p: 6 }}>
-            <CircularProgress sx={{ color: "#0F766E" }} />
+            <CircularProgress />
+          </Box>
+        ) : loansQuery.isError ? (
+          <Box sx={{ p: 6 }}>
+            <Alert severity="error">
+              Unable to load loans. Please try again.
+            </Alert>
           </Box>
         ) : loans.length === 0 ? (
           <Box sx={{ p: 6, textAlign: "center" }}>
@@ -180,93 +298,68 @@ export default function Loans() {
           <TableContainer>
             <Table>
               <TableHead>
-                <TableRow sx={{ bgcolor: "#F8FAFC", borderBottom: "2px solid #E2E8F0" }}>
-                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>Loan ID</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>Customer</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>Amount</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>EMI</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>Progress</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>Actions</TableCell>
+                <TableRow sx={{ bgcolor: "#F8FAFC" }}>
+                  <TableCell>Loan #</TableCell>
+                  <TableCell>Customer</TableCell>
+                  <TableCell>Branch</TableCell>
+                  <TableCell>Principal</TableCell>
+                  <TableCell>Outstanding</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {loans.map((loan) => (
-                  <TableRow
-                    key={loan.id}
-                    sx={{
-                      "&:hover": { bgcolor: "#F0F9FF" },
-                      borderBottom: "1px solid #E2E8F0",
-                    }}
-                  >
-                    <TableCell sx={{ color: "#0F172A", fontWeight: 600 }}>
-                      {loan.id}
-                    </TableCell>
-                    <TableCell sx={{ color: "#0F172A" }}>
-                      {loan.customerName}
-                    </TableCell>
-                    <TableCell sx={{ color: "#0F172A", fontWeight: 600 }}>
-                      {loan.loanAmount}
-                    </TableCell>
-                    <TableCell sx={{ color: "#0F172A" }}>
-                      {loan.emiAmount}
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <LinearProgress
-                          variant="determinate"
-                          value={getProgressValue(loan)}
-                          sx={{
-                            flex: 1,
-                            height: 6,
-                            borderRadius: 2,
-                            bgcolor: "#E2E8F0",
-                            "& .MuiLinearProgress-bar": {
-                              bgcolor: "#0F766E",
-                              borderRadius: 2,
-                            },
-                          }}
-                        />
-                        <Typography variant="body2" sx={{ minWidth: 30, color: "#0F172A", fontWeight: 600 }}>
-                          {Math.round(getProgressValue(loan))}%
-                        </Typography>
-                      </Box>
-                    </TableCell>
+                  <TableRow key={loan.loan_id}>
+                    <TableCell>{loan.loan_number || "-"}</TableCell>
+                    <TableCell>{loan.customer_name || "-"}</TableCell>
+                    <TableCell>{loan.branch_name || "-"}</TableCell>
+                    <TableCell>{loan.principal_amount ?? "-"}</TableCell>
+                    <TableCell>{loan.outstanding_amount ?? "-"}</TableCell>
                     <TableCell>
                       <Chip
-                        label={loan.status}
+                        label={loan.status || "-"}
                         size="small"
-                        sx={{
-                          bgcolor: loan.status === "active" ? "#DCFCE7" : loan.status === "overdue" ? "#FEE2E2" : "#E0E7FF",
-                          color: loan.status === "active" ? "#15803D" : loan.status === "overdue" ? "#991B1B" : "#4F46E5",
-                          fontWeight: 600,
-                        }}
+                        color={STATUS_COLORS[loan.status] || "default"}
                       />
-                      {loan.daysOverdue > 0 && (
-                        <Typography variant="caption" sx={{ display: "block", color: "#EF4444", mt: 0.5 }}>
-                          {loan.daysOverdue} days overdue
-                        </Typography>
-                      )}
                     </TableCell>
                     <TableCell>
-                      <Stack direction="row" spacing={1}>
-                        <Button
-                          size="small"
-                          startIcon={<EditIcon />}
-                          variant="text"
-                          onClick={() => handleViewDetails(loan)}
-                          sx={{ color: "#0F766E" }}
-                        >
-                          View
-                        </Button>
-                        <Button
-                          size="small"
-                          startIcon={<DownloadIcon />}
-                          variant="text"
-                          sx={{ color: "#2563EB" }}
-                        >
-                          EMI
-                        </Button>
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        sx={{ flexWrap: "wrap" }}
+                      >
+                        {loan.status === "ACTIVE" && (
+                          <Button size="small" onClick={() => openEdit(loan)}>
+                            Edit
+                          </Button>
+                        )}
+                        {loan.status === "ACTIVE" && (
+                          <Button
+                            size="small"
+                            color="success"
+                            onClick={() => closeLoan.mutate(loan.loan_id)}
+                          >
+                            Close
+                          </Button>
+                        )}
+                        {loan.status === "ACTIVE" && (
+                          <Button
+                            size="small"
+                            onClick={() => forecloseLoan.mutate(loan.loan_id)}
+                          >
+                            Foreclose
+                          </Button>
+                        )}
+                        {loan.status === "ACTIVE" && (
+                          <Button
+                            size="small"
+                            color="error"
+                            onClick={() => defaultLoan.mutate(loan.loan_id)}
+                          >
+                            Mark Defaulted
+                          </Button>
+                        )}
                       </Stack>
                     </TableCell>
                   </TableRow>
@@ -277,68 +370,163 @@ export default function Loans() {
         )}
       </Paper>
 
-      {/* Details Dialog */}
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ bgcolor: "#F8FAFC", color: "#0F172A", fontWeight: 700 }}>
-          Loan Details - {selectedLoan?.id}
+      <Dialog
+        open={Boolean(dialog)}
+        onClose={() => !saveLoan.isPending && setDialog(null)}
+        fullWidth
+        maxWidth="md"
+      >
+        <DialogTitle>
+          {dialog?.mode === "create" ? "Disburse Loan" : "Edit Loan"}
         </DialogTitle>
-        <DialogContent sx={{ mt: 2 }}>
-          <Stack spacing={2.5}>
-            <Box>
-              <Typography variant="body2" color="#64748B" sx={{ mb: 0.5 }}>
-                Customer Name
-              </Typography>
-              <Typography fontWeight={600}>{selectedLoan?.customerName}</Typography>
-            </Box>
-            <Box>
-              <Typography variant="body2" color="#64748B" sx={{ mb: 0.5 }}>
-                Loan Amount
-              </Typography>
-              <Typography fontWeight={600}>{selectedLoan?.loanAmount}</Typography>
-            </Box>
-            <Box>
-              <Typography variant="body2" color="#64748B" sx={{ mb: 0.5 }}>
-                Monthly EMI
-              </Typography>
-              <Typography fontWeight={600}>{selectedLoan?.emiAmount}</Typography>
-            </Box>
-            <Box>
-              <Typography variant="body2" color="#64748B" sx={{ mb: 0.5 }}>
-                Amount Paid
-              </Typography>
-              <Typography fontWeight={600} color="#10B981">
-                {selectedLoan?.amountPaid}
-              </Typography>
-            </Box>
-            <Box>
-              <Typography variant="body2" color="#64748B" sx={{ mb: 0.5 }}>
-                Outstanding Balance
-              </Typography>
-              <Typography fontWeight={600} color="#EF4444">
-                {selectedLoan?.amountOutstanding}
-              </Typography>
-            </Box>
-            <Box>
-              <Typography variant="body2" color="#64748B" sx={{ mb: 0.5 }}>
-                Next Due Date
-              </Typography>
-              <Typography fontWeight={600}>{selectedLoan?.nextDueDate}</Typography>
-            </Box>
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            {dialog?.mode === "create" && (
+              <>
+                {formLoading && (
+                  <Alert severity="info">
+                    Loading approved applications and branches…
+                  </Alert>
+                )}
+                <TextField
+                  required
+                  select
+                  fullWidth
+                  label="Approved application"
+                  value={form.applicationId}
+                  onChange={onSelectApplication}
+                  disabled={formLoading}
+                >
+                  <MenuItem value="">Select an approved application</MenuItem>
+                  {applications.map((app) => (
+                    <MenuItem
+                      key={app.application_id}
+                      value={String(app.application_id)}
+                    >
+                      {app.application_number} — {app.customer_name}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                {appDetails && (
+                  <Alert severity="info">
+                    Customer: {appDetails.customer_name} · Product:{" "}
+                    {appDetails.product_name} · Tenure: {appDetails.tenure} ·
+                    Recovery: {appDetails.recovery_frequency}
+                  </Alert>
+                )}
+                <TextField
+                  required
+                  select
+                  fullWidth
+                  label="Branch"
+                  value={form.branchId}
+                  onChange={setField("branchId")}
+                  disabled={formLoading}
+                >
+                  <MenuItem value="">Select a branch</MenuItem>
+                  {branches.map((b) => (
+                    <MenuItem key={b.branch_id} value={String(b.branch_id)}>
+                      {b.branch_name}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </>
+            )}
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <TextField
+                required
+                fullWidth
+                type="number"
+                label="Principal amount"
+                value={form.principalAmount}
+                onChange={setField("principalAmount")}
+              />
+              <TextField
+                required
+                fullWidth
+                type="number"
+                label="Disbursed amount"
+                value={form.disbursedAmount}
+                onChange={setField("disbursedAmount")}
+              />
+            </Stack>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <TextField
+                required
+                fullWidth
+                type="number"
+                label="Interest rate (%)"
+                value={form.interestRate}
+                onChange={setField("interestRate")}
+              />
+              <TextField
+                required
+                fullWidth
+                type="number"
+                label="Total interest"
+                value={form.totalInterest}
+                onChange={setField("totalInterest")}
+              />
+            </Stack>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <TextField
+                required
+                fullWidth
+                type="number"
+                label="Total payable"
+                value={form.totalPayable}
+                onChange={setField("totalPayable")}
+              />
+              <TextField
+                required
+                fullWidth
+                type="number"
+                label="Outstanding amount"
+                value={form.outstandingAmount}
+                onChange={setField("outstandingAmount")}
+              />
+            </Stack>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <TextField
+                required
+                fullWidth
+                type="date"
+                label="Disbursement date"
+                value={form.disbursementDate}
+                onChange={setField("disbursementDate")}
+                slotProps={{ inputLabel: { shrink: true } }}
+              />
+              <TextField
+                fullWidth
+                type="date"
+                label="Maturity date"
+                value={form.maturityDate}
+                onChange={setField("maturityDate")}
+                slotProps={{ inputLabel: { shrink: true } }}
+              />
+            </Stack>
+            <TextField
+              fullWidth
+              multiline
+              minRows={2}
+              label="Remarks"
+              value={form.remarks}
+              onChange={setField("remarks")}
+            />
           </Stack>
         </DialogContent>
-        <DialogActions sx={{ p: 2, bgcolor: "#F8FAFC" }}>
-          <Button onClick={() => setOpenDialog(false)} sx={{ color: "#64748B" }}>
-            Close
-          </Button>
+        <DialogActions>
+          <Button onClick={() => setDialog(null)}>Cancel</Button>
           <Button
             variant="contained"
-            startIcon={<DownloadIcon />}
-            sx={{
-              bgcolor: "#2563EB",
-              "&:hover": { bgcolor: "#1D4ED8" },
-            }}
+            disabled={
+              saveLoan.isPending ||
+              (dialog?.mode === "create" && formLoading) ||
+              !requiredFilled
+            }
+            onClick={() => saveLoan.mutate()}
           >
-            Download Schedule
+            {saveLoan.isPending ? "Saving…" : "Save"}
           </Button>
         </DialogActions>
       </Dialog>

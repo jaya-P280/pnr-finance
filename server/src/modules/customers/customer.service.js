@@ -4,46 +4,42 @@ import customerRepository from "./customer.repository.js";
 import { CUSTOMER_MESSAGES, CUSTOMER } from "./customers.constants.js";
 import CodeGenerator from "../../shared/codeGenerator.helper.js";
 import PaginationHelper from "../../shared/pagination.helper.js";
+import auditService from "../audit/audit.service.js";
 
 class CustomerService {
-  
   async createCustomer(data, currentUser) {
     const connection = await customerRepository.beginTransaction();
-
     try {
       const branch = await customerRepository.branchExists(
         connection,
         data.branchId,
       );
-
-      if (!branch) {
-        throw new ApiError(404, CUSTOMER_MESSAGES.BRANCH_NOT_FOUND);
-      }
+      if (!branch) throw new ApiError(404, CUSTOMER_MESSAGES.BRANCH_NOT_FOUND);
 
       if (
         await customerRepository.mobileExists(connection, data.mobileNumber)
       ) {
         throw new ApiError(409, CUSTOMER_MESSAGES.MOBILE_EXISTS);
       }
-
       if (await customerRepository.emailExists(connection, data.email)) {
         throw new ApiError(409, CUSTOMER_MESSAGES.EMAIL_EXISTS);
       }
-
       if (
         await customerRepository.aadhaarExists(connection, data.aadhaarNumber)
       ) {
         throw new ApiError(409, CUSTOMER_MESSAGES.AADHAAR_EXISTS);
       }
-
       if (await customerRepository.panExists(connection, data.panNumber)) {
         throw new ApiError(409, CUSTOMER_MESSAGES.PAN_EXISTS);
       }
 
       const lastCustomer =
         await customerRepository.getLastCustomerCode(connection);
-
-      const customerCode = CodeGenerator(CUSTOMER.PREFIX,lastCustomer?.customer_code,CUSTOMER.PAD_LENGTH);
+      const customerCode = CodeGenerator.generate(
+        CUSTOMER.PREFIX,
+        lastCustomer?.customer_code,
+        CUSTOMER.PAD_LENGTH,
+      );
 
       const customerId = await customerRepository.createCustomer(connection, {
         customerCode,
@@ -67,109 +63,71 @@ class CustomerService {
       });
 
       await customerRepository.commit(connection);
-
       logger.info(`Customer Created : ${customerCode}`);
-
-      return {
-        customerId,
-
-        customerCode,
-      };
+      return { customerId, customerCode };
     } catch (error) {
       await customerRepository.rollback(connection);
-
       throw error;
     }
   }
 
   async getCustomers(query) {
-    const {page, limit} = PaginationHelper.build(query);
-
+    const { page, limit } = PaginationHelper.build(query);
     const filters = {
       page,
-
       limit,
-
       search: query.search?.trim() || null,
-
       branchId: query.branchId ? Number(query.branchId) : null,
-
       status: query.status || null,
-
       sortBy: query.sortBy || "created_at",
-
       sortOrder: query.sortOrder || "ASC",
     };
-
     const customers = await customerRepository.getCustomers(filters);
-
     const totalRecords = await customerRepository.countCustomers(filters);
-
     return {
       customers,
-
-      pagination: PaginationHelper.metadata(page,limit,totalRecords),
+      pagination: PaginationHelper.metadata(page, limit, totalRecords),
     };
   }
 
   async getCustomerById(customerId) {
     const customer = await customerRepository.getCustomerById(customerId);
-
-    if (!customer) {
-      throw new ApiError(404, CUSTOMER_MESSAGES.NOT_FOUND);
-    }
-
+    if (!customer) throw new ApiError(404, CUSTOMER_MESSAGES.NOT_FOUND);
     return customer;
   }
 
   async updateCustomer(customerId, data, currentUser) {
     const connection = await customerRepository.beginTransaction();
-
     try {
-      const customer = await customerRepository.getCustomerById(customerId);
-
-      if (!customer) {
+      const existingCustomer =
+        await customerRepository.getCustomerById(customerId);
+      if (!existingCustomer)
         throw new ApiError(404, CUSTOMER_MESSAGES.NOT_FOUND);
-      }
 
       const branch = await customerRepository.branchExists(
         connection,
         data.branchId,
       );
-
-      if (!branch) {
-        throw new ApiError(404, CUSTOMER_MESSAGES.BRANCH_NOT_FOUND);
-      }
+      if (!branch) throw new ApiError(404, CUSTOMER_MESSAGES.BRANCH_NOT_FOUND);
 
       const mobile = await customerRepository.findByMobile(data.mobileNumber);
-
-      if (mobile && mobile.customer_id !== customerId) {
+      if (mobile && mobile.customer_id !== customerId)
         throw new ApiError(409, CUSTOMER_MESSAGES.MOBILE_EXISTS);
-      }
 
       const email = await customerRepository.findByEmail(data.email);
-
-      if (email && email.customer_id !== customerId) {
+      if (email && email.customer_id !== customerId)
         throw new ApiError(409, CUSTOMER_MESSAGES.EMAIL_EXISTS);
-      }
 
       const aadhaar = await customerRepository.findByAadhaar(
         data.aadhaarNumber,
       );
-
-      if (aadhaar && aadhaar.customer_id !== customerId) {
+      if (aadhaar && aadhaar.customer_id !== customerId)
         throw new ApiError(409, CUSTOMER_MESSAGES.AADHAAR_EXISTS);
-      }
 
       const pan = await customerRepository.findByPan(data.panNumber);
-
-      if (pan && pan.customer_id !== customerId) {
+      if (pan && pan.customer_id !== customerId)
         throw new ApiError(409, CUSTOMER_MESSAGES.PAN_EXISTS);
-      }
 
-      const existingCustomer =
-        await customerRepository.getCustomerById(customerId);
-      // ...
       await customerRepository.updateCustomer(connection, {
         customerId,
         branchId: data.branchId,
@@ -197,24 +155,17 @@ class CustomerService {
       await customerRepository.commit(connection);
     } catch (error) {
       await customerRepository.rollback(connection);
-
       throw error;
     }
   }
 
   async updateCustomerStatus(customerId, status, currentUser) {
     const connection = await customerRepository.beginTransaction();
-
     try {
       const customer = await customerRepository.getCustomerById(customerId);
-
-      if (!customer) {
-        throw new ApiError(404, CUSTOMER_MESSAGES.NOT_FOUND);
-      }
-
-      if (customer.status === status) {
+      if (!customer) throw new ApiError(404, CUSTOMER_MESSAGES.NOT_FOUND);
+      if (customer.status === status)
         throw new ApiError(400, `Customer is already ${status}.`);
-      }
 
       await customerRepository.updateCustomerStatus(
         connection,
@@ -222,37 +173,265 @@ class CustomerService {
         status,
         currentUser.user_id,
       );
-
       await customerRepository.commit(connection);
     } catch (error) {
       await customerRepository.rollback(connection);
-
       throw error;
     }
   }
 
   async deleteCustomer(customerId, currentUser) {
     const connection = await customerRepository.beginTransaction();
-
     try {
       const customer = await customerRepository.getCustomerById(customerId);
-
-      if (!customer) {
-        throw new ApiError(404, CUSTOMER_MESSAGES.NOT_FOUND);
-      }
+      if (!customer) throw new ApiError(404, CUSTOMER_MESSAGES.NOT_FOUND);
 
       await customerRepository.softDeleteCustomer(
         connection,
         customerId,
         currentUser.user_id,
       );
+      await customerRepository.commit(connection);
+    } catch (error) {
+      await customerRepository.rollback(connection);
+      throw error;
+    }
+  }
+
+  async uploadCustomerKyc(customerId, files, body, currentUser, metadata) {
+    const connection = await customerRepository.beginTransaction();
+    try {
+      const customer = await customerRepository.getCustomerById(customerId);
+      if (!customer) throw new ApiError(404, CUSTOMER_MESSAGES.NOT_FOUND);
+
+      const oldKyc = await customerRepository.findKycByCustomerId(customerId);
+
+      const aadhaarFront =
+        files?.aadhaarFront?.[0]?.filename ?? oldKyc?.aadhaar_front ?? null;
+      const aadhaarBack =
+        files?.aadhaarBack?.[0]?.filename ?? oldKyc?.aadhaar_back ?? null;
+      const panImage =
+        files?.panImage?.[0]?.filename ?? oldKyc?.pan_image ?? null;
+
+      const kycPayload = {
+        customerId,
+        aadhaarNumber: body.aadhaarNumber,
+        panNumber: body.panNumber,
+        aadhaarFront,
+        aadhaarBack,
+        panImage,
+        customerPhoto: oldKyc?.customer_photo ?? null,
+        signatureImage: oldKyc?.signature_image ?? null,
+        bankPassbook: oldKyc?.bank_passbook ?? null,
+        incomeProof: oldKyc?.income_proof ?? null,
+        addressProof: oldKyc?.address_proof ?? null,
+      };
+
+      if (oldKyc) {
+        await customerRepository.updateKyc(connection, kycPayload);
+      } else {
+        await customerRepository.createKyc(connection, kycPayload);
+      }
+
+      await customerRepository.commit(connection);
+
+      await auditService.log({
+        userId: currentUser.user_id,
+        action: "UPDATE",
+        module: "CUSTOMER",
+        description: "Customer KYC Updated",
+        ipAddress: metadata.ipAddress,
+        userAgent: metadata.userAgent,
+      });
+
+      return { aadhaarFront, aadhaarBack, panImage };
+    } catch (error) {
+      await customerRepository.rollback(connection);
+      throw error;
+    }
+  }
+
+  async verifyCustomerKyc(customerId, currentUser) {
+    const connection = await customerRepository.beginTransaction();
+    try {
+      const customer = await customerRepository.getCustomerById(customerId);
+      if (!customer) throw new ApiError(404, CUSTOMER_MESSAGES.NOT_FOUND);
+
+      const kyc = await customerRepository.findKycByCustomerId(customerId);
+      if (!kyc) throw new ApiError(404, "Customer KYC not found.");
+
+      await customerRepository.verifyKyc(
+        connection,
+        customerId,
+        currentUser.user_id,
+      );
+      await customerRepository.commit(connection);
+    } catch (error) {
+      await customerRepository.rollback(connection);
+      throw error;
+    }
+  }
+
+  async rejectCustomerKyc(customerId, remarks, currentUser) {
+    const connection = await customerRepository.beginTransaction();
+    try {
+      const customer = await customerRepository.getCustomerById(customerId);
+      if (!customer) throw new ApiError(404, CUSTOMER_MESSAGES.NOT_FOUND);
+
+      const kyc = await customerRepository.findKycByCustomerId(customerId);
+      if (!kyc) throw new ApiError(404, "Customer KYC not found.");
+
+      await customerRepository.rejectKyc(
+        connection,
+        customerId,
+        remarks,
+        currentUser.user_id,
+      );
+      await customerRepository.commit(connection);
+    } catch (error) {
+      await customerRepository.rollback(connection);
+      throw error;
+    }
+  }
+
+  async addFamilyMember(customerId, data) {
+    const connection = await customerRepository.beginTransaction();
+    try {
+      const customer = await customerRepository.getCustomerById(customerId);
+      if (!customer) throw new ApiError(404, CUSTOMER_MESSAGES.NOT_FOUND);
+
+      await customerRepository.createFamilyMember(connection, {
+        customerId,
+        memberName: data.memberName,
+        relationship: data.relationship,
+        age: data.age,
+        occupation: data.occupation ?? null,
+        mobile: data.mobile ?? null,
+      });
 
       await customerRepository.commit(connection);
     } catch (error) {
       await customerRepository.rollback(connection);
-
       throw error;
     }
+  }
+
+  async getFamilyMembers(customerId) {
+    const customer = await customerRepository.getCustomerById(customerId);
+    if (!customer) throw new ApiError(404, CUSTOMER_MESSAGES.NOT_FOUND);
+    return await customerRepository.getFamilyMembers(customerId);
+  }
+
+  async updateFamilyMember(familyId, data) {
+    const connection = await customerRepository.beginTransaction();
+    try {
+      await customerRepository.updateFamilyMember(connection, {
+        familyId,
+        memberName: data.memberName,
+        relationship: data.relationship,
+        age: data.age,
+        occupation: data.occupation ?? null,
+        mobile: data.mobile ?? null,
+      });
+      await customerRepository.commit(connection);
+    } catch (error) {
+      await customerRepository.rollback(connection);
+      throw error;
+    }
+  }
+
+  async deleteFamilyMember(familyId) {
+    const connection = await customerRepository.beginTransaction();
+    try {
+      await customerRepository.deleteFamilyMember(connection, familyId);
+      await customerRepository.commit(connection);
+    } catch (error) {
+      await customerRepository.rollback(connection);
+      throw error;
+    }
+  }
+
+  async addNominee(customerId, data) {
+    const connection = await customerRepository.beginTransaction();
+    try {
+      const customer = await customerRepository.getCustomerById(customerId);
+      if (!customer) throw new ApiError(404, CUSTOMER_MESSAGES.NOT_FOUND);
+
+      await customerRepository.createNominee(connection, {
+        customerId,
+        nomineeName: data.nomineeName,
+        relationship: data.relationship,
+        dateOfBirth: data.dateOfBirth ?? null,
+        mobile: data.mobile ?? null,
+        address: data.address ?? null,
+        percentage: data.percentage ?? null,
+      });
+
+      await customerRepository.commit(connection);
+    } catch (error) {
+      await customerRepository.rollback(connection);
+      throw error;
+    }
+  }
+
+  async getNominees(customerId) {
+    const customer = await customerRepository.getCustomerById(customerId);
+    if (!customer) throw new ApiError(404, CUSTOMER_MESSAGES.NOT_FOUND);
+    return await customerRepository.getNominees(customerId);
+  }
+
+  async updateNominee(nomineeId, data) {
+    const connection = await customerRepository.beginTransaction();
+    try {
+      await customerRepository.updateNominee(connection, {
+        nomineeId,
+        nomineeName: data.nomineeName,
+        relationship: data.relationship,
+        dateOfBirth: data.dateOfBirth ?? null,
+        mobile: data.mobile ?? null,
+        address: data.address ?? null,
+        percentage: data.percentage ?? null,
+      });
+      await customerRepository.commit(connection);
+    } catch (error) {
+      await customerRepository.rollback(connection);
+      throw error;
+    }
+  }
+
+  async deleteNominee(nomineeId) {
+    const connection = await customerRepository.beginTransaction();
+    try {
+      await customerRepository.deleteNominee(connection, nomineeId);
+      await customerRepository.commit(connection);
+    } catch (error) {
+      await customerRepository.rollback(connection);
+      throw error;
+    }
+  }
+
+  async getCustomerProfile(customerId) {
+    const customer = await customerRepository.getCustomerById(customerId);
+    if (!customer) throw new ApiError(404, CUSTOMER_MESSAGES.NOT_FOUND);
+    return await customerRepository.getCustomerProfile(customerId);
+  }
+  async getKycQueue(query) {
+    const { page, limit } = PaginationHelper.build(query);
+    const filters = {
+      status: query.status || "PENDING",
+      branchId: query.branchId ? Number(query.branchId) : null,
+      search: query.search?.trim() || null,
+      page,
+      limit,
+    };
+    const rows = await customerRepository.getKycQueue(filters);
+    const total = await customerRepository.countKycQueue(filters);
+    const counts = await customerRepository.getKycStatusCounts();
+    return {
+      rows,
+      pagination: PaginationHelper.metadata(page, limit, total),
+      counts,
+    };
   }
 }
 

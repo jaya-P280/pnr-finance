@@ -30,7 +30,7 @@ class InitializeService{
             for(const permission of DEFAULT_PERMISSIONS){
                 const existingRole = await repository.findPermissionByName(connection,permission.permission_name);
                 if(!existingRole){
-                    await repository.createRole(connection,permission);
+                    await repository.createPermission(connection,permission);
                     logger.info(`Role is created : ${permission.permission_name}`);
                 }else{
                     logger.info(`Role exists: ${permission.permission_name}}`);

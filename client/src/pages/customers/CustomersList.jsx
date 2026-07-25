@@ -54,7 +54,6 @@ const getErrorMessage = (error, fallback) =>
 const cleanPayload = (form) => {
   const payload = { ...form, branchId: Number(form.branchId) };
   [
-    "lastName",
     "alternateMobile",
     "email",
     "aadhaarNumber",
@@ -172,6 +171,7 @@ export default function CustomerList() {
   const requiredFilled =
     form.branchId &&
     form.firstName &&
+    form.lastName &&
     form.gender &&
     form.dateOfBirth &&
     form.mobileNumber &&
@@ -390,6 +390,7 @@ export default function CustomerList() {
                     onChange={setField("firstName")}
                   />
                   <TextField
+                    required
                     fullWidth
                     label="Last name"
                     value={form.lastName}
