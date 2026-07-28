@@ -17,16 +17,22 @@ import MenuOpenIcon from "@mui/icons-material/MenuOpen";
 import IconButton from "@mui/material/IconButton";
 
 import logo from "../../assets/logo.webp";
-import menu from "../constants/menu";
+import getFilteredMenu from "../../components/constants/menu";
+import useAuth from "../../hooks/useAuth";
 import { DRAWER_WIDTH } from "../constants/layout.constants";
 
 export default function Sidebar({ mobile, onClose, open, onToggleSidebar }) {
   const location = useLocation();
   const activePath = location.pathname;
+  const { user } = useAuth();
+  const menuItems = useMemo(
+    () => getFilteredMenu(user?.role?.name || "FIELD_OFFICER"),
+    [user],
+  );
 
   const activeSections = useMemo(
     () =>
-      menu.reduce((acc, item) => {
+      menuItems.reduce((acc, item) => {
         if (item.children) {
           acc[item.title] = item.children.some((child) =>
             activePath.startsWith(child.path),
@@ -110,7 +116,7 @@ export default function Sidebar({ mobile, onClose, open, onToggleSidebar }) {
       <Divider sx={{ borderColor: "#334155" }} />
 
       <List sx={{ mt: 1, px: 1 }}>
-        {menu.map((section) => (
+        {menuItems.map((section) => (
           <Box key={section.section}>
             <Typography
               sx={{

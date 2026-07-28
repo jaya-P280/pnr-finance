@@ -1,23 +1,84 @@
 import express from "express";
-import pool from "../../database/db.js";
+
 import authenticate from "../auth/auth.middleware.js";
-import ApiResponse from "../../shared/ApiResponse.js";
+import authorize from "../../middleware/authorize.middleware.js";
+import validationMiddleware from "../../middleware/validation.middleware.js";
+
+import roleController from "./role.controller.js";
+
+import {
+  createRoleValidation,
+  updateRoleValidation,
+  getRoleValidation,
+  deleteRoleValidation,
+  updateRoleStatusValidation,
+  updateRolePermissionsValidation,
+} from "./role.validation.js";
 
 const router = express.Router();
 
-router.get("/", authenticate, async (req, res, next) => {
-  try {
-    const [roles] = await pool.execute(`
-      SELECT role_id AS roleId, role_name AS roleName
-      FROM roles
-      WHERE is_active = TRUE
-      ORDER BY role_name
-    `);
+router.use(authenticate);
 
-    res.status(200).json(new ApiResponse(200, "Roles fetched successfully.", roles));
-  } catch (error) {
-    next(error);
-  }
-});
+router.get(
+  "/",
+  authorize("ROLE_VIEW"),
+  roleController.getRoles
+);
+
+router.get(
+  "/:id",
+  authorize("ROLE_VIEW"),
+  getRoleValidation,
+  validationMiddleware,
+  roleController.getRoleById
+);
+
+router.post(
+  "/",
+  authorize("ROLE_CREATE"),
+  createRoleValidation,
+  validationMiddleware,
+  roleController.createRole
+);
+
+router.put(
+  "/:id",
+  authorize("ROLE_UPDATE"),
+  updateRoleValidation,
+  validationMiddleware,
+  roleController.updateRole
+);
+
+router.patch(
+  "/:id/status",
+  authorize("ROLE_UPDATE"),
+  updateRoleStatusValidation,
+  validationMiddleware,
+  roleController.updateRoleStatus
+);
+
+router.get(
+  "/:id/permissions",
+  authorize("ROLE_VIEW"),
+  getRoleValidation,
+  validationMiddleware,
+  roleController.getRolePermissions
+);
+
+router.put(
+  "/:id/permissions",
+  authorize("ROLE_UPDATE"),
+  updateRolePermissionsValidation,
+  validationMiddleware,
+  roleController.updateRolePermissions
+);
+
+router.delete(
+  "/:id",
+  authorize("ROLE_DELETE"),
+  deleteRoleValidation,
+  validationMiddleware,
+  roleController.deleteRole
+);
 
 export default router;

@@ -6,27 +6,20 @@ const authorize = (...requiredPermissions) => {
       return next(new ApiError(401, "Authentication required."));
     }
 
-    if (
-      req.user.roleName === "SUPER_ADMIN" ||
-      requiredPermissions.includes("SUPER_ADMIN")
-    ) {
+    const roleName = req.user.role_name;
+
+    // --- ADMIN has full access (bypass all permission checks) ---
+    if (roleName === "ADMIN") {
       return next();
     }
 
+    // --- SUPER_ADMIN gets NO bypass — only what's in their permissions ---
     const permissions = req.user.permissions || [];
 
-    const hasPermission = requiredPermissions.every((permission) =>
-      permissions.includes(permission),
-    );
+    const hasAll = requiredPermissions.every((p) => permissions.includes(p));
 
-    if (!hasPermission) {
-      return next(
-        new ApiError(
-          403,
-
-          "You do not have permission to perform this action.",
-        ),
-      );
+    if (!hasAll) {
+      return next(new ApiError(403, "You do not have permission to perform this action."));
     }
 
     next();

@@ -28,6 +28,9 @@ const ENDPOINTS = {
   COLLECTIONS: "/collections",
 
   REPORTS: "/reports",
+  SETTINGS: "/settings",
+  DASHBOARD: "/dashboard",
+  EMI: "/emi",
 };
 
 export default ENDPOINTS;

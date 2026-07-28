@@ -24,13 +24,9 @@ import {
 } from "@mui/material";
 import { Add as AddIcon, Search as SearchIcon, Edit as EditIcon, Delete as DeleteIcon, People as PeopleIcon } from "@mui/icons-material";
 import SectionPage from "../../components/layout/SectionPage";
+import groupService from "../../services/group.service";
 
-// Mock data
-const mockGroups = [
-  { id: 1, name: "Mahila Group - Main Street", branch: "New Delhi", members: 15, activeLoans: 8, totalCollected: "₹2,45,000", status: "active" },
-  { id: 2, name: "Agricultural Cooperative", branch: "Pune", members: 22, activeLoans: 12, totalCollected: "₹4,56,000", status: "active" },
-  { id: 3, name: "SHG - Rural Development", branch: "Bangalore", members: 18, activeLoans: 10, totalCollected: "₹3,12,000", status: "active" },
-];
+
 
 function TabPanel(props) {
   const { children, value, index } = props;
@@ -43,19 +39,12 @@ export default function Groups() {
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [tabValue, setTabValue] = useState(0);
 
-  const { data = mockGroups, isLoading } = useQuery({
-    queryKey: ["groups", search],
-    queryFn: async () => {
-      // const response = await groupService.getAll({ search });
-      // return response.groups;
-      return mockGroups;
-    },
-    keepPreviousData: true,
-  });
+  const { data: groupsData, isLoading } = useQuery({
+  queryKey: ["groups", search],
+  queryFn: () => groupService.getAll({ search }),
+});
 
-  const groups = search
-    ? data.filter((group) => group.name.toLowerCase().includes(search.toLowerCase()))
-    : data;
+const groups = groupsData?.groups || [];
 
   const handleOpenDetails = (group) => {
     setSelectedGroup(group);

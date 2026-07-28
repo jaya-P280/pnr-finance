@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useState, useQuery } from "react";
 import {
-  Box,
   Button,
   Paper,
   Stack,
@@ -10,8 +9,6 @@ import {
   Grid,
   FormControlLabel,
   Switch,
-  Card,
-  CardContent,
   InputAdornment,
   Select,
   MenuItem,
@@ -21,6 +18,7 @@ import {
 } from "@mui/material";
 import { Save as SaveIcon, Edit as EditIcon } from "@mui/icons-material";
 import SectionPage from "../../components/layout/SectionPage";
+import settingsService from "../../services/setting.service";
 
 export default function Settings() {
   const [isEditing, setIsEditing] = useState(false);
@@ -49,6 +47,38 @@ export default function Settings() {
     financialYear: "April-March",
   });
 
+// Inside component, after state declarations
+useQuery({
+  queryKey: ["companyProfile"],
+  queryFn: async () => {
+    const data = await settingsService.getCompanyProfile();
+    if (data) setCompanySettings(data);
+    return data;
+  },
+});
+
+useQuery({
+  queryKey: ["systemSettings"],
+  queryFn: async () => {
+    const data = await settingsService.getSystemSettings();
+    if (data) setSystemSettings(data);
+    return data;
+  },
+});
+
+// Update handleSave:
+const handleSave = async () => {
+  try {
+    await settingsService.updateCompanyProfile(companySettings);
+    await settingsService.updateSystemSettings(systemSettings);
+    setIsEditing(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  } catch (error) {
+    console.error("Failed to save settings", error);
+  }
+};
+
   const handleCompanyChange = (field, value) => {
     setCompanySettings({ ...companySettings, [field]: value });
   };
@@ -57,13 +87,6 @@ export default function Settings() {
     setSystemSettings({ ...systemSettings, [field]: value });
   };
 
-  const handleSave = async () => {
-    // TODO: API call to save settings
-    console.log("Saving settings:", { companySettings, systemSettings });
-    setIsEditing(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
-  };
 
   return (
     <SectionPage

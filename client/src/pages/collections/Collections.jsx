@@ -27,60 +27,15 @@ import {
   CardContent,
   Grid,
 } from "@mui/material";
-import { Add as AddIcon, Search as SearchIcon, Download as DownloadIcon, Receipt as ReceiptIcon } from "@mui/icons-material";
+import {
+  Add as AddIcon,
+  Search as SearchIcon,
+  Download as DownloadIcon,
+  Receipt as ReceiptIcon,
+} from "@mui/icons-material";
 import SectionPage from "../../components/layout/SectionPage";
+import collectionService from "../../services/collection.service";
 
-// Mock data
-const mockCollections = [
-  {
-    id: "CO001",
-    loanId: "LN001",
-    customerName: "Rajesh Kumar",
-    collectionDate: "2026-07-18",
-    emiAmount: "₹5,208",
-    collectionAmount: "₹5,208",
-    status: "completed",
-    receiptNo: "RCP001",
-  },
-  {
-    id: "CO002",
-    loanId: "LN002",
-    customerName: "Priya Singh",
-    collectionDate: "2026-07-17",
-    emiAmount: "₹10,417",
-    collectionAmount: "₹10,417",
-    status: "completed",
-    receiptNo: "RCP002",
-  },
-  {
-    id: "CO003",
-    loanId: "LN003",
-    customerName: "Arjun Patel",
-    collectionDate: "2026-07-16",
-    emiAmount: "₹12,500",
-    collectionAmount: "₹0",
-    status: "pending",
-    receiptNo: "-",
-  },
-  {
-    id: "CO004",
-    loanId: "LN004",
-    customerName: "Meera Devi",
-    collectionDate: "2026-08-01",
-    emiAmount: "₹3,125",
-    collectionAmount: "₹3,125",
-    status: "completed",
-    receiptNo: "RCP003",
-  },
-];
-
-// Collection summary stats
-const collectionStats = {
-  todayCollection: "₹28,750",
-  monthlyTarget: "₹5,00,000",
-  monthlyCollected: "₹3,75,000",
-  overduePending: "₹12,500",
-};
 
 export default function Collections() {
   const [search, setSearch] = useState("");
@@ -88,28 +43,27 @@ export default function Collections() {
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedCollection, setSelectedCollection] = useState(null);
 
-  const { data = mockCollections, isLoading } = useQuery({
+  const { data: collectionsData, isLoading } = useQuery({
     queryKey: ["collections", search, statusFilter],
-    queryFn: async () => {
-      // const response = await collectionService.getAll({ search, status: statusFilter });
-      // return response.collections;
-      return mockCollections;
-    },
-    keepPreviousData: true,
+    queryFn: () =>
+      collectionService.getAll({
+        search,
+        status: statusFilter !== "all" ? statusFilter : undefined,
+      }),
   });
 
-  let collections = search
-    ? data.filter(
-        (col) =>
-          col.customerName.toLowerCase().includes(search.toLowerCase()) ||
-          col.loanId.toLowerCase().includes(search.toLowerCase())
-      )
-    : data;
+  const { data: summary } = useQuery({
+    queryKey: ["collectionSummary"],
+    queryFn: () => collectionService.getSummary(),
+  });
 
-  if (statusFilter !== "all") {
-    collections = collections.filter((col) => col.status === statusFilter);
-  }
-
+  const collections = collectionsData?.collections || [];
+  const collectionStats = summary || {
+    todayCollection: "₹0",
+    monthlyTarget: "₹5,00,000",
+    monthlyCollected: "₹0",
+    overduePending: "₹0",
+  };
   const handleViewReceipt = (collection) => {
     setSelectedCollection(collection);
     setOpenDialog(true);
@@ -225,7 +179,14 @@ export default function Collections() {
         </Grid>
       </Grid>
 
-      <Paper elevation={0} sx={{ border: "1px solid #E2E8F0", borderRadius: 3, overflow: "hidden" }}>
+      <Paper
+        elevation={0}
+        sx={{
+          border: "1px solid #E2E8F0",
+          borderRadius: 3,
+          overflow: "hidden",
+        }}
+      >
         {isLoading ? (
           <Box sx={{ display: "flex", justifyContent: "center", p: 6 }}>
             <CircularProgress sx={{ color: "#0F766E" }} />
@@ -238,15 +199,33 @@ export default function Collections() {
           <TableContainer>
             <Table>
               <TableHead>
-                <TableRow sx={{ bgcolor: "#F8FAFC", borderBottom: "2px solid #E2E8F0" }}>
-                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>Collection ID</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>Loan ID</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>Customer</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>Date</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>EMI</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>Collected</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>Actions</TableCell>
+                <TableRow
+                  sx={{ bgcolor: "#F8FAFC", borderBottom: "2px solid #E2E8F0" }}
+                >
+                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>
+                    Collection ID
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>
+                    Loan ID
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>
+                    Customer
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>
+                    Date
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>
+                    EMI
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>
+                    Collected
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>
+                    Status
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>
+                    Actions
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -274,7 +253,13 @@ export default function Collections() {
                       {collection.emiAmount}
                     </TableCell>
                     <TableCell sx={{ color: "#0F172A", fontWeight: 600 }}>
-                      <Typography color={collection.collectionAmount !== "₹0" ? "#10B981" : "#EF4444"}>
+                      <Typography
+                        color={
+                          collection.collectionAmount !== "₹0"
+                            ? "#10B981"
+                            : "#EF4444"
+                        }
+                      >
                         {collection.collectionAmount}
                       </Typography>
                     </TableCell>
@@ -283,8 +268,14 @@ export default function Collections() {
                         label={collection.status}
                         size="small"
                         sx={{
-                          bgcolor: collection.status === "completed" ? "#DCFCE7" : "#FEF3C7",
-                          color: collection.status === "completed" ? "#15803D" : "#92400E",
+                          bgcolor:
+                            collection.status === "completed"
+                              ? "#DCFCE7"
+                              : "#FEF3C7",
+                          color:
+                            collection.status === "completed"
+                              ? "#15803D"
+                              : "#92400E",
                           fontWeight: 600,
                         }}
                       />
@@ -321,13 +312,27 @@ export default function Collections() {
       </Paper>
 
       {/* Receipt Dialog */}
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ bgcolor: "#F8FAFC", color: "#0F172A", fontWeight: 700 }}>
+      <Dialog
+        open={openDialog}
+        onClose={() => setOpenDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle
+          sx={{ bgcolor: "#F8FAFC", color: "#0F172A", fontWeight: 700 }}
+        >
           Receipt - {selectedCollection?.receiptNo}
         </DialogTitle>
         <DialogContent sx={{ mt: 2 }}>
           <Stack spacing={2.5}>
-            <Box sx={{ p: 2, bgcolor: "#F0F9FF", borderRadius: 2, border: "1px solid #E0F2FE" }}>
+            <Box
+              sx={{
+                p: 2,
+                bgcolor: "#F0F9FF",
+                borderRadius: 2,
+                border: "1px solid #E0F2FE",
+              }}
+            >
               <Typography variant="body2" color="#0369A1" fontWeight={600}>
                 Collection Confirmed
               </Typography>
@@ -342,13 +347,17 @@ export default function Collections() {
               <Typography variant="body2" color="#64748B" sx={{ mb: 0.5 }}>
                 Customer
               </Typography>
-              <Typography fontWeight={600}>{selectedCollection?.customerName}</Typography>
+              <Typography fontWeight={600}>
+                {selectedCollection?.customerName}
+              </Typography>
             </Box>
             <Box>
               <Typography variant="body2" color="#64748B" sx={{ mb: 0.5 }}>
                 Loan ID
               </Typography>
-              <Typography fontWeight={600}>{selectedCollection?.loanId}</Typography>
+              <Typography fontWeight={600}>
+                {selectedCollection?.loanId}
+              </Typography>
             </Box>
             <Box>
               <Typography variant="body2" color="#64748B" sx={{ mb: 0.5 }}>
@@ -362,12 +371,17 @@ export default function Collections() {
               <Typography variant="body2" color="#64748B" sx={{ mb: 0.5 }}>
                 Date
               </Typography>
-              <Typography fontWeight={600}>{selectedCollection?.collectionDate}</Typography>
+              <Typography fontWeight={600}>
+                {selectedCollection?.collectionDate}
+              </Typography>
             </Box>
           </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 2, bgcolor: "#F8FAFC" }}>
-          <Button onClick={() => setOpenDialog(false)} sx={{ color: "#64748B" }}>
+          <Button
+            onClick={() => setOpenDialog(false)}
+            sx={{ color: "#64748B" }}
+          >
             Close
           </Button>
           <Button

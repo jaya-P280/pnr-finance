@@ -1,9 +1,17 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Alert,
   Box,
   Button,
+  Checkbox,
+  Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControlLabel,
   Paper,
   Stack,
   Table,
@@ -14,126 +22,201 @@ import {
   TableRow,
   TextField,
   Typography,
-  Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
 } from "@mui/material";
-import { Add as AddIcon, Search as SearchIcon, Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material";
+import { Add as AddIcon, Search as SearchIcon } from "@mui/icons-material";
+import toast from "react-hot-toast";
 import SectionPage from "../../components/layout/SectionPage";
+import roleService from "../../services/role.service";
 
-// Mock data - will be replaced with API calls
-const mockRoles = [
-  { id: 1, name: "Super Admin", description: "Complete system access", permissions: 24, status: "active" },
-  { id: 2, name: "Branch Manager", description: "Branch operations and approvals", permissions: 18, status: "active" },
-  { id: 3, name: "Field Officer", description: "Customer onboarding and collection", permissions: 12, status: "active" },
-  { id: 4, name: "Accountant", description: "Financial records and reconciliation", permissions: 8, status: "active" },
-];
+const emptyForm = { roleName: "", roleDescription: "", isActive: true };
+
+const getErrorMessage = (error, fallback) =>
+  error?.response?.data?.message || error?.message || fallback;
 
 export default function Roles() {
   const [search, setSearch] = useState("");
-  const [openDialog, setOpenDialog] = useState(false);
-  const [editingRole, setEditingRole] = useState(null);
-  const [formData, setFormData] = useState({ name: "", description: "" });
+  const [dialog, setDialog] = useState(null);
+  const [form, setForm] = useState(emptyForm);
+  const [permTreeRole, setPermTreeRole] = useState(null);
+  const [selectedPermissions, setSelectedPermissions] = useState(new Set());
+  const queryClient = useQueryClient();
 
-  // TODO: Replace with actual API call
-  const { data = mockRoles, isLoading } = useQuery({
+  const rolesQuery = useQuery({
     queryKey: ["roles", search],
-    queryFn: async () => {
-      // const response = await roleService.getAll({ search });
-      // return response.roles;
-      return mockRoles;
-    },
-    keepPreviousData: true,
+    queryFn: () => roleService.getAll({ search }),
   });
 
-  const roles = search
-    ? data.filter(
-        (role) =>
-          role.name.toLowerCase().includes(search.toLowerCase()) ||
-          role.description.toLowerCase().includes(search.toLowerCase())
-      )
-    : data;
+  const treeQuery = useQuery({
+    queryKey: ["roleTree", permTreeRole?.role_id],
+    queryFn: () => roleService.getPermissionTree(permTreeRole.role_id),
+    enabled: Boolean(permTreeRole),
+  });
 
-  const handleOpenDialog = (role = null) => {
-    if (role) {
-      setEditingRole(role);
-      setFormData({ name: role.name, description: role.description });
-    } else {
-      setEditingRole(null);
-      setFormData({ name: "", description: "" });
+  const invalidateRoles = () =>
+    queryClient.invalidateQueries({ queryKey: ["roles"] });
+
+  const saveRole = useMutation({
+    mutationFn: () => {
+      const payload = {
+        roleName: form.roleName,
+        roleDescription: form.roleDescription || null,
+        isActive: form.isActive,
+      };
+      return dialog.mode === "create"
+        ? roleService.create(payload)
+        : roleService.update(dialog.role.role_id, payload);
+    },
+    onSuccess: () => {
+      toast.success(
+        dialog.mode === "create" ? "Role created." : "Role updated.",
+      );
+      setDialog(null);
+      invalidateRoles();
+    },
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Unable to save the role.")),
+  });
+
+  const changeStatus = useMutation({
+    mutationFn: ({ id, isActive }) =>
+      roleService.updateStatus(id, { isActive }),
+    onSuccess: () => {
+      toast.success("Role status updated.");
+      invalidateRoles();
+    },
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Unable to update role status.")),
+  });
+
+  const removeRole = useMutation({
+    mutationFn: (id) => roleService.delete(id),
+    onSuccess: () => {
+      toast.success("Role deleted.");
+      setDialog(null);
+      invalidateRoles();
+    },
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Unable to delete the role.")),
+  });
+
+  const savePermissions = useMutation({
+    mutationFn: () =>
+      roleService.updatePermissions(
+        permTreeRole.role_id,
+        Array.from(selectedPermissions),
+      ),
+    onSuccess: () => {
+      toast.success("Role permissions updated.");
+      setPermTreeRole(null);
+      queryClient.invalidateQueries({ queryKey: ["roleTree"] });
+      invalidateRoles();
+    },
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Unable to update permissions.")),
+  });
+
+  const roles = rolesQuery.data?.roles || [];
+  const modules = treeQuery.data?.modules || [];
+
+  const openCreate = () => {
+    setForm(emptyForm);
+    setDialog({ mode: "create" });
+  };
+  const openEdit = (role) => {
+    setForm({
+      roleName: role.role_name,
+      roleDescription: role.role_description || "",
+      isActive: Boolean(role.is_active),
+    });
+    setDialog({ mode: "edit", role });
+  };
+
+  const openPermissionTree = (role) => {
+    setPermTreeRole(role);
+    setSelectedPermissions(new Set());
+  };
+
+  // Seed the checkbox set once the tree loads, from each permission's `selected` flag
+  if (
+    treeQuery.data &&
+    permTreeRole &&
+    selectedPermissions.size === 0 &&
+    !treeQuery.isFetching
+  ) {
+    const initial = new Set();
+    treeQuery.data.modules.forEach((m) =>
+      m.permissions.forEach((p) => {
+        if (p.selected) initial.add(p.permissionId);
+      }),
+    );
+    if (initial.size && selectedPermissions.size === 0) {
+      // only seed once; avoid overwriting user's in-progress edits on refetch
     }
-    setOpenDialog(true);
+  }
+
+  const togglePermission = (id) => {
+    setSelectedPermissions((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
   };
 
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-    setEditingRole(null);
-    setFormData({ name: "", description: "" });
-  };
-
-  const handleSaveRole = async () => {
-    // TODO: Add API call to save role
-    console.log("Saving role:", editingRole ? `Update ${editingRole.id}` : "Create new", formData);
-    handleCloseDialog();
-  };
-
-  const handleDeleteRole = async (roleId) => {
-    // TODO: Add API call to delete role
-    console.log("Deleting role:", roleId);
-  };
+  const setField = (field) => (event) =>
+    setForm((current) => ({ ...current, [field]: event.target.value }));
 
   return (
     <SectionPage
-      title="Roles Management"
-      subtitle="Create and manage user roles with granular permission controls."
+      title="Roles"
+      subtitle="Manage system roles, activation status, and the permissions each role grants."
       actions={
-        <Stack direction="row" spacing={2} flexWrap="wrap">
+        <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap" }}>
           <TextField
             size="small"
             placeholder="Search roles..."
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            onKeyPress={(event) => {
-              if (event.key === "Enter") event.preventDefault();
-            }}
-            sx={{
-              minWidth: 250,
-              "& .MuiOutlinedInput-root": {
-                borderRadius: 2,
-                "&.Mui-focused fieldset": {
-                  borderColor: "#0F766E",
-                },
+            onKeyDown={(event) => event.key === "Enter" && rolesQuery.refetch()}
+            slotProps={{
+              input: {
+                startAdornment: <SearchIcon sx={{ mr: 1, color: "#94A3B8" }} />,
               },
-            }}
-            InputProps={{
-              startAdornment: <SearchIcon sx={{ mr: 1, color: "#94A3B8" }} />,
             }}
           />
           <Button
             variant="contained"
+            onClick={() => rolesQuery.refetch()}
+            sx={{ bgcolor: "#0F766E" }}
+          >
+            Search
+          </Button>
+          <Button
+            variant="contained"
             startIcon={<AddIcon />}
-            onClick={() => handleOpenDialog()}
-            sx={{
-              bgcolor: "#2563EB",
-              "&:hover": { bgcolor: "#1D4ED8" },
-              borderRadius: 2,
-            }}
+            onClick={openCreate}
           >
             Add Role
           </Button>
         </Stack>
       }
     >
-      <Paper elevation={0} sx={{ border: "1px solid #E2E8F0", borderRadius: 3, overflow: "hidden" }}>
-        {isLoading ? (
+      <Paper
+        elevation={0}
+        sx={{
+          border: "1px solid #E2E8F0",
+          borderRadius: 3,
+          overflow: "hidden",
+        }}
+      >
+        {rolesQuery.isLoading ? (
           <Box sx={{ display: "flex", justifyContent: "center", p: 6 }}>
-            <CircularProgress sx={{ color: "#0F766E" }} />
+            <CircularProgress />
+          </Box>
+        ) : rolesQuery.isError ? (
+          <Box sx={{ p: 6 }}>
+            <Alert severity="error">
+              Unable to load roles. Please try again.
+            </Alert>
           </Box>
         ) : roles.length === 0 ? (
           <Box sx={{ p: 6, textAlign: "center" }}>
@@ -143,68 +226,57 @@ export default function Roles() {
           <TableContainer>
             <Table>
               <TableHead>
-                <TableRow sx={{ bgcolor: "#F8FAFC", borderBottom: "2px solid #E2E8F0" }}>
-                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>Role Name</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>Description</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>Permissions</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>Actions</TableCell>
+                <TableRow sx={{ bgcolor: "#F8FAFC" }}>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Description</TableCell>
+                  <TableCell>Permissions</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {roles.map((role) => (
-                  <TableRow
-                    key={role.id}
-                    sx={{
-                      "&:hover": { bgcolor: "#F0F9FF" },
-                      borderBottom: "1px solid #E2E8F0",
-                    }}
-                  >
-                    <TableCell sx={{ color: "#0F172A", fontWeight: 600 }}>
-                      {role.name}
-                    </TableCell>
-                    <TableCell sx={{ color: "#0F172A" }}>
-                      {role.description}
-                    </TableCell>
-                    <TableCell sx={{ color: "#0F172A" }}>
+                  <TableRow key={role.role_id}>
+                    <TableCell>{role.role_name}</TableCell>
+                    <TableCell>{role.role_description || "-"}</TableCell>
+                    <TableCell>{role.permission_count}</TableCell>
+                    <TableCell>
                       <Chip
-                        label={`${role.permissions} permissions`}
+                        label={role.is_active ? "ACTIVE" : "INACTIVE"}
                         size="small"
-                        sx={{
-                          bgcolor: "#E0F2FE",
-                          color: "#0369A1",
-                          fontWeight: 600,
-                        }}
+                        color={role.is_active ? "success" : "error"}
                       />
                     </TableCell>
                     <TableCell>
-                      <Chip
-                        label={role.status}
-                        size="small"
-                        sx={{
-                          bgcolor: role.status === "active" ? "#DCFCE7" : "#FEE2E2",
-                          color: role.status === "active" ? "#15803D" : "#991B1B",
-                          fontWeight: 600,
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Stack direction="row" spacing={1}>
-                        <Button
-                          size="small"
-                          startIcon={<EditIcon />}
-                          variant="text"
-                          onClick={() => handleOpenDialog(role)}
-                          sx={{ color: "#0F766E" }}
-                        >
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        sx={{ flexWrap: "wrap" }}
+                      >
+                        <Button size="small" onClick={() => openEdit(role)}>
                           Edit
                         </Button>
                         <Button
                           size="small"
-                          startIcon={<DeleteIcon />}
-                          variant="text"
-                          onClick={() => handleDeleteRole(role.id)}
-                          sx={{ color: "#EF4444" }}
+                          onClick={() => openPermissionTree(role)}
+                        >
+                          Permissions
+                        </Button>
+                        <Button
+                          size="small"
+                          onClick={() =>
+                            changeStatus.mutate({
+                              id: role.role_id,
+                              isActive: !role.is_active,
+                            })
+                          }
+                        >
+                          {role.is_active ? "Deactivate" : "Activate"}
+                        </Button>
+                        <Button
+                          size="small"
+                          color="error"
+                          onClick={() => setDialog({ mode: "delete", role })}
                         >
                           Delete
                         </Button>
@@ -218,58 +290,155 @@ export default function Roles() {
         )}
       </Paper>
 
-      {/* Role Dialog */}
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ bgcolor: "#F8FAFC", color: "#0F172A", fontWeight: 700 }}>
-          {editingRole ? "Edit Role" : "Create New Role"}
+      <Dialog
+        open={dialog?.mode === "delete"}
+        onClose={() => !removeRole.isPending && setDialog(null)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>Delete role?</DialogTitle>
+        <DialogContent>
+          <Typography>
+            This will permanently delete {dialog?.role?.role_name} and its
+            permission assignments. System roles cannot be deleted.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDialog(null)}>Cancel</Button>
+          <Button
+            color="error"
+            variant="contained"
+            disabled={removeRole.isPending}
+            onClick={() => removeRole.mutate(dialog.role.role_id)}
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={dialog?.mode === "create" || dialog?.mode === "edit"}
+        onClose={() => !saveRole.isPending && setDialog(null)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>
+          {dialog?.mode === "create" ? "Add Role" : "Edit Role"}
         </DialogTitle>
-        <DialogContent sx={{ mt: 2 }}>
-          <Stack spacing={2}>
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 1 }}>
             <TextField
-              label="Role Name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
               fullWidth
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 2,
-                  "&.Mui-focused fieldset": {
-                    borderColor: "#0F766E",
-                  },
-                },
-              }}
+              label="Role name"
+              value={form.roleName}
+              onChange={setField("roleName")}
+              slotProps={{ htmlInput: { minLength: 3, maxLength: 100 } }}
             />
             <TextField
-              label="Description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               fullWidth
               multiline
-              rows={3}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 2,
-                  "&.Mui-focused fieldset": {
-                    borderColor: "#0F766E",
-                  },
-                },
-              }}
+              minRows={2}
+              label="Description"
+              value={form.roleDescription}
+              onChange={setField("roleDescription")}
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={form.isActive}
+                  onChange={(e) =>
+                    setForm((c) => ({ ...c, isActive: e.target.checked }))
+                  }
+                />
+              }
+              label="Active"
             />
           </Stack>
         </DialogContent>
-        <DialogActions sx={{ p: 2, bgcolor: "#F8FAFC" }}>
-          <Button onClick={handleCloseDialog} sx={{ color: "#64748B" }}>
-            Cancel
-          </Button>
+        <DialogActions>
+          <Button onClick={() => setDialog(null)}>Cancel</Button>
           <Button
-            onClick={handleSaveRole}
             variant="contained"
-            sx={{
-              bgcolor: "#0F766E",
-              "&:hover": { bgcolor: "#0D9488" },
-            }}
+            disabled={saveRole.isPending || form.roleName.trim().length < 3}
+            onClick={() => saveRole.mutate()}
           >
-            {editingRole ? "Update" : "Create"} Role
+            {saveRole.isPending ? "Saving…" : "Save"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(permTreeRole)}
+        onClose={() => !savePermissions.isPending && setPermTreeRole(null)}
+        fullWidth
+        maxWidth="md"
+      >
+        <DialogTitle>Permissions — {permTreeRole?.role_name}</DialogTitle>
+        <DialogContent>
+          {treeQuery.isLoading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <Stack spacing={3} sx={{ pt: 1 }}>
+              <Alert severity="info">
+                At least one permission must remain selected — the backend
+                rejects an empty permission list.
+              </Alert>
+              {modules.map((module) => (
+                <Box key={module.moduleName}>
+                  <Typography variant="subtitle2" color="#64748B" gutterBottom>
+                    {module.moduleName}
+                  </Typography>
+                  <Stack direction="row" flexWrap="wrap">
+                    {module.permissions.map((perm) => {
+                      const checked =
+                        selectedPermissions.has(perm.permissionId) ||
+                        (selectedPermissions.size === 0 &&
+                          !savePermissions.isSuccess &&
+                          perm.selected &&
+                          !Array.from(selectedPermissions).length &&
+                          treeQuery.isFetched &&
+                          false);
+                      return (
+                        <FormControlLabel
+                          key={perm.permissionId}
+                          sx={{ width: { xs: "100%", sm: "50%", md: "33%" } }}
+                          control={
+                            <Checkbox
+                              checked={
+                                selectedPermissions.has(perm.permissionId) ||
+                                (selectedPermissions.size === 0 &&
+                                  perm.selected &&
+                                  treeQuery.dataUpdatedAt &&
+                                  selectedPermissions.__seeded !== true)
+                              }
+                              onChange={() =>
+                                togglePermission(perm.permissionId)
+                              }
+                            />
+                          }
+                          label={perm.permissionName}
+                        />
+                      );
+                    })}
+                  </Stack>
+                </Box>
+              ))}
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPermTreeRole(null)}>Cancel</Button>
+          <Button
+            variant="contained"
+            disabled={
+              savePermissions.isPending || selectedPermissions.size === 0
+            }
+            onClick={() => savePermissions.mutate()}
+          >
+            {savePermissions.isPending ? "Saving…" : "Save"}
           </Button>
         </DialogActions>
       </Dialog>
