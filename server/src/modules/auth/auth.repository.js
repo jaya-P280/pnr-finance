@@ -131,6 +131,39 @@ class AuthRepository {
 
     return rows.map((row) => row.permission_name);
   }
+  async findDefaultFieldOfficerRole() {
+  const [rows] = await pool.execute(
+    `SELECT role_id FROM roles WHERE role_name = 'FIELD_OFFICER' LIMIT 1`,
+  );
+  return rows[0] || null;
+}
+
+async getLastEmployeeCode() {
+  const [rows] = await pool.execute(
+    `SELECT employee_code FROM users ORDER BY user_id DESC LIMIT 1`,
+  );
+  return rows[0] || null;
+}
+
+async getDefaultBranch() {
+  const [rows] = await pool.execute(
+    `SELECT branch_id FROM branches WHERE status = 'ACTIVE' LIMIT 1`,
+  );
+  return rows[0] || null;
+}
+
+async createUser(data) {
+  const [result] = await pool.execute(
+    `INSERT INTO users (employee_code, first_name, last_name, email, password_hash, mobile_number, role_id, branch_id, status, is_first_login)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', 1)`,
+    [
+      data.employeeCode, data.firstName, data.lastName,
+      data.email, data.passwordHash, data.mobileNumber,
+      data.roleId, data.branchId,
+    ],
+  );
+  return result.insertId;
+}
 }
 
 export default new AuthRepository();
