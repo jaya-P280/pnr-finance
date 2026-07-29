@@ -69,12 +69,21 @@ export function AuthProvider({ children }) {
   };
 
   const initializeSession = async () => {
+    // Only attempt refresh if we have a refresh token in state
+    const hasRefreshToken = !!refreshToken;
+    
+    if (!hasRefreshToken) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
 
     try {
       const refreshed = await authService.refresh();
       if (!refreshed?.accessToken) {
         clearSession();
+        setLoading(false);
         return;
       }
       if (refreshed?.accessToken) {
@@ -93,7 +102,11 @@ export function AuthProvider({ children }) {
   };
 
   useEffect(() => {
-    initializeSession();
+    // Only run once on mount, not on every render
+    if (loading && !accessToken && refreshToken) {
+      initializeSession();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const value = useMemo(
