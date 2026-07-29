@@ -12,8 +12,6 @@ class AuthController {
       userAgent: req.get("User-Agent"),
     });
 
-    data.user.profile_image = getFullImageUrl(req, data.user.profile_image, "users");
-
     res.cookie("PNRG_REFRESH_TOKEN", data.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -31,8 +29,6 @@ class AuthController {
   });
 
   register = asyncHandler(async (req, res) => {
-    // Self-registration — creates user with PENDING status
-    // Admin must activate the account
     const result = await authService.register(req.body);
     return res.status(201).json(
       new ApiResponse(201, "Registration successful. Please wait for admin approval.", result),

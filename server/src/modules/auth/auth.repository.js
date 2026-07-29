@@ -13,7 +13,7 @@ class AuthRepository {
           u.role_id,
           r.role_name,
           u.profile_image,
-          u.status                          ← ADD THIS
+          u.status                          
        FROM users u
        INNER JOIN roles r ON r.role_id = u.role_id
        WHERE u.email = (?)
