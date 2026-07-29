@@ -22,7 +22,6 @@ import {
 import authMiddleware from "../auth/auth.middleware.js";
 import authorize from "../../middleware/authorize.middleware.js";
 import validationMiddleware from "../../middleware/validation.middleware.js";
-import { uploadKycFiles } from "../../middleware/upload.middleware.js";
 
 const router = express.Router();
 
@@ -71,7 +70,6 @@ router.post(
   "/:id/kyc",
   authMiddleware,
   authorize("CUSTOMER_UPDATE"),
-  uploadKycFiles,
   uploadCustomerKycValidation,
   validationMiddleware,
   customerController.uploadCustomerKyc,

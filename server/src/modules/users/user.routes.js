@@ -4,31 +4,28 @@ import { createUserValidation, updateUserValidation, userIdValidation, userListV
 import validateRequest from "../../middleware/validation.middleware.js";
 import authenticate from "../../modules/auth/auth.middleware.js";
 import authorize from "../../middleware/authorize.middleware.js";
-import upload from "../../shared/storage/multer.js"
 
 const router = express.Router();
 
 router.post("/",
     authenticate,
-    authorize("SUPER_ADMIN"),
+    authorize("USER_CREATE"),
     createUserValidation,
     validateRequest,
     userController.createUser
 );
 
-router.get(
-    "/",
+router.get("/",
     authenticate,
-    authorize("SUPER_ADMIN"),
+    authorize("USER_VIEW"),
     userListValidation,
     validateRequest,
     userController.getUsers
 );
 
-router.get(
-    "/:id",
+router.get("/:id",
     authenticate,
-    authorize("SUPER_ADMIN"),
+    authorize("USER_VIEW"),
     userIdValidation,
     validateRequest,
     userController.getUserById
@@ -36,7 +33,7 @@ router.get(
 
 router.put("/:id",
     authenticate,
-    authorize("SUPER_ADMIN"),
+    authorize("USER_UPDATE"),
     updateUserValidation,
     validateRequest,
     userController.updateUser
@@ -44,30 +41,18 @@ router.put("/:id",
 
 router.patch("/:id/status",
     authenticate,
-    authorize("SUPER_ADMIN"),
+    authorize("USER_UPDATE"),
     userStatusValidation,
     validateRequest,
     userController.updateUserStatus
 );
 
-router.delete(
-
-    "/:id",
+router.delete("/:id",
     authenticate,
-    authorize("SUPER_ADMIN"),
+    authorize("USER_DELETE"),
     deleteUserValidation,
     validateRequest,
     userController.deleteUser
 );
-
-router.patch(
-    "/:id/profile-image",
-    authenticate,
-    authorize("USER_UPDATE"),
-    upload.single("profileImage"),
-    uploadProfileValidation,
-    validateRequest,
-    userController.uploadProfileImage
-)
 
 export default router;

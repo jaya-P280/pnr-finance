@@ -7,35 +7,63 @@ import PaidIcon from "@mui/icons-material/Paid";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import SettingsIcon from "@mui/icons-material/Settings";
 
-// Role-based access mapping: which roles can see which paths
 const ROLE_ACCESS = {
-  SUPER_ADMIN: [
-    "/dashboard", "/users", "/roles", "/permissions",
-    "/branches", "/groups",
-    "/customers", "/customer-documents",
-    "/loan-products", "/loan-applications", "/loans", "/collections",
-    "/cash-book", "/expenses", "/income",
-    "/loan-reports", "/collection-reports", "/customer-reports",
-    "/settings", "/profile",
+  SUPER_ADMIN: ["/dashboard", "/users", "/settings", "/profile"],
+  ADMIN: [
+    // ← ADD THIS
+    "/dashboard",
+    "/users",
+    "/roles",
+    "/permissions",
+    "/branches",
+    "/groups",
+    "/customers",
+    "/customer-documents",
+    "/loan-products",
+    "/loan-applications",
+    "/loans",
+    "/collections",
+    "/cash-book",
+    "/expenses",
+    "/income",
+    "/loan-reports",
+    "/collection-reports",
+    "/customer-reports",
+    "/settings",
+    "/profile",
   ],
   BRANCH_MANAGER: [
-    "/dashboard", "/branches", "/groups",
-    "/customers", "/customer-documents",
-    "/loan-products", "/loan-applications", "/loans", "/collections",
-    "/loan-reports", "/collection-reports", "/customer-reports",
+    "/dashboard",
+    "/branches",
+    "/groups",
+    "/customers",
+    "/customer-documents",
+    "/loan-products",
+    "/loan-applications",
+    "/loans",
+    "/collections",
+    "/loan-reports",
+    "/collection-reports",
+    "/customer-reports",
     "/profile",
   ],
   FIELD_OFFICER: [
     "/dashboard",
-    "/customers", "/customer-documents",
-    "/loan-applications", "/collections",
+    "/customers",
+    "/customer-documents",
+    "/loan-applications",
+    "/collections",
     "/profile",
   ],
   ACCOUNTANT: [
     "/dashboard",
     "/collections",
-    "/cash-book", "/expenses", "/income",
-    "/loan-reports", "/collection-reports", "/customer-reports",
+    "/cash-book",
+    "/expenses",
+    "/income",
+    "/loan-reports",
+    "/collection-reports",
+    "/customer-reports",
     "/profile",
   ],
 };
@@ -63,7 +91,8 @@ export function getFilteredMenu(userRole) {
       section: "Master",
       items: [
         {
-          title: "User Management", icon: PeopleIcon,
+          title: "User Management",
+          icon: PeopleIcon,
           children: [
             { title: "Users", path: "/users" },
             { title: "Roles", path: "/roles" },
@@ -71,14 +100,16 @@ export function getFilteredMenu(userRole) {
           ],
         },
         {
-          title: "Organization", icon: ApartmentIcon,
+          title: "Organization",
+          icon: ApartmentIcon,
           children: [
             { title: "Branches", path: "/branches" },
             { title: "Groups", path: "/groups" },
           ],
         },
         {
-          title: "Customer", icon: PersonIcon,
+          title: "Customer",
+          icon: PersonIcon,
           children: [
             { title: "Customers", path: "/customers" },
             { title: "Documents", path: "/customer-documents" },
@@ -88,37 +119,46 @@ export function getFilteredMenu(userRole) {
     },
     {
       section: "Loans",
-      items: [{
-        title: "Loan Management", icon: AccountBalanceWalletIcon,
-        children: [
-          { title: "Loan Products", path: "/loan-products" },
-          { title: "Loan Applications", path: "/loan-applications" },
-          { title: "Loans", path: "/loans" },
-          { title: "Collections", path: "/collections" },
-        ],
-      }],
+      items: [
+        {
+          title: "Loan Management",
+          icon: AccountBalanceWalletIcon,
+          children: [
+            { title: "Loan Products", path: "/loan-products" },
+            { title: "Loan Applications", path: "/loan-applications" },
+            { title: "Loans", path: "/loans" },
+            { title: "Collections", path: "/collections" },
+          ],
+        },
+      ],
     },
     {
       section: "Finance",
-      items: [{
-        title: "Accounting", icon: PaidIcon,
-        children: [
-          { title: "Cash Book", path: "/cash-book" },
-          { title: "Expenses", path: "/expenses" },
-          { title: "Income", path: "/income" },
-        ],
-      }],
+      items: [
+        {
+          title: "Accounting",
+          icon: PaidIcon,
+          children: [
+            { title: "Cash Book", path: "/cash-book" },
+            { title: "Expenses", path: "/expenses" },
+            { title: "Income", path: "/income" },
+          ],
+        },
+      ],
     },
     {
       section: "Reports",
-      items: [{
-        title: "Reports", icon: AssessmentIcon,
-        children: [
-          { title: "Loan Reports", path: "/loan-reports" },
-          { title: "Collection Reports", path: "/collection-reports" },
-          { title: "Customer Reports", path: "/customer-reports" },
-        ],
-      }],
+      items: [
+        {
+          title: "Reports",
+          icon: AssessmentIcon,
+          children: [
+            { title: "Loan Reports", path: "/loan-reports" },
+            { title: "Collection Reports", path: "/collection-reports" },
+            { title: "Customer Reports", path: "/customer-reports" },
+          ],
+        },
+      ],
     },
     {
       section: "System",

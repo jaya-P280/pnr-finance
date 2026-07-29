@@ -3,52 +3,44 @@ import pool from "../../database/db.js";
 class AuthRepository {
   async findUserByEmail(email) {
     const [rows] = await pool.execute(
-      `
-            SELECT 
-                u.user_id,
-                u.first_name,
-                u.last_name,
-                u.email,
-                u.password_hash,
-                u.branch_id,
-                u.role_id,
-                r.role_name,
-                u.profile_image
-                
-            FROM users u
-            INNER JOIN roles r
-                on r.role_id = u.role_id
-            WHERE u.email = (?)
-            AND u.status = 'ACTIVE'
-            `,
+      `SELECT 
+          u.user_id,
+          u.first_name,
+          u.last_name,
+          u.email,
+          u.password_hash,
+          u.branch_id,
+          u.role_id,
+          r.role_name,
+          u.profile_image,
+          u.status                          ← ADD THIS
+       FROM users u
+       INNER JOIN roles r ON r.role_id = u.role_id
+       WHERE u.email = (?)
+         AND u.deleted_at IS NULL`,
       [email],
     );
-
     return rows[0];
   }
 
-  async findUserById(UserId) {
+    async findUserById(UserId) {
     const [rows] = await pool.execute(
-      `
-            SELECT 
-                u.user_id,
-                u.first_name,
-                u.last_name,
-                u.email,
-                u.role_id,
-                u.branch_id,
-                r.role_name,
-                u.profile_image
-            FROM users u
-            INNER JOIN roles r
-                ON r.role_id = u.role_id
-            WHERE 
-                u.user_id = ?
-             AND
-             u.status = 'ACTIVE';`,
+      `SELECT 
+          u.user_id,
+          u.first_name,
+          u.last_name,
+          u.email,
+          u.role_id,
+          u.branch_id,
+          r.role_name,
+          u.profile_image,
+          u.status                          
+       FROM users u
+       INNER JOIN roles r ON r.role_id = u.role_id
+       WHERE u.user_id = ?
+         AND u.deleted_at IS NULL`,        
       [UserId],
     );
-
     return rows[0];
   }
 
@@ -132,30 +124,30 @@ class AuthRepository {
     return rows.map((row) => row.permission_name);
   }
   async findDefaultFieldOfficerRole() {
-  const [rows] = await pool.execute(
-    `SELECT role_id FROM roles WHERE role_name = 'FIELD_OFFICER' LIMIT 1`,
-  );
-  return rows[0] || null;
-}
+    const [rows] = await pool.execute(
+      `SELECT role_id FROM roles WHERE role_name = 'FIELD_OFFICER' LIMIT 1`,
+    );
+    return rows[0] || null;
+  }
 
-async getLastEmployeeCode() {
-  const [rows] = await pool.execute(
-    `SELECT employee_code FROM users ORDER BY user_id DESC LIMIT 1`,
-  );
-  return rows[0] || null;
-}
+  async getLastEmployeeCode() {
+    const [rows] = await pool.execute(
+      `SELECT employee_code FROM users ORDER BY user_id DESC LIMIT 1`,
+    );
+    return rows[0] || null;
+  }
 
-async getDefaultBranch() {
-  const [rows] = await pool.execute(
-    `SELECT branch_id FROM branches WHERE status = 'ACTIVE' LIMIT 1`,
-  );
-  return rows[0] || null;
-}
+  async getDefaultBranch() {
+    const [rows] = await pool.execute(
+      `SELECT branch_id FROM branches WHERE status = 'ACTIVE' LIMIT 1`,
+    );
+    return rows[0] || null;
+  }
 
-async createUser(data) {
+  async createUser(data) {
   const [result] = await pool.execute(
     `INSERT INTO users (employee_code, first_name, last_name, email, password_hash, mobile_number, role_id, branch_id, status, is_first_login)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', 1)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', 0)`,    // ← CHANGED from 'PENDING', 1
     [
       data.employeeCode, data.firstName, data.lastName,
       data.email, data.passwordHash, data.mobileNumber,

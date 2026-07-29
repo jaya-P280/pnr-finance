@@ -3,7 +3,6 @@ import userService from "../users/user.service.js";
 import ApiResponse from "../../shared/ApiResponse.js";
 import ApiError from "../../shared/ApiError.js";
 import asyncHandler from "../../shared/asyncHandler.js";
-import { getFullImageUrl } from "../../utils/url.js";
 
 class AuthController {
   login = asyncHandler(async (req, res) => {

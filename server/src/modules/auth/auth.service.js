@@ -9,10 +9,6 @@ class AuthService {
   async login(email, password, metadata) {
     const user = await authRepository.findUserByEmail(email);
     if (!user) throw new ApiError(401, "Invalid email or password");
-    if (user.status === "PENDING")
-      throw new ApiError(403, "Account pending approval");
-    if (user.status === "INACTIVE")
-      throw new ApiError(403, "Account is inactive");
 
     const permissions = await authRepository.getUserPermissions(user.user_id);
     const matched = await passwordService.compare(password, user.password_hash);
@@ -74,7 +70,7 @@ class AuthService {
 
     return {
       employeeCode,
-      message: "Registration submitted. Awaiting admin approval.",
+      message: "Registration Successful",
     };
   }
 

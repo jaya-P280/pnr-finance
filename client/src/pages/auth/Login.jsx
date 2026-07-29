@@ -1,5 +1,5 @@
-﻿import { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+﻿import { useState} from "react";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import {
   Box,
@@ -111,7 +111,6 @@ export default function Login() {
                 },
               }}
             />
-
             <TextField
               fullWidth
               label="Password"
@@ -135,7 +134,6 @@ export default function Login() {
                 },
               }}
             />
-
             <Button
               type="submit"
               variant="contained"
@@ -158,6 +156,23 @@ export default function Login() {
             >
               {loading ? "Signing in..." : "Sign In"}
             </Button>
+            // Inside the login card, after the form:
+            <Typography
+              variant="body2"
+              sx={{ mt: 2, textAlign: "center", color: "#64748B" }}
+            >
+              Don't have an account?{" "}
+              <Link
+                to="/register"
+                style={{
+                  color: "#0F766E",
+                  fontWeight: 600,
+                  textDecoration: "none",
+                }}
+              >
+                Create Account
+              </Link>
+            </Typography>
           </Stack>
         </Box>
       </Paper>

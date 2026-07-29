@@ -25,8 +25,9 @@ export default function Sidebar({ mobile, onClose, open, onToggleSidebar }) {
   const location = useLocation();
   const activePath = location.pathname;
   const { user } = useAuth();
+  const roleName = user?.role_name || user?.role || "FIELD_OFFICER"
   const menuItems = useMemo(
-    () => getFilteredMenu(user?.role?.name || "FIELD_OFFICER"),
+    () => getFilteredMenu(roleName),
     [user],
   );
 

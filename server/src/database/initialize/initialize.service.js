@@ -15,7 +15,11 @@ class InitializeService {
     try {
       logger.info("Starting database initialization...");
 
-      // --- Create Roles ---
+      // ===== 1. AUTO-CREATE ALL TABLES =====
+      await repository.createSchema(connection);
+      logger.info("Schema created/verified");
+
+      // ===== 2. Create Roles =====
       logger.info("Checking default roles...");
       const roleMap = {}; // role_name => role_id
 

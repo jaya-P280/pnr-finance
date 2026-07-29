@@ -26,12 +26,17 @@ import LoanReports from "../pages/reports/LoanReports";
 import CollectionReports from "../pages/reports/CollectionReports";
 import CustomerReports from "../pages/reports/CustomerReports";
 import Settings from "../pages/settings/Settings";
+import Register from "../pages/auth/Register";    // ← ADD IMPORT
+
+// Inside <Route element={<PublicRoute />}>:
+  
 
 export default function AppRoutes() {
   return (
     <Routes>
       <Route element={<PublicRoute />}>
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         <Route path="/setup-password" element={<PasswordSetup />} />
       </Route>
 
