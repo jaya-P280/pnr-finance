@@ -6,11 +6,13 @@ import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import PaidIcon from "@mui/icons-material/Paid";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import SettingsIcon from "@mui/icons-material/Settings";
+import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 
 const ROLE_ACCESS = {
+  // SUPER_ADMIN: Only create admin users + own profile/settings
   SUPER_ADMIN: ["/dashboard", "/users", "/settings", "/profile"],
+  // ADMIN: Full system access
   ADMIN: [
-    // ← ADD THIS
     "/dashboard",
     "/users",
     "/roles",
@@ -112,51 +114,60 @@ export function getFilteredMenu(userRole) {
           icon: PersonIcon,
           children: [
             { title: "Customers", path: "/customers" },
-            { title: "Documents", path: "/customer-documents" },
+            {
+              title: "eKYC",
+              icon: VerifiedUserIcon,
+              path: "/customer-documents",
+            },
           ],
         },
       ],
     },
+    // FLATTENED: Loans section heading → direct items (no redundant wrapper)
     {
       section: "Loans",
       items: [
         {
-          title: "Loan Management",
+          title: "Loan Products",
           icon: AccountBalanceWalletIcon,
-          children: [
-            { title: "Loan Products", path: "/loan-products" },
-            { title: "Loan Applications", path: "/loan-applications" },
-            { title: "Loans", path: "/loans" },
-            { title: "Collections", path: "/collections" },
-          ],
+          path: "/loan-products",
+        },
+        {
+          title: "Loan Applications",
+          icon: AccountBalanceWalletIcon,
+          path: "/loan-applications",
+        },
+        { title: "Loans", icon: AccountBalanceWalletIcon, path: "/loans" },
+        {
+          title: "Collections",
+          icon: AccountBalanceWalletIcon,
+          path: "/collections",
         },
       ],
     },
+    // FLATTENED: Finance section
     {
       section: "Finance",
       items: [
-        {
-          title: "Accounting",
-          icon: PaidIcon,
-          children: [
-            { title: "Cash Book", path: "/cash-book" },
-            { title: "Expenses", path: "/expenses" },
-            { title: "Income", path: "/income" },
-          ],
-        },
+        { title: "Cash Book", icon: PaidIcon, path: "/cash-book" },
+        { title: "Expenses", icon: PaidIcon, path: "/expenses" },
+        { title: "Income", icon: PaidIcon, path: "/income" },
       ],
     },
+    // FLATTENED: Reports section
     {
       section: "Reports",
       items: [
+        { title: "Loan Reports", icon: AssessmentIcon, path: "/loan-reports" },
         {
-          title: "Reports",
+          title: "Collection Reports",
           icon: AssessmentIcon,
-          children: [
-            { title: "Loan Reports", path: "/loan-reports" },
-            { title: "Collection Reports", path: "/collection-reports" },
-            { title: "Customer Reports", path: "/customer-reports" },
-          ],
+          path: "/collection-reports",
+        },
+        {
+          title: "Customer Reports",
+          icon: AssessmentIcon,
+          path: "/customer-reports",
         },
       ],
     },
@@ -166,7 +177,6 @@ export function getFilteredMenu(userRole) {
     },
   ];
 
-  // Filter each section's items
   return menu
     .map((section) => ({
       ...section,

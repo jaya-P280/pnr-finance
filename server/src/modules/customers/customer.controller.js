@@ -2,6 +2,7 @@ import customerService from "./customer.service.js";
 import ApiResponse from "../../shared/ApiResponse.js";
 import { CUSTOMER_MESSAGES } from "./customers.constants.js";
 import ApiError from "../../shared/ApiError.js";
+import { getFullImageUrl } from "../../shared/imageUrl.helper.js";
 
 class CustomerController {
   async createCustomer(req, res, next) {

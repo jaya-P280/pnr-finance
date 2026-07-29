@@ -1,6 +1,7 @@
 import userService from "./user.service.js";
 import ApiResponse from "../../shared/ApiResponse.js";
 import asyncHandler from "../../shared/asyncHandler.js";
+import { getFullImageUrl } from "../../shared/imageUrl.helper.js";
 
 class UserController {
   createUser = asyncHandler(async (req, res) => {

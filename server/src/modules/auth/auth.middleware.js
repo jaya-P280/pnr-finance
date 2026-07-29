@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import env from "../../config/env.js";
 import ApiError from "../../shared/ApiError.js";
 import authRepository from "./auth.repository.js";
+import { getFullImageUrl } from "../../shared/imageUrl.helper.js";
 
 const authenticate = async (req, res, next) => {
   try {
