@@ -1,35 +1,58 @@
-import { createContext, useEffect, useMemo, useState } from "react";
+import { createContext, useEffect, useMemo, useState, useCallback } from "react";
 import authService from "../services/auth.service";
-import {
-  setAccessToken,
-  clearAccessToken,
-  getAccessToken,
-} from "../utils/token.utils";
 import toast from "react-hot-toast";
+import { setupAuthInterceptors } from "../api/axios";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [accessToken, setToken] = useState(() => getAccessToken());
+  const [accessToken, setToken] = useState(null);
+  const [refreshToken, setRefreshToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const saveSession = (token, userDetails) => {
-    setToken(token);
+  // Sync tokens with global window object for axios interceptors
+  const syncTokensWithWindow = useCallback((token, refresh) => {
+    window.__AUTH_ACCESS_TOKEN__ = token || null;
+    window.__AUTH_REFRESH_TOKEN__ = refresh || null;
+  }, []);
+
+  const saveSession = (tokens, userDetails) => {
+    setToken(tokens.accessToken);
+    setRefreshToken(tokens.refreshToken);
     setUser(userDetails);
-    setAccessToken(token);
+    syncTokensWithWindow(tokens.accessToken, tokens.refreshToken);
   };
 
   const clearSession = () => {
     setToken(null);
+    setRefreshToken(null);
     setUser(null);
-    clearAccessToken();
+    syncTokensWithWindow(null, null);
   };
+
+  // Callbacks for axios interceptors
+  const getToken = useCallback(() => accessToken, [accessToken]);
+  const getRefreshToken = useCallback(() => refreshToken, [refreshToken]);
+
+  const onTokenRefresh = useCallback((newAccessToken, newRefreshToken) => {
+    if (newAccessToken && newRefreshToken) {
+      setToken(newAccessToken);
+      setRefreshToken(newRefreshToken);
+      syncTokensWithWindow(newAccessToken, newRefreshToken);
+    } else {
+      clearSession();
+    }
+  }, [syncTokensWithWindow]);
+
+  // Setup axios interceptors with callbacks
+  useEffect(() => {
+    setupAuthInterceptors(getToken, getRefreshToken, onTokenRefresh);
+  }, [getToken, getRefreshToken, onTokenRefresh]);
 
   const login = async ({ email, password }) => {
     const authResult = await authService.login({ email, password });
-    saveSession(authResult.accessToken, authResult.user);
-    console.log(authResult)
+    saveSession(authResult, authResult.user);
     return authResult;
   };
 
@@ -56,13 +79,13 @@ export function AuthProvider({ children }) {
       }
       if (refreshed?.accessToken) {
         setToken(refreshed.accessToken);
-        setAccessToken(refreshed.accessToken);
+        setRefreshToken(refreshed.refreshToken);
+        syncTokensWithWindow(refreshed.accessToken, refreshed.refreshToken);
       }
 
       const profile = await authService.getProfile();
       setUser(profile);
     } catch (error) {
-      console.log(error);
       clearSession();
     } finally {
       setLoading(false);
@@ -77,12 +100,13 @@ export function AuthProvider({ children }) {
     () => ({
       user,
       accessToken,
+      refreshToken,
       isAuthenticated: !!accessToken,
       loading,
       login,
       logout,
     }),
-    [user, accessToken, loading],
+    [user, accessToken, refreshToken, loading],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

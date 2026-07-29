@@ -1,4 +1,4 @@
-import api from "./axois";
+import api from "./axios";
 import ENDPOINTS from "./endpoint";
 
 export const getCompanyProfile = () => api.get(`${ENDPOINTS.SETTINGS}/company`);

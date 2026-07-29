@@ -1,4 +1,4 @@
-import api from "./axois";
+import api from "./axios";
 import ENDPOINTS from "./endpoint";
 
 export const login = (data) => api.post(ENDPOINTS.AUTH.LOGIN, data);

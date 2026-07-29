@@ -1,4 +1,4 @@
-import * as permissionApi from "../api/permisssions.api";
+import * as permissionApi from "../api/permissions.api";
 
 class PermissionService {
   async getAll(params) {

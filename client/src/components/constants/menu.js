@@ -7,7 +7,19 @@ import PaidIcon from "@mui/icons-material/Paid";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import SettingsIcon from "@mui/icons-material/Settings";
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
+import AssignmentIndIcon from "@mui/icons-material/AssignmentInd";
+import GroupsIcon from "@mui/icons-material/Groups";
+import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
+import BusinessIcon from "@mui/icons-material/Business";
+import ClassIcon from "@mui/icons-material/Class";
+import SecurityIcon from "@mui/icons-material/Security";
+import DescriptionIcon from "@mui/icons-material/Description";
+import FolderOpenIcon from "@mui/icons-material/FolderOpen";
+import CreditCardIcon from "@mui/icons-material/CreditCard";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 
+// Role-based menu access configuration
 const ROLE_ACCESS = {
   // SUPER_ADMIN: Only create admin users + own profile/settings
   SUPER_ADMIN: ["/dashboard", "/users", "/settings", "/profile"],
@@ -53,6 +65,7 @@ const ROLE_ACCESS = {
     "/dashboard",
     "/customers",
     "/customer-documents",
+    "/groups",
     "/loan-applications",
     "/collections",
     "/profile",
@@ -67,6 +80,15 @@ const ROLE_ACCESS = {
     "/collection-reports",
     "/customer-reports",
     "/profile",
+  ],
+  // CUSTOMER: Normal user portal - can manage own account, apply loans, view status
+  CUSTOMER: [
+    "/customer/dashboard",
+    "/customer/profile",
+    "/customer/applications",
+    "/customer/apply-loan",
+    "/customer/loans",
+    "/customer/ekyc",
   ],
 };
 
@@ -84,6 +106,58 @@ export function getFilteredMenu(userRole) {
     });
   }
 
+  // Customer Portal Menu
+  if (userRole === 'CUSTOMER') {
+    return [
+      {
+        section: "Overview",
+        items: [
+          { 
+            title: "Dashboard", 
+            icon: DashboardIcon, 
+            path: "/customer/dashboard" 
+          },
+        ],
+      },
+      {
+        section: "My Account",
+        items: [
+          { 
+            title: "Profile", 
+            icon: PersonIcon, 
+            path: "/customer/profile" 
+          },
+          { 
+            title: "e-KYC Status", 
+            icon: VerifiedUserIcon, 
+            path: "/customer/ekyc" 
+          },
+        ],
+      },
+      {
+        section: "Loans",
+        items: [
+          { 
+            title: "My Applications", 
+            icon: AssignmentIndIcon, 
+            path: "/customer/applications" 
+          },
+          { 
+            title: "Apply for Loan", 
+            icon: FolderOpenIcon, 
+            path: "/customer/apply-loan" 
+          },
+          { 
+            title: "Active Loans", 
+            icon: AccountBalanceWalletIcon, 
+            path: "/customer/loans" 
+          },
+        ],
+      },
+    ];
+  }
+
+  // Admin/Employee Portal Menu
   const menu = [
     {
       section: "Dashboard",
@@ -134,13 +208,13 @@ export function getFilteredMenu(userRole) {
         },
         {
           title: "Loan Applications",
-          icon: AccountBalanceWalletIcon,
+          icon: AssignmentIndIcon,
           path: "/loan-applications",
         },
-        { title: "Loans", icon: AccountBalanceWalletIcon, path: "/loans" },
+        { title: "Loans", icon: BusinessIcon, path: "/loans" },
         {
           title: "Collections",
-          icon: AccountBalanceWalletIcon,
+          icon: ReceiptLongIcon,
           path: "/collections",
         },
       ],

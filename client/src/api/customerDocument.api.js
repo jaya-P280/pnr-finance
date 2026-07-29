@@ -1,4 +1,4 @@
-import api from "./axois";
+import api from "./axios";
 import ENDPOINTS from "./endpoint";
 
 const base = (id) => `${ENDPOINTS.CUSTOMERS}/${id}`;

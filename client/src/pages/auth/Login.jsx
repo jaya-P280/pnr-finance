@@ -1,4 +1,4 @@
-﻿import { useState} from "react";
+import { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import {
@@ -8,7 +8,10 @@ import {
   TextField,
   Button,
   Stack,
+  InputAdornment,
+  IconButton,
 } from "@mui/material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 import toast from "react-hot-toast";
 import useAuth from "../../hooks/useAuth";
 
@@ -17,6 +20,7 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const from = location.state?.from?.pathname || "/dashboard";
 
@@ -80,10 +84,10 @@ export default function Login() {
         </Box>
 
         <Typography variant="h5" fontWeight={700} mb={1} color="#0F172A">
-          Login
+          Welcome Back
         </Typography>
         <Typography color="#64748B" mb={4}>
-          Sign in to access the PNRG Finance dashboard.
+          Sign in to access your {location.state?.role === 'SUPER_ADMIN' ? 'Super Admin' : location.state?.role === 'ADMIN' ? 'Admin' : 'Employee'} Portal
         </Typography>
 
         <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
@@ -114,7 +118,7 @@ export default function Login() {
             <TextField
               fullWidth
               label="Password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               autoComplete="current-password"
               error={!!errors.password}
               helperText={errors.password?.message}
@@ -125,6 +129,19 @@ export default function Login() {
                   message: "Password must have at least 6 characters",
                 },
               })}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowPassword(!showPassword)}
+                      edge="end"
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 2,
@@ -156,7 +173,6 @@ export default function Login() {
             >
               {loading ? "Signing in..." : "Sign In"}
             </Button>
-            // Inside the login card, after the form:
             <Typography
               variant="body2"
               sx={{ mt: 2, textAlign: "center", color: "#64748B" }}
