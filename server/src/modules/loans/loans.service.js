@@ -543,6 +543,56 @@ class LoanService {
 
   }
 
+  async applyForLoan(data, currentUser) {
+    const connection = await loanRepository.getConnection();
+
+    try {
+      await loanRepository.beginTransaction(connection);
+
+      // Validate loan product exists
+      const product = await loanRepository.getLoanProductById(
+        connection,
+        data.loanProductId
+      );
+
+      if (!product) {
+        throw new Error("Invalid loan product");
+      }
+
+      // Validate amount against product limits
+      if (data.loanAmount < product.minAmount || data.loanAmount > product.maxAmount) {
+        throw new Error(
+          `Loan amount must be between ₹${product.minAmount.toLocaleString()} and ₹${product.maxAmount.toLocaleString()}`
+        );
+      }
+
+      // Create loan application with DRAFT status
+      const applicationData = {
+        customerId: currentUser.user_id,
+        loanProductId: data.loanProductId,
+        loanAmount: data.loanAmount,
+        tenureMonths: data.tenureMonths,
+        loanPurpose: data.loanPurpose,
+        repaymentFrequency: data.repaymentFrequency || 'Monthly',
+        status: 'DRAFT',
+        appliedDate: new Date()
+      };
+
+      const application = await loanRepository.createLoanApplication(
+        connection,
+        applicationData
+      );
+
+      await loanRepository.commit(connection);
+
+      return application;
+
+    } catch (error) {
+      await loanRepository.rollback(connection);
+      throw error;
+    }
+  }
+
 }
 
 export default new LoanService();

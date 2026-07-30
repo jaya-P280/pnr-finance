@@ -175,6 +175,23 @@ class LoanController {
     }
   }
 
+  async applyForLoan(req, res, next) {
+    try {
+      const result = await loanService.applyForLoan(req.body, req.user);
+
+      return res.status(201).json(
+        new ApiResponse(
+          201,
+          "Loan application submitted successfully",
+          result
+        )
+      );
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
 }
 
 export default new LoanController();

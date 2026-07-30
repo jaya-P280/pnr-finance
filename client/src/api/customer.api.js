@@ -16,7 +16,11 @@ export const customerPortalApi = {
   getMyProfile: () => api.get('/customer/profile'),
   updateMyProfile: (data) => api.put('/customer/profile', data),
   
+  // Loan Products
+  getLoanProducts: () => api.get('/loan-products'),
+  
   // Loan Applications
+  applyForLoan: (data) => api.post('/loans/apply', data),
   createApplication: (data) => api.post('/loans/application', data),
   getMyApplications: () => api.get('/loans/my-applications'),
   getApplicationDetails: (id) => api.get(`/loans/application/${id}`),

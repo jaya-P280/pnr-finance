@@ -93,5 +93,13 @@ router.patch(
   loanController.defaultLoan
 );
 
+// Customer loan application route
+router.post(
+  "/apply",
+  authenticate,
+  authorize("LOAN_APPLICATION_CREATE"),
+  loanController.applyForLoan
+);
+
 
 export default router;
