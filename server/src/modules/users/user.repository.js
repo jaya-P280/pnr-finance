@@ -106,7 +106,7 @@ class UserRepository {
                 first_name,
                 last_name,
                 email,
-                phone,
+                mobile_number,
                 profile_image,
                 created_by,
                 must_change_password
@@ -123,7 +123,7 @@ class UserRepository {
                 user.firstName,
                 user.lastName,
                 user.email,
-                user.phone,
+                user.mobileNumber,
                 user.profileImage,
                 user.createdBy,
                 true
@@ -161,7 +161,7 @@ class UserRepository {
             u.first_name,
             u.last_name,
             u.email,
-            u.phone,
+            u.mobile_number as phone,
             u.profile_image,
             u.status,
             u.created_at,
@@ -184,7 +184,7 @@ class UserRepository {
                 OR u.first_name LIKE ?
                 OR u.last_name LIKE ?
                 OR u.email LIKE ?
-                OR u.phone LIKE ?
+                OR u.mobile_number LIKE ?
             )`;
             const keyword = `${search}%`;
             values.push(
@@ -279,7 +279,7 @@ class UserRepository {
                 OR u.first_name LIKE ?
                 OR u.last_name LIKE ?
                 OR u.email LIKE ?
-                OR u.phone LIKE ?
+                OR u.mobile_number LIKE ?
             )
         `;
 
@@ -339,7 +339,7 @@ class UserRepository {
                 u.first_name,
                 u.last_name,
                 u.email,
-                u.phone,
+                u.mobile_number as phone,
                 u.profile_image,
                 u.status,
                 u.created_at,
@@ -399,7 +399,7 @@ class UserRepository {
                 first_name = ?,
                 last_name = ?,
                 email = ?,
-                phone = ?,
+                mobile_number = ?,
                 role_id = ?,
                 branch_id = ?,
                 updated_at = CURRENT_TIMESTAMP
@@ -411,7 +411,7 @@ class UserRepository {
             user.firstName,
             user.lastName,
             user.email,
-            user.phone,
+            user.mobileNumber,
             user.roleId,
             user.branchId,
             user.userId

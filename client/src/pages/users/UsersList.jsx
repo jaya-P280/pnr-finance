@@ -33,7 +33,7 @@ const emptyForm = {
   firstName: "",
   lastName: "",
   email: "",
-  phone: "",
+  mobileNumber: "",
   roleId: "",
   branchId: "",
   profileImage:null,
@@ -127,7 +127,7 @@ export default function UsersList() {
         firstName: details.firstName || "",
         lastName: details.lastName || "",
         email: details.email || "",
-        phone: details.phone || "",
+        mobileNumber: details.mobileNumber || "",
         roleId: String(details.roleId || ""),
         branchId: String(details.branchId || ""),
       });
@@ -352,8 +352,8 @@ export default function UsersList() {
                   slotProps={{
                     htmlInput: { inputMode: "numeric", maxLength: 10 },
                   }}
-                  value={form.phone}
-                  onChange={setField("phone")}
+                  value={form.mobileNumber}
+                  onChange={setField("mobileNumber")}
                 />
                 <TextField
                   required
@@ -401,7 +401,7 @@ export default function UsersList() {
                   formLoading ||
                   !form.firstName ||
                   !form.email ||
-                  !form.phone ||
+                  !form.mobileNumber ||
                   !form.roleId ||
                   !form.branchId
                 }

@@ -55,7 +55,7 @@ class UserService {
 
       const phoneExists = await userRepository.phoneExists(
         connection,
-        data.phone,
+        data.mobileNumber,
       );
       if (phoneExists) {
         throw new ApiError(409, USER_MESSAGES.PHONE_EXISTS);
@@ -85,7 +85,7 @@ class UserService {
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,
-        phone: data.phone,
+        mobileNumber: data.mobileNumber,
         roleId: data.roleId,
         branchId: data.branchId,
         profileImage: data.profileImage ?? null,
@@ -210,7 +210,7 @@ class UserService {
       firstName: user.first_name,
       lastName: user.last_name,
       email: user.email,
-      phone: user.phone,
+      mobileNumber: user.phone,
       profileImage: user.profile_image,
       status: user.status,
       createdAt: user.created_at,
@@ -246,7 +246,7 @@ class UserService {
       firstName: user.first_name,
       lastName: user.last_name,
       email: user.email,
-      phone: user.phone,
+      mobileNumber: user.phone,
       profileImage: user.profile_image,
       status: user.status,
       createdAt: user.created_at,
@@ -269,7 +269,7 @@ class UserService {
       if (email && email.user_id !== userId) {
         throw new ApiError(409, USER_MESSAGES.EMAIL_EXISTS);
       }
-      const phone = await userRepository.findUserByPhone(data.phone);
+      const phone = await userRepository.findUserByPhone(data.mobileNumber);
 
       if (phone && phone.user_id !== userId) {
         throw new ApiError(409, USER_MESSAGES.PHONE_EXISTS);
