@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { customerPortalApi } from '../../api/customer.api';
-import { toast } from 'react-toastify';
+import toast from "react-hot-toast";
 
 const CustomerRegistration = () => {
   const navigate = useNavigate();

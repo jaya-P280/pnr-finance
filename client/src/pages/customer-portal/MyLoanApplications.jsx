@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { customerPortalApi } from '../../api/customer.api';
-import { toast } from 'react-toastify';
-import { 
-  FileText, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
-  AlertCircle,
+import toast from "react-hot-toast";
+import {
+  Description as FileText,
+  AccessTime as Clock,
+  CheckCircle,
+  Cancel as XCircle,
+  WarningAmber as AlertCircle,
   Download,
-  Eye
-} from 'lucide-react';
+  Visibility as Eye,
+} from "@mui/icons-material";
 
 const MyLoanApplications = () => {
   const [applications, setApplications] = useState([]);

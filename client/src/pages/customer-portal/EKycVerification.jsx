@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import { customerPortalApi } from '../../api/customer.api';
-import { toast } from 'react-toastify';
-import { 
-  CheckCircle, 
-  Clock, 
-  Upload, 
+import toast from "react-hot-toast";
+import {
+  CheckCircle,
+  AccessTime as Clock,
+  UploadFile as Upload,
   Smartphone,
   CreditCard,
-  FileText,
-  Shield
-} from 'lucide-react';
+  Description as FileText,
+  Shield,
+} from "@mui/icons-material";
 
 const EKycVerification = () => {
   const [kycStatus, setKycStatus] = useState(null);

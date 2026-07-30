@@ -304,3 +304,12 @@ export const DEFAULT_ADMIN = {
   phone: "9999999999",
   password: "Admin@123",
 };
+
+export const DEFAULT_SUPER_ADMIN = {
+  employee_code: "SUP0001",
+  first_name: "Super",
+  last_name: "Administrator",
+  email: "superadmin@pnrgfinance.com",
+  phone: "9999999998",
+  password: "SuperAdmin@123",
+};

@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { customerPortalApi } from '../../api/customer.api';
-import { toast } from 'react-toastify';
-import { 
-  ArrowLeft, 
-  Calendar, 
-  DollarSign, 
-  Percent, 
+import toast from "react-hot-toast";
+import {
+  ArrowBack as ArrowLeft,
+  CalendarMonth as Calendar,
+  AttachMoney as DollarSign,
+  Percent,
   CheckCircle,
-  Clock,
+  AccessTime as Clock,
   Download,
-  FileText
-} from 'lucide-react';
+  Description as FileText,
+} from "@mui/icons-material";
 
 const LoanApplicationDetail = () => {
   const { id } = useParams();

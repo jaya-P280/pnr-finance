@@ -3,6 +3,7 @@ import logger from "../../config/logger.js";
 import repository from "./initialize.repository.js";
 import {
   DEFAULT_ADMIN,
+  DEFAULT_SUPER_ADMIN,
   DEFAULT_BRANCH,
   DEFAULT_PERMISSIONS,
   DEFAULT_ROLES,
@@ -98,6 +99,33 @@ class InitializeService {
       } else {
         branchId = branch.branch_id;
         logger.info("Head Office exists");
+      }
+
+      // --- Create Default Admin ---
+      logger.info("Checking default super admin...");
+      const existingSuperAdmin = await repository.findAdmin(
+        connection,
+        DEFAULT_SUPER_ADMIN.email,
+      );
+
+      if (!existingSuperAdmin) {
+        const superAdminRoleId = roleMap["SUPER_ADMIN"];
+        const passwordHash = await bcrypt.hash(DEFAULT_SUPER_ADMIN.password, 12);
+
+        await repository.createAdmin(connection, {
+          branch_id: branchId,
+          role_id: superAdminRoleId,
+          employee_code: DEFAULT_SUPER_ADMIN.employee_code,
+          first_name: DEFAULT_SUPER_ADMIN.first_name,
+          last_name: DEFAULT_SUPER_ADMIN.last_name,
+          email: DEFAULT_SUPER_ADMIN.email,
+          phone: DEFAULT_SUPER_ADMIN.phone,
+          password_hash: passwordHash,
+        });
+
+        logger.info("Default Super Admin created (superadmin@pnrgfinance.com)");
+      } else {
+        logger.info("Default Super Admin already exists");
       }
 
       // --- Create Default Admin ---

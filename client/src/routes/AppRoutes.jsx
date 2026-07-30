@@ -26,6 +26,12 @@ import LoanReports from "../pages/reports/LoanReports";
 import CollectionReports from "../pages/reports/CollectionReports";
 import CustomerReports from "../pages/reports/CustomerReports";
 import Settings from "../pages/settings/Settings";
+import CustomerRegistration from "../pages/customer-portal/CustomerRegistration";
+import EKycVerification from "../pages/customer-portal/EKycVerification";
+import MyLoanApplications from "../pages/customer-portal/MyLoanApplications";
+import LoanApplicationDetail from "../pages/customer-portal/LoanApplicationDetail";
+import MyLoans from "../pages/customer-portal/MyLoans";
+import RepaymentSchedule from "../pages/customer-portal/RepaymentSchedule";
 import Register from "../pages/auth/Register";    // ← ADD IMPORT
 
 // Inside <Route element={<PublicRoute />}>:
@@ -62,6 +68,15 @@ export default function AppRoutes() {
           <Route path="/collection-reports" element={<CollectionReports />} />
           <Route path="/customer-reports" element={<CustomerReports />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/customer/dashboard" element={<Dashboard />} />
+          <Route path="/customer/profile" element={<Profile />} />
+          <Route path="/customer/ekyc" element={<EKycVerification />} />
+          <Route path="/customer/applications" element={<MyLoanApplications />} />
+          <Route path="/customer/applications/:id" element={<LoanApplicationDetail />} />
+          <Route path="/customer/apply-loan" element={<CustomerRegistration />} />
+          <Route path="/customer/loans" element={<MyLoans />} />
+          <Route path="/customer/loans/:loanId" element={<RepaymentSchedule />} />
+          <Route path="/customer/loans/:loanId/schedule" element={<RepaymentSchedule />} />
         </Route>
       </Route>
 

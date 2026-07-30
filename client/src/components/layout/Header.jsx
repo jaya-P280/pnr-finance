@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import MenuIcon from "@mui/icons-material/Menu";
 import SettingsIcon from "@mui/icons-material/Settings";
 import LogoutIcon from "@mui/icons-material/Logout";
+import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 import useAuth from "../../hooks/useAuth";
 import toast from "react-hot-toast";
 
@@ -27,6 +28,10 @@ export default function Header({ open, onToggleSidebar }) {
     : "Administrator";
 
   const profileImageUrl = user?.profile_image || user?.profileImage || "";
+  const isCustomer = (user?.role_name || user?.role) === "CUSTOMER";
+  const profilePath = isCustomer ? "/customer/profile" : "/profile";
+  const utilityPath = isCustomer ? "/customer/ekyc" : "/settings";
+  const utilityLabel = isCustomer ? "e-KYC Status" : "Settings";
 
   return (
     <AppBar position="fixed" elevation={0} sx={{
@@ -58,7 +63,7 @@ export default function Header({ open, onToggleSidebar }) {
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
           <Tooltip title="View Profile">
             <Button
-              onClick={() => navigate("/profile")}
+              onClick={() => navigate(profilePath)}
               sx={{
                 textTransform: "none", display: "flex", alignItems: "center", gap: 1,
                 px: 1.5, py: 0.5, borderRadius: 2, color: "#0F172A",
@@ -78,10 +83,10 @@ export default function Header({ open, onToggleSidebar }) {
 
           <Box sx={{ width: 1, height: 24, bgcolor: "#E2E8F0", mx: 0.5 }} />
 
-          <Tooltip title="Settings">
-            <IconButton onClick={() => navigate("/settings")}
+          <Tooltip title={utilityLabel}>
+            <IconButton onClick={() => navigate(utilityPath)}
               sx={{ color: "#64748B", "&:hover": { color: "#0F766E", bgcolor: "#F1F5F9" } }}>
-              <SettingsIcon />
+              {isCustomer ? <VerifiedUserIcon /> : <SettingsIcon />}
             </IconButton>
           </Tooltip>
 

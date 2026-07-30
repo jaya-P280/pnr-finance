@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { customerPortalApi } from '../../api/customer.api';
-import { toast } from 'react-toastify';
-import { 
-  ArrowLeft, 
-  Calendar, 
-  CheckCircle, 
-  XCircle,
-  Clock,
+import toast from "react-hot-toast";
+import {
+  ArrowBack as ArrowLeft,
+  CalendarMonth as Calendar,
+  CheckCircle,
+  Cancel as XCircle,
+  AccessTime as Clock,
   Download,
   CreditCard,
-  AlertCircle
-} from 'lucide-react';
+  WarningAmber as AlertCircle,
+} from "@mui/icons-material";
 
 const RepaymentSchedule = () => {
   const { loanId } = useParams();

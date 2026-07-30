@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { customerPortalApi } from '../../api/customer.api';
-import { toast } from 'react-toastify';
-import { 
-  CreditCard, 
-  Calendar, 
-  CheckCircle, 
-  Clock,
-  DollarSign,
+import toast from "react-hot-toast";
+import {
+  CreditCard,
+  CalendarMonth as Calendar,
+  CheckCircle,
+  AccessTime as Clock,
+  AttachMoney as DollarSign,
   Download,
-  Eye
-} from 'lucide-react';
+  Visibility as Eye,
+} from "@mui/icons-material";
 
 const MyLoans = () => {
   const [loans, setLoans] = useState([]);

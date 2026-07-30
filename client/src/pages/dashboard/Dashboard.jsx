@@ -115,7 +115,7 @@ export default function Dashboard() {
                   <Button
                     color="inherit"
                     size="small"
-                    onClick={() => navigate("/customer-documents")}
+                    onClick={() => navigate("/customer/ekyc")}
                   >
                     Complete eKYC
                   </Button>
