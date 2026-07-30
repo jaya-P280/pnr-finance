@@ -20,8 +20,13 @@ import {
 import { Save as SaveIcon, Edit as EditIcon } from "@mui/icons-material";
 import SectionPage from "../../components/layout/SectionPage";
 import settingsService from "../../services/setting.service";
+import useAuth from "../../hooks/useAuth";
 
 export default function Settings() {
+  const { user } = useAuth();
+  const roleName = user?.role_name || user?.role || "";
+  const canViewSettings = ["SUPER_ADMIN", "ADMIN"].includes(roleName);
+  const canUpdateSettings = roleName === "ADMIN";
   const [isEditing, setIsEditing] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -51,6 +56,7 @@ export default function Settings() {
 // Inside component, after state declarations
 useQuery({
   queryKey: ["companyProfile"],
+  enabled: canViewSettings,
   queryFn: async () => {
     const data = await settingsService.getCompanyProfile();
     if (data) setCompanySettings(data);
@@ -60,6 +66,7 @@ useQuery({
 
 useQuery({
   queryKey: ["systemSettings"],
+  enabled: canViewSettings,
   queryFn: async () => {
     const data = await settingsService.getSystemSettings();
     if (data) setSystemSettings(data);
@@ -88,12 +95,21 @@ const handleSave = async () => {
     setSystemSettings({ ...systemSettings, [field]: value });
   };
 
+  if (!canViewSettings) {
+    return (
+      <SectionPage title="Settings" subtitle="Company settings are managed by an administrator.">
+        <Alert severity="info" sx={{ borderRadius: 2 }}>
+          You do not have permission to view company settings.
+        </Alert>
+      </SectionPage>
+    );
+  }
 
   return (
     <SectionPage
       title="Settings"
       subtitle="Configure company profile, system settings, and operational parameters."
-      actions={
+      actions={canUpdateSettings ? (
         <Button
           variant="contained"
           startIcon={isEditing ? <SaveIcon /> : <EditIcon />}
@@ -108,7 +124,7 @@ const handleSave = async () => {
         >
           {isEditing ? "Save Settings" : "Edit Settings"}
         </Button>
-      }
+      ) : null}
     >
       {saved && (
         <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>
@@ -123,7 +139,7 @@ const handleSave = async () => {
         </Typography>
 
         <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <TextField
               fullWidth
               label="Company Name"
@@ -138,7 +154,7 @@ const handleSave = async () => {
               }}
             />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <TextField
               fullWidth
               label="Registration Number"
@@ -153,7 +169,7 @@ const handleSave = async () => {
               }}
             />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <TextField
               fullWidth
               label="Email"
@@ -169,7 +185,7 @@ const handleSave = async () => {
               }}
             />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <TextField
               fullWidth
               label="Phone Number"
@@ -184,7 +200,7 @@ const handleSave = async () => {
               }}
             />
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={12}>
             <TextField
               fullWidth
               label="Address"
@@ -199,7 +215,7 @@ const handleSave = async () => {
               }}
             />
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <TextField
               fullWidth
               label="City"
@@ -214,7 +230,7 @@ const handleSave = async () => {
               }}
             />
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <TextField
               fullWidth
               label="State"
@@ -229,7 +245,7 @@ const handleSave = async () => {
               }}
             />
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <TextField
               fullWidth
               label="Pincode"
@@ -254,7 +270,7 @@ const handleSave = async () => {
         </Typography>
 
         <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <TextField
               fullWidth
               label="Default Interest Rate"
@@ -262,8 +278,10 @@ const handleSave = async () => {
               value={systemSettings.defaultInterestRate}
               onChange={(e) => handleSystemChange("defaultInterestRate", e.target.value)}
               disabled={!isEditing}
-              InputProps={{
-                endAdornment: <InputAdornment position="end">%</InputAdornment>,
+              slotProps={{
+                input: {
+                  endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                },
               }}
               sx={{
                 "& .MuiOutlinedInput-root": {
@@ -273,7 +291,7 @@ const handleSave = async () => {
               }}
             />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <TextField
               fullWidth
               label="Default Processing Fee"
@@ -281,8 +299,10 @@ const handleSave = async () => {
               value={systemSettings.defaultProcessingFee}
               onChange={(e) => handleSystemChange("defaultProcessingFee", e.target.value)}
               disabled={!isEditing}
-              InputProps={{
-                endAdornment: <InputAdornment position="end">%</InputAdornment>,
+              slotProps={{
+                input: {
+                  endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                },
               }}
               sx={{
                 "& .MuiOutlinedInput-root": {
@@ -292,15 +312,17 @@ const handleSave = async () => {
               }}
             />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <TextField
               fullWidth
               label="Max Loan Amount"
               value={systemSettings.maxLoanAmount}
               onChange={(e) => handleSystemChange("maxLoanAmount", e.target.value)}
               disabled={!isEditing}
-              InputProps={{
+              slotProps={{
+                input: {
                 startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                },
               }}
               sx={{
                 "& .MuiOutlinedInput-root": {
@@ -310,15 +332,17 @@ const handleSave = async () => {
               }}
             />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <TextField
               fullWidth
               label="Min Loan Amount"
               value={systemSettings.minLoanAmount}
               onChange={(e) => handleSystemChange("minLoanAmount", e.target.value)}
               disabled={!isEditing}
-              InputProps={{
+              slotProps={{
+                input: {
                 startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                },
               }}
               sx={{
                 "& .MuiOutlinedInput-root": {
@@ -328,7 +352,7 @@ const handleSave = async () => {
               }}
             />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <FormControl fullWidth disabled={!isEditing}>
               <InputLabel>Default Currency</InputLabel>
               <Select
@@ -347,7 +371,7 @@ const handleSave = async () => {
               </Select>
             </FormControl>
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <FormControl fullWidth disabled={!isEditing}>
               <InputLabel>Financial Year</InputLabel>
               <Select

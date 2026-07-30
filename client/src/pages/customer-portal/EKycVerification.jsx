@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { customerPortalApi } from '../../api/customer.api';
 import { toast } from 'react-toastify';
 import { 
   CheckCircle, 
   Clock, 
-  XCircle, 
   Upload, 
   Smartphone,
   CreditCard,
@@ -31,7 +30,7 @@ const EKycVerification = () => {
       const response = await customerPortalApi.getKycStatus();
       setKycStatus(response.data);
     } catch (error) {
-      // KYC status might not exist yet for new users
+      console.log(error)
       setKycStatus({ aadhaarVerified: false, panVerified: false, digilockerConnected: false });
     } finally {
       setLoading(false);

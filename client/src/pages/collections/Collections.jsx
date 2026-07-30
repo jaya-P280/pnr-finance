@@ -89,8 +89,10 @@ export default function Collections() {
                 },
               },
             }}
-            InputProps={{
-              startAdornment: <SearchIcon sx={{ mr: 1, color: "#94A3B8" }} />,
+            slotProps={{
+              input: {
+                startAdornment: <SearchIcon sx={{ mr: 1, color: "#94A3B8" }} />,
+              },
             }}
           />
           <FormControl sx={{ minWidth: 180 }}>

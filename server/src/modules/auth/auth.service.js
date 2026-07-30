@@ -42,7 +42,7 @@ class AuthService {
     if (existing) throw new ApiError(409, "Email already registered.");
 
     // All SQL queries go to repository — service only coordinates
-    const role = await authRepository.findDefaultFieldOfficerRole();
+    const role = await authRepository.findDefaultCustomerRole();
     if (!role) throw new ApiError(500, "Default role not configured.");
 
     const lastUser = await authRepository.getLastEmployeeCode();

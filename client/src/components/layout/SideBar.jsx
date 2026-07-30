@@ -16,7 +16,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import MenuOpenIcon from "@mui/icons-material/MenuOpen";
 import IconButton from "@mui/material/IconButton";
 
-import logo from "../../assets/logo.webp";
+
 import getFilteredMenu from "../../components/constants/menu";
 import useAuth from "../../hooks/useAuth";
 import { DRAWER_WIDTH } from "../constants/layout.constants";
@@ -98,7 +98,7 @@ export default function Sidebar({ mobile, onClose, open, onToggleSidebar }) {
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <Box component="img" src={logo} sx={{ width: 42, height: 42 }} />
+          {/* <Box component="img" src={logo} sx={{ width: 42, height: 42 }} /> */}
           <Box>
             <Typography variant="h6" fontWeight={700} color="common.white">
               PNRG Finance

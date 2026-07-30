@@ -6,7 +6,6 @@ import MenuIcon from "@mui/icons-material/Menu";
 import SettingsIcon from "@mui/icons-material/Settings";
 import LogoutIcon from "@mui/icons-material/Logout";
 import useAuth from "../../hooks/useAuth";
-import logo from "../../assets/logo.webp";
 import toast from "react-hot-toast";
 
 export default function Header({ open, onToggleSidebar }) {
@@ -46,7 +45,7 @@ export default function Header({ open, onToggleSidebar }) {
           </IconButton>
           {!open && (
             <Box sx={{ display: "flex", alignItems: "center", ml: 2 }}>
-              <Box component="img" src={logo} sx={{ width: 42, height: 42, objectFit: "contain", mr: 2 }} />
+              {/* <Box component="img" src={logo} sx={{ width: 42, height: 42, objectFit: "contain", mr: 2 }} /> */}
               <Box>
                 <Typography variant="h6" fontWeight={700} sx={{ color: "#000000" }}>PNRG Finance</Typography>
                 <Typography variant="caption" sx={{ color: "#000000" }}>Microfinance Management</Typography>

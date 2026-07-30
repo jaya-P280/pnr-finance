@@ -32,18 +32,26 @@ export function AuthProvider({ children }) {
   };
 
   // Callbacks for axios interceptors
-  const getToken = useCallback(() => accessToken, [accessToken]);
-  const getRefreshToken = useCallback(() => refreshToken, [refreshToken]);
+  const getToken = useCallback(
+    () => accessToken || window.__AUTH_ACCESS_TOKEN__ || null,
+    [accessToken],
+  );
+  const getRefreshToken = useCallback(
+    () => refreshToken || window.__AUTH_REFRESH_TOKEN__ || null,
+    [refreshToken],
+  );
 
   const onTokenRefresh = useCallback((newAccessToken, newRefreshToken) => {
-    if (newAccessToken && newRefreshToken) {
+    if (newAccessToken) {
       setToken(newAccessToken);
-      setRefreshToken(newRefreshToken);
-      syncTokensWithWindow(newAccessToken, newRefreshToken);
+      if (newRefreshToken) {
+        setRefreshToken(newRefreshToken);
+      }
+      syncTokensWithWindow(newAccessToken, newRefreshToken || refreshToken);
     } else {
       clearSession();
     }
-  }, [syncTokensWithWindow]);
+  }, [refreshToken, syncTokensWithWindow]);
 
   // Setup axios interceptors with callbacks
   useEffect(() => {
@@ -69,28 +77,17 @@ export function AuthProvider({ children }) {
   };
 
   const initializeSession = async () => {
-    // Only attempt refresh if we have a refresh token in state
-    const hasRefreshToken = !!refreshToken;
-    
-    if (!hasRefreshToken) {
-      setLoading(false);
-      return;
-    }
-
     setLoading(true);
 
     try {
       const refreshed = await authService.refresh();
       if (!refreshed?.accessToken) {
         clearSession();
-        setLoading(false);
         return;
       }
-      if (refreshed?.accessToken) {
-        setToken(refreshed.accessToken);
-        setRefreshToken(refreshed.refreshToken);
-        syncTokensWithWindow(refreshed.accessToken, refreshed.refreshToken);
-      }
+      setToken(refreshed.accessToken);
+      if (refreshed.refreshToken) setRefreshToken(refreshed.refreshToken);
+      syncTokensWithWindow(refreshed.accessToken, refreshed.refreshToken);
 
       const profile = await authService.getProfile();
       setUser(profile);
@@ -102,10 +99,8 @@ export function AuthProvider({ children }) {
   };
 
   useEffect(() => {
-    // Only run once on mount, not on every render
-    if (loading && !accessToken && refreshToken) {
-      initializeSession();
-    }
+    // The server's HttpOnly refresh-token cookie survives page reloads.
+    initializeSession();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

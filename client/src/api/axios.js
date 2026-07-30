@@ -44,13 +44,13 @@ api.interceptors.response.use(
 
       try {
         const refreshToken = getRefreshTokenCallback ? getRefreshTokenCallback() : null;
-        if (!refreshToken) {
-          throw new Error("No refresh token");
-        }
 
         const response = await axios.post(
           `${import.meta.env.VITE_API_BASE_URL}/auth/refresh`,
-          { refreshToken },
+          // The refresh token is normally in an HttpOnly cookie. Sending the
+          // in-memory token as a fallback preserves compatibility with older
+          // sessions without exposing the cookie to JavaScript.
+          refreshToken ? { refreshToken } : {},
           { withCredentials: true }
         );
 

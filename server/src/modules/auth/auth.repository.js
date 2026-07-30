@@ -123,12 +123,13 @@ class AuthRepository {
 
     return rows.map((row) => row.permission_name);
   }
-  async findDefaultFieldOfficerRole() {
-    const [rows] = await pool.execute(
-      `SELECT role_id FROM roles WHERE role_name = 'FIELD_OFFICER' LIMIT 1`,
-    );
-    return rows[0] || null;
-  }
+
+async findDefaultCustomerRole() {
+  const [rows] = await pool.execute(
+    `SELECT role_id FROM roles WHERE role_name = 'CUSTOMER' LIMIT 1`,
+  );
+  return rows[0] || null;
+}
 
   async getLastEmployeeCode() {
     const [rows] = await pool.execute(

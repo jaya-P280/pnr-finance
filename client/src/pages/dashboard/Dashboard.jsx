@@ -28,7 +28,6 @@ import {
   CheckCircle as CheckIcon,
   AccountBalanceWallet as LoanIcon,
   CalendarMonth as EmiIcon,
-  Settings as SettingsIcon,
 } from "@mui/icons-material";
 import DashboardCard from "./DashboardCard";
 import dashboardService from "../../services/dashboard.service";
@@ -108,7 +107,7 @@ export default function Dashboard() {
         <Grid container spacing={3} sx={{ mb: 4 }}>
           {/* eKYC Status Alert */}
           {myData?.ekycStatus !== "COMPLETED" && (
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Alert
                 severity="warning"
                 icon={<WarningIcon />}
@@ -132,7 +131,7 @@ export default function Dashboard() {
 
           {/* My Loans Summary */}
           {myData?.loans?.length > 0 && (
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Card
                 elevation={0}
                 sx={{ border: "1px solid #E2E8F0", borderRadius: 3 }}
@@ -195,7 +194,7 @@ export default function Dashboard() {
 
           {/* EMI Schedule */}
           {myData?.emiSchedule?.length > 0 && (
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Card
                 elevation={0}
                 sx={{ border: "1px solid #E2E8F0", borderRadius: 3 }}
@@ -236,18 +235,17 @@ export default function Dashboard() {
           )}
 
           {/* Settings Shortcut */}
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Button
               variant="outlined"
-              startIcon={<SettingsIcon />}
-              onClick={() => navigate("/settings")}
+              onClick={() => navigate("/profile")}
               sx={{ borderColor: "#E2E8F0", color: "#0F172A", borderRadius: 2 }}
             >
-              My Settings
+              My Profile
             </Button>
           </Grid>
 
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Divider sx={{ my: 2 }} />
           </Grid>
         </Grid>
@@ -259,9 +257,9 @@ export default function Dashboard() {
           <CircularProgress />
         </Box>
       ) : (
-        <Grid container spacing={3} alignItems="stretch">
+        <Grid container spacing={3} sx={{ alignItems: "stretch" }}>
           {cards.map((card) => (
-            <Grid item xs={12} sm={6} lg={3} key={card.title}>
+            <Grid size={{ xs: 12, sm: 6, lg: 3 }} key={card.title}>
               <DashboardCard
                 title={card.title}
                 value={card.value}
@@ -271,7 +269,7 @@ export default function Dashboard() {
             </Grid>
           ))}
 
-          <Grid item xs={12} md={8}>
+          <Grid size={{ xs: 12, md: 8 }}>
             <Card sx={{ minHeight: 340 }}>
               <CardContent>
                 <Typography
@@ -317,7 +315,7 @@ export default function Dashboard() {
             </Card>
           </Grid>
 
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Card sx={{ minHeight: 340 }}>
               <CardContent>
                 <Typography
@@ -364,7 +362,7 @@ export default function Dashboard() {
 
           {/* Quick Actions (admin only) */}
           {isAdmin && (
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Card>
                 <CardContent>
                   <Typography
