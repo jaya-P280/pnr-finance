@@ -85,6 +85,8 @@ class LoanApplicationService {
 
         customerId: data.customerId,
 
+        branchId: customer.branch_id,
+
         groupId: data.groupId || null,
 
         loanProductId: data.loanProductId,
@@ -130,6 +132,8 @@ class LoanApplicationService {
       search: query.search?.trim() || null,
 
       customerId: query.customerId || null,
+
+      branchId: query.branchId || null,
 
       groupId: query.groupId || null,
 

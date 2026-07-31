@@ -4,7 +4,7 @@ const ENDPOINTS = {
   AUTH: {
     LOGIN: "/auth/login",
     LOGOUT: "/auth/logout",
-    REGISTER:"/auth/register",
+    REGISTER: "/auth/register",
     REFRESH: "/auth/refresh",
     PROFILE: "/auth/me",
   },
@@ -14,10 +14,12 @@ const ENDPOINTS = {
   USERS: "/users",
 
   ROLES: "/roles",
+  PERMISSIONS: "/permissions",
 
   BRANCHES: "/branches",
 
   CUSTOMERS: "/customers",
+  CUSTOMER_PORTAL: "/customer",
 
   GROUPS: "/groups",
 

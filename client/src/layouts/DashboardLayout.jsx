@@ -1,31 +1,23 @@
 import { Box, useMediaQuery } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-import { Outlet, useLocation } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { Outlet } from "react-router-dom";
+import { useState } from "react";
 
 import Header from "../components/layout/Header";
 import Sidebar from "../components/layout/Sidebar";
-
-
 export default function DashboardLayout() {
   const theme = useTheme();
-
   const mobile = useMediaQuery(theme.breakpoints.down("lg"));
-  const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(!mobile);
-
-  useEffect(() => {
-    setSidebarOpen(!mobile);
-  }, [mobile]);
-
-  useEffect(() => {
-    if (mobile) {
-      setSidebarOpen(false);
-    }
-  }, [location.pathname, mobile]);
+  const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const sidebarOpen = mobile ? mobileSidebarOpen : desktopSidebarOpen;
 
   const handleToggleSidebar = () => {
-    setSidebarOpen((prev) => !prev);
+    if (mobile) {
+      setMobileSidebarOpen((prev) => !prev);
+      return;
+    }
+    setDesktopSidebarOpen((prev) => !prev);
   };
 
   return (
@@ -41,7 +33,7 @@ export default function DashboardLayout() {
       <Sidebar
         mobile={mobile}
         open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
+        onClose={() => setMobileSidebarOpen(false)}
         onToggleSidebar={handleToggleSidebar}
       />
 

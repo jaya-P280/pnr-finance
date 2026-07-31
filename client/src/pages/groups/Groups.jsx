@@ -62,7 +62,7 @@ const groups = groupsData?.groups || [];
       title="Group Management"
       subtitle="Manage microfinance groups, members, and group-level activities."
       actions={
-        <Stack direction="row" spacing={2} flexWrap="wrap">
+        <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap" }}>
           <TextField
             size="small"
             placeholder="Search groups..."

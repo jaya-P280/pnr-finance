@@ -260,16 +260,22 @@ class InitializeRepository {
         product_code VARCHAR(20) NOT NULL UNIQUE,
         product_name VARCHAR(200) NOT NULL,
         description TEXT,
-        min_amount DECIMAL(15,2) NOT NULL,
-        max_amount DECIMAL(15,2) NOT NULL,
-        min_tenure INT NOT NULL,
-        max_tenure INT NOT NULL,
+        product_type VARCHAR(50) DEFAULT 'TERM_LOAN',
+        interest_type VARCHAR(50) DEFAULT 'REDUCING',
+        minimum_amount DECIMAL(15,2) NOT NULL,
+        maximum_amount DECIMAL(15,2) NOT NULL,
+        minimum_tenure INT NOT NULL,
+        maximum_tenure INT NOT NULL,
         interest_rate DECIMAL(5,2) NOT NULL,
         processing_fee_type ENUM('FLAT','PERCENTAGE') DEFAULT 'PERCENTAGE',
-        processing_fee_value DECIMAL(5,2) DEFAULT 0,
-        penalty_rate DECIMAL(5,2) DEFAULT 0,
+        processing_fee DECIMAL(15,2) DEFAULT 0,
+        insurance_fee_type ENUM('FLAT','PERCENTAGE') DEFAULT 'PERCENTAGE',
+        insurance_fee DECIMAL(15,2) DEFAULT 0,
+        penalty DECIMAL(15,2) DEFAULT 0,
         penalty_type ENUM('FLAT','PERCENTAGE') DEFAULT 'PERCENTAGE',
         recovery_frequency ENUM('DAILY','WEEKLY','BI_WEEKLY','MONTHLY') DEFAULT 'MONTHLY',
+        holiday_excluded TINYINT(1) DEFAULT 0,
+        include_gst TINYINT(1) DEFAULT 0,
         status ENUM('ACTIVE','INACTIVE') DEFAULT 'ACTIVE',
         created_by INT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -289,15 +295,18 @@ class InitializeRepository {
         requested_amount DECIMAL(15,2) NOT NULL,
         approved_amount DECIMAL(15,2),
         tenure INT NOT NULL,
+        interest_rate DECIMAL(5,2) NOT NULL DEFAULT 0,
         recovery_frequency ENUM('DAILY','WEEKLY','BI_WEEKLY','MONTHLY') DEFAULT 'MONTHLY',
         purpose TEXT,
-        application_status ENUM('DRAFT','PENDING','VERIFIED','APPROVED','REJECTED','DISBURSED') DEFAULT 'PENDING',
+        remarks TEXT,
+        application_status ENUM('DRAFT','PENDING','UNDER_REVIEW','VERIFIED','APPROVED','REJECTED','DISBURSED') DEFAULT 'PENDING',
         verified_by INT,
         verified_at TIMESTAMP NULL,
         approved_by INT,
         approved_at TIMESTAMP NULL,
         rejection_reason TEXT,
-        created_by INT,
+        applied_by INT,
+        applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         deleted_at TIMESTAMP NULL,
@@ -307,7 +316,7 @@ class InitializeRepository {
         FOREIGN KEY (loan_product_id) REFERENCES loan_products(loan_product_id),
         FOREIGN KEY (verified_by) REFERENCES users(user_id),
         FOREIGN KEY (approved_by) REFERENCES users(user_id),
-        FOREIGN KEY (created_by) REFERENCES users(user_id)
+        FOREIGN KEY (applied_by) REFERENCES users(user_id)
       )`,
 
       // --- LOAN GUARANTORS ---
@@ -421,8 +430,32 @@ class InitializeRepository {
     for (const sql of queries) {
       await connection.execute(sql);
     }
+    await this.reconcileLegacySchema(connection);
     console.log("✓ All tables created/verified");
   }
+  async reconcileLegacySchema(connection) {
+    const upgrades = [
+      ["loan_products", "product_type VARCHAR(50) DEFAULT 'TERM_LOAN'"], ["loan_products", "interest_type VARCHAR(50) DEFAULT 'REDUCING'"],
+      ["loan_products", "minimum_amount DECIMAL(15,2) NULL"], ["loan_products", "maximum_amount DECIMAL(15,2) NULL"],
+      ["loan_products", "minimum_tenure INT NULL"], ["loan_products", "maximum_tenure INT NULL"],
+      ["loan_products", "processing_fee DECIMAL(15,2) DEFAULT 0"], ["loan_products", "insurance_fee_type VARCHAR(20) DEFAULT 'PERCENTAGE'"],
+      ["loan_products", "insurance_fee DECIMAL(15,2) DEFAULT 0"], ["loan_products", "penalty DECIMAL(15,2) DEFAULT 0"],
+      ["loan_products", "holiday_excluded TINYINT(1) DEFAULT 0"], ["loan_products", "include_gst TINYINT(1) DEFAULT 0"],
+      ["loan_applications", "interest_rate DECIMAL(5,2) NOT NULL DEFAULT 0"], ["loan_applications", "applied_by INT NULL"],
+      ["loan_applications", "applied_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP"], ["loan_applications", "remarks TEXT NULL"],
+    ];
+    for (const [table, definition] of upgrades) {
+      const column = definition.split(" ")[0];
+      const [rows] = await connection.query(`SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`, [table, column]);
+      if (!rows.length) await connection.query(`ALTER TABLE ${table} ADD COLUMN ${definition}`);
+    }
+    await connection.query(`ALTER TABLE loan_applications MODIFY COLUMN application_status ENUM('DRAFT','PENDING','UNDER_REVIEW','VERIFIED','APPROVED','REJECTED','DISBURSED') DEFAULT 'PENDING'`);
+    const [legacyColumns] = await connection.query(`SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'loan_products' AND COLUMN_NAME IN ('min_amount', 'max_amount', 'min_tenure', 'max_tenure')`);
+    if (legacyColumns.length === 4) {
+      await connection.query(`UPDATE loan_products SET minimum_amount = COALESCE(minimum_amount, min_amount), maximum_amount = COALESCE(maximum_amount, max_amount), minimum_tenure = COALESCE(minimum_tenure, min_tenure), maximum_tenure = COALESCE(maximum_tenure, max_tenure)`);
+    }
+  }
+
   async findRoleByName(connection, roleName) {
     const [rows] = await connection.execute(
       `
@@ -515,6 +548,17 @@ class InitializeRepository {
             `,
       [roleId, permissionId],
     );
+  }
+
+  async replaceRolePermissions(connection, roleId, permissionIds) {
+    await connection.execute(
+      `DELETE FROM role_permissions WHERE role_id = ?`,
+      [roleId],
+    );
+
+    for (const permissionId of permissionIds) {
+      await this.assignPermission(connection, roleId, permissionId);
+    }
   }
 
   async findBranch(connection, branchCode) {

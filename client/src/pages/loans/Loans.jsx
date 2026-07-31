@@ -28,6 +28,7 @@ import SectionPage from "../../components/layout/SectionPage";
 import branchService from "../../services/branch.service";
 import loanApplicationService from "../../services/loanApplication.service";
 import loanService from "../../services/loan.service";
+import useAuth from "../../hooks/useAuth";
 
 const emptyForm = {
   applicationId: "",
@@ -54,6 +55,8 @@ const getErrorMessage = (error, fallback) =>
   error?.response?.data?.message || error?.message || fallback;
 
 export default function Loans() {
+  const { user } = useAuth();
+  const canManageLoans = (user?.role_name || user?.role) === "ADMIN";
   const [search, setSearch] = useState("");
   const [dialog, setDialog] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -266,9 +269,9 @@ export default function Loans() {
           >
             Search
           </Button>
-          <Button variant="contained" onClick={openCreate}>
+          {canManageLoans && <Button variant="contained" onClick={openCreate}>
             Disburse Loan
-          </Button>
+          </Button>}
         </Stack>
       }
     >
@@ -329,12 +332,12 @@ export default function Loans() {
                         spacing={1}
                         sx={{ flexWrap: "wrap" }}
                       >
-                        {loan.status === "ACTIVE" && (
+                        {canManageLoans && loan.status === "ACTIVE" && (
                           <Button size="small" onClick={() => openEdit(loan)}>
                             Edit
                           </Button>
                         )}
-                        {loan.status === "ACTIVE" && (
+                        {canManageLoans && loan.status === "ACTIVE" && (
                           <Button
                             size="small"
                             color="success"
@@ -343,7 +346,7 @@ export default function Loans() {
                             Close
                           </Button>
                         )}
-                        {loan.status === "ACTIVE" && (
+                        {canManageLoans && loan.status === "ACTIVE" && (
                           <Button
                             size="small"
                             onClick={() => forecloseLoan.mutate(loan.loan_id)}
@@ -351,7 +354,7 @@ export default function Loans() {
                             Foreclose
                           </Button>
                         )}
-                        {loan.status === "ACTIVE" && (
+                        {canManageLoans && loan.status === "ACTIVE" && (
                           <Button
                             size="small"
                             color="error"

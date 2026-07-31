@@ -31,6 +31,7 @@ class LoanApplicationRepository {
       `
       SELECT
         customer_id,
+        branch_id,
         status
       FROM customers
       WHERE customer_id = ?
@@ -90,6 +91,7 @@ class LoanApplicationRepository {
         application_number,
         customer_id,
         group_id,
+        branch_id,
         loan_product_id,
         requested_amount,
         approved_amount,
@@ -102,7 +104,7 @@ class LoanApplicationRepository {
       )
       VALUES
       (
-        ?,?,?,?,?,?,
+        ?,?,?,?,?,?,?
         ?,?,?,?,?,?
       )
       `,
@@ -110,6 +112,7 @@ class LoanApplicationRepository {
         application.applicationNumber,
         application.customerId,
         application.groupId,
+        application.branchId,
         application.loanProductId,
         application.requestedAmount,
         application.approvedAmount,
@@ -185,6 +188,11 @@ class LoanApplicationRepository {
     if (filters.customerId) {
       sql += ` AND la.customer_id = ?`;
       params.push(filters.customerId);
+    }
+
+    if (filters.branchId) {
+      sql += ` AND c.branch_id = ?`;
+      params.push(filters.branchId);
     }
 
     if (filters.groupId) {
@@ -265,6 +273,11 @@ class LoanApplicationRepository {
     if (filters.customerId) {
       sql += ` AND la.customer_id = ?`;
       params.push(filters.customerId);
+    }
+
+    if (filters.branchId) {
+      sql += ` AND c.branch_id = ?`;
+      params.push(filters.branchId);
     }
 
     if (filters.groupId) {

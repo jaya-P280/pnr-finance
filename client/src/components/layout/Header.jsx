@@ -20,11 +20,13 @@ export default function Header({ open, onToggleSidebar }) {
   };
 
   const initials =
-    user?.first_name?.[0]?.toUpperCase() ||
+    user?.firstName?.[0]?.toUpperCase() || user?.first_name?.[0]?.toUpperCase() ||
     user?.email?.[0]?.toUpperCase() || "A";
 
-  const fullName = user?.first_name
-    ? `${user.first_name} ${user.last_name || ""}`
+  const firstName = user?.firstName || user?.first_name;
+  const lastName = user?.lastName || user?.last_name;
+  const fullName = firstName
+    ? `${firstName} ${lastName || ""}`.trim()
     : "Administrator";
 
   const profileImageUrl = user?.profile_image || user?.profileImage || "";
@@ -67,6 +69,7 @@ export default function Header({ open, onToggleSidebar }) {
               sx={{
                 textTransform: "none", display: "flex", alignItems: "center", gap: 1,
                 px: 1.5, py: 0.5, borderRadius: 2, color: "#0F172A",
+                minWidth: 0, whiteSpace: "nowrap",
                 "&:hover": { bgcolor: "#F1F5F9" },
               }}
             >
@@ -74,9 +77,9 @@ export default function Header({ open, onToggleSidebar }) {
                 sx={{ bgcolor: "#0F766E", width: 34, height: 34, fontSize: 14, fontWeight: 700 }}>
                 {initials}
               </Avatar>
-              <Box sx={{ textAlign: "left", lineHeight: 1.2 }}>
-                <Typography fontSize={13} fontWeight={600}>{fullName}</Typography>
-                <Typography fontSize={11} color="#64748B">{user?.role_name || user?.role || "User"}</Typography>
+              <Box sx={{ textAlign: "left", lineHeight: 1.2, minWidth: 0 }}>
+                <Typography fontSize={13} fontWeight={600} noWrap>{fullName}</Typography>
+                <Typography fontSize={11} color="#64748B" noWrap>{user?.role_name || user?.role || "User"}</Typography>
               </Box>
             </Button>
           </Tooltip>

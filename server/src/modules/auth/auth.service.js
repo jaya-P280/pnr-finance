@@ -74,6 +74,12 @@ class AuthService {
     };
   }
 
+  async updateProfile(userId, data) {
+    const user = await authRepository.updateOwnProfile(userId, data);
+    if (!user) throw new ApiError(404, "User not found.");
+    return user;
+  }
+
   async refresh(refreshToken) {
     const payload = tokenService.verifyRefreshToken(refreshToken);
     const hash = tokenService.hashRefreshToken(refreshToken);

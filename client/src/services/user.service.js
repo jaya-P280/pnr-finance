@@ -20,18 +20,12 @@ class UserService {
   }
 
   async update(id, payload) {
-    console.log(payload,id)
     const { data } = await userApi.updateUser(id, payload);
     return data;
   }
 
   async updateStatus(id, payload) {
     const { data } = await userApi.updateUserStatus(id, payload);
-    return data;
-  }
-
-  async uploadProfileImage(id, file) {
-    const { data } = await userApi.uploadProfileImage(id, file);
     return data;
   }
 

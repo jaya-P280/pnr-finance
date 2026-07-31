@@ -13,3 +13,9 @@ export const registerValidation = [
   body("mobileNumber").optional().trim(),
   body("branchId").optional().isInt({ min: 1 }),
 ];
+
+export const updateProfileValidation = [
+  body("firstName").trim().notEmpty().withMessage("First name is required.").isLength({ max: 100 }),
+  body("lastName").optional({ nullable: true }).trim().isLength({ max: 100 }),
+  body("mobileNumber").optional({ nullable: true }).trim().isMobilePhone("en-IN"),
+];

@@ -25,7 +25,7 @@ class RoleRepository {
         r.role_id,
         r.role_name,
         r.role_description,
-        r.is_active,
+        (r.status = 'ACTIVE') AS is_active,
         r.created_at,
         COUNT(rp.permission_id) AS permission_count
       FROM roles r
@@ -49,8 +49,8 @@ class RoleRepository {
     }
 
     if (filters.status !== null && filters.status !== undefined) {
-      sql += ` AND r.is_active = ?`;
-      params.push(filters.status);
+      sql += ` AND r.status = ?`;
+      params.push(filters.status ? "ACTIVE" : "INACTIVE");
     }
 
     sql += `
@@ -95,8 +95,8 @@ class RoleRepository {
     }
 
     if (filters.status !== null && filters.status !== undefined) {
-      sql += ` AND is_active = ?`;
-      params.push(filters.status);
+      sql += ` AND status = ?`;
+      params.push(filters.status ? "ACTIVE" : "INACTIVE");
     }
 
     const [rows] = await db.execute(sql, params);
@@ -112,7 +112,7 @@ class RoleRepository {
         role_id,
         role_name,
         role_description,
-        is_active,
+        (status = 'ACTIVE') AS is_active,
         created_at,
         updated_at
       FROM roles
@@ -148,7 +148,7 @@ class RoleRepository {
       (
         role_name,
         role_description,
-        is_active
+        status
       )
       VALUES
       (
@@ -158,7 +158,7 @@ class RoleRepository {
       [
         role.roleName,
         role.roleDescription,
-        role.isActive,
+        role.isActive ? "ACTIVE" : "INACTIVE",
       ]
     );
 
@@ -172,13 +172,13 @@ class RoleRepository {
       SET
         role_name = ?,
         role_description = ?,
-        is_active = ?
+        status = ?
       WHERE role_id = ?
       `,
       [
         role.roleName,
         role.roleDescription,
-        role.isActive,
+        role.isActive ? "ACTIVE" : "INACTIVE",
         role.roleId
       ]
     );
@@ -195,11 +195,11 @@ class RoleRepository {
       `
       UPDATE roles
       SET
-        is_active = ?
+        status = ?
       WHERE role_id = ?
       `,
       [
-        isActive,
+        isActive ? "ACTIVE" : "INACTIVE",
         roleId
       ]
     );

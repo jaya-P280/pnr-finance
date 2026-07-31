@@ -10,9 +10,6 @@ import {
   Stack,
   Typography,
   CircularProgress,
-  Alert,
-  Chip,
-  Divider,
 } from "@mui/material";
 import {
   BarChart,
@@ -23,15 +20,10 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import {
-  WarningAmber as WarningIcon,
-  CheckCircle as CheckIcon,
-  AccountBalanceWallet as LoanIcon,
-  CalendarMonth as EmiIcon,
-} from "@mui/icons-material";
 import DashboardCard from "./DashboardCard";
 import dashboardService from "../../services/dashboard.service";
 import useAuth from "../../hooks/useAuth";
+import CustomerDashboard from "../customer-portal/CustomerDashboard";
 
 const quickActions = [
   { title: "Add Customer", path: "/customers" },
@@ -44,19 +36,14 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const roleName = user?.role_name || user?.role || "";
+  const isCustomer = roleName === "CUSTOMER";
 
   // Fetch org stats
   const { data: stats, isLoading } = useQuery({
     queryKey: ["dashboardStats"],
     queryFn: () => dashboardService.getStats(),
     refetchInterval: 30000,
-  });
-
-  // Fetch personal user data (loans, eKYC status)
-  const { data: myData } = useQuery({
-    queryKey: ["myDashboard"],
-    queryFn: () => dashboardService.getMyData(),
-    enabled: !!user?.user_id,
+    enabled: !isCustomer,
   });
 
   const cards = useMemo(
@@ -89,6 +76,10 @@ export default function Dashboard() {
 
   const isAdmin = ["SUPER_ADMIN", "ADMIN"].includes(roleName);
 
+  if (isCustomer) {
+    return <CustomerDashboard />;
+  }
+
   return (
     <>
       <Box sx={{ mb: 3 }}>
@@ -102,151 +93,11 @@ export default function Dashboard() {
         </Typography>
       </Box>
 
-      {/* ─── PERSONAL SECTION (for non-admin users) ─── */}
+      {/* ─── PERSONAL SECTION (for non-admin employees) ─── */}
       {!isAdmin && (
         <Grid container spacing={3} sx={{ mb: 4 }}>
-          {/* eKYC Status Alert */}
-          {myData?.ekycStatus !== "COMPLETED" && (
-            <Grid size={12}>
-              <Alert
-                severity="warning"
-                icon={<WarningIcon />}
-                action={
-                  <Button
-                    color="inherit"
-                    size="small"
-                    onClick={() => navigate("/customer/ekyc")}
-                  >
-                    Complete eKYC
-                  </Button>
-                }
-                sx={{ borderRadius: 2 }}
-              >
-                Your eKYC is {myData?.ekycStatus || "not completed"}. Please
-                complete your KYC verification to proceed with loan
-                applications.
-              </Alert>
-            </Grid>
-          )}
-
-          {/* My Loans Summary */}
-          {myData?.loans?.length > 0 && (
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Card
-                elevation={0}
-                sx={{ border: "1px solid #E2E8F0", borderRadius: 3 }}
-              >
-                <CardContent>
-                  <Stack direction="row" alignItems="center" gap={1} mb={2}>
-                    <LoanIcon color="primary" />
-                    <Typography variant="h6" fontWeight={700}>
-                      My Loans
-                    </Typography>
-                  </Stack>
-                  {myData.loans.map((loan) => (
-                    <Box
-                      key={loan.loan_id}
-                      sx={{
-                        p: 1.5,
-                        mb: 1,
-                        bgcolor: "#F8FAFC",
-                        borderRadius: 2,
-                        border: "1px solid #E2E8F0",
-                      }}
-                    >
-                      <Stack
-                        direction="row"
-                        justifyContent="space-between"
-                        alignItems="center"
-                      >
-                        <Box>
-                          <Typography variant="body2" fontWeight={600}>
-                            {loan.loan_number}
-                          </Typography>
-                          <Typography variant="caption" color="#64748B">
-                            Principal: ₹
-                            {Number(loan.principal_amount).toLocaleString()}
-                          </Typography>
-                        </Box>
-                        <Chip
-                          label={loan.status}
-                          size="small"
-                          color={
-                            loan.status === "ACTIVE" ? "success" : "default"
-                          }
-                        />
-                      </Stack>
-                      <Typography
-                        variant="body2"
-                        fontWeight={600}
-                        color="#0F766E"
-                        mt={0.5}
-                      >
-                        Outstanding: ₹
-                        {Number(loan.outstanding_amount).toLocaleString()}
-                      </Typography>
-                    </Box>
-                  ))}
-                </CardContent>
-              </Card>
-            </Grid>
-          )}
-
-          {/* EMI Schedule */}
-          {myData?.emiSchedule?.length > 0 && (
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Card
-                elevation={0}
-                sx={{ border: "1px solid #E2E8F0", borderRadius: 3 }}
-              >
-                <CardContent>
-                  <Stack direction="row" alignItems="center" gap={1} mb={2}>
-                    <EmiIcon color="primary" />
-                    <Typography variant="h6" fontWeight={700}>
-                      Upcoming EMIs
-                    </Typography>
-                  </Stack>
-                  {myData.emiSchedule.slice(0, 5).map((emi) => (
-                    <Box
-                      key={emi.id}
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        py: 1,
-                        borderBottom: "1px solid #F1F5F9",
-                      }}
-                    >
-                      <Typography variant="body2" color="#64748B">
-                        {emi.due_date}
-                      </Typography>
-                      <Typography variant="body2" fontWeight={600}>
-                        ₹{Number(emi.amount).toLocaleString()}
-                      </Typography>
-                      <Chip
-                        label={emi.status}
-                        size="small"
-                        color={emi.status === "PAID" ? "success" : "warning"}
-                      />
-                    </Box>
-                  ))}
-                </CardContent>
-              </Card>
-            </Grid>
-          )}
-
-          {/* Settings Shortcut */}
           <Grid size={12}>
-            <Button
-              variant="outlined"
-              onClick={() => navigate("/profile")}
-              sx={{ borderColor: "#E2E8F0", color: "#0F172A", borderRadius: 2 }}
-            >
-              My Profile
-            </Button>
-          </Grid>
-
-          <Grid size={12}>
-            <Divider sx={{ my: 2 }} />
+            <Typography color="#64748B">Use the sidebar to access your assigned work.</Typography>
           </Grid>
         </Grid>
       )}
@@ -373,7 +224,7 @@ export default function Dashboard() {
                   >
                     Quick Actions
                   </Typography>
-                  <Stack direction="row" spacing={2} flexWrap="wrap">
+                  <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap" }}>
                     {quickActions.map((action) => (
                       <Button
                         key={action.title}

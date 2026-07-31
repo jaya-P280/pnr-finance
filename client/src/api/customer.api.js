@@ -1,46 +1,75 @@
 import api from "./axios";
 import ENDPOINTS from "./endpoint";
 
-// Admin/Employee endpoints for managing all customers
-export const getCustomers = (params) => api.get(ENDPOINTS.CUSTOMERS, { params });
-export const getCustomer = (id) => api.get(`${ENDPOINTS.CUSTOMERS}/${id}`);
-export const createCustomer = (data) => api.post(ENDPOINTS.CUSTOMERS, data);
-export const updateCustomer = (id, data) => api.put(`${ENDPOINTS.CUSTOMERS}/${id}`, data);
+export const getCustomers = (params) =>
+  api.get(ENDPOINTS.CUSTOMERS, { params });
+export const getCustomer = (id) =>
+  api.get(`${ENDPOINTS.CUSTOMERS}/${id}`);
+export const createCustomer = (data) =>
+  api.post(ENDPOINTS.CUSTOMERS, data);
+export const updateCustomer = (id, data) =>
+  api.put(`${ENDPOINTS.CUSTOMERS}/${id}`, data);
 export const updateCustomerStatus = (id, data) =>
   api.patch(`${ENDPOINTS.CUSTOMERS}/${id}/status`, data);
-export const deleteCustomer = (id) => api.delete(`${ENDPOINTS.CUSTOMERS}/${id}`);
+export const deleteCustomer = (id) =>
+  api.delete(`${ENDPOINTS.CUSTOMERS}/${id}`);
 
-// Customer portal endpoints (for normal users to manage their own account)
+export const uploadCustomerKyc = (id, data) =>
+  api.post(`${ENDPOINTS.CUSTOMERS}/${id}/kyc`, data);
+export const verifyCustomerKyc = (id, data) =>
+  api.patch(`${ENDPOINTS.CUSTOMERS}/${id}/kyc/verify`, data);
+export const rejectCustomerKyc = (id, data) =>
+  api.patch(`${ENDPOINTS.CUSTOMERS}/${id}/kyc/reject`, data);
+export const getKycQueue = (params) =>
+  api.get(`${ENDPOINTS.CUSTOMERS}/kyc/queue`, { params });
+
+export const addFamilyMember = (customerId, data) =>
+  api.post(`${ENDPOINTS.CUSTOMERS}/${customerId}/family`, data);
+export const getFamilyMembers = (customerId) =>
+  api.get(`${ENDPOINTS.CUSTOMERS}/${customerId}/family`);
+export const updateFamilyMember = (familyId, data) =>
+  api.put(`${ENDPOINTS.CUSTOMERS}/family/${familyId}`, data);
+export const deleteFamilyMember = (familyId) =>
+  api.delete(`${ENDPOINTS.CUSTOMERS}/family/${familyId}`);
+
+export const addNominee = (customerId, data) =>
+  api.post(`${ENDPOINTS.CUSTOMERS}/${customerId}/nominees`, data);
+export const getNominees = (customerId) =>
+  api.get(`${ENDPOINTS.CUSTOMERS}/${customerId}/nominees`);
+export const updateNominee = (nomineeId, data) =>
+  api.put(`${ENDPOINTS.CUSTOMERS}/nominees/${nomineeId}`, data);
+export const deleteNominee = (nomineeId) =>
+  api.delete(`${ENDPOINTS.CUSTOMERS}/nominees/${nomineeId}`);
+
+export const getCustomerProfile = (customerId) =>
+  api.get(`${ENDPOINTS.CUSTOMERS}/${customerId}/profile`);
+
+const customerPortal = ENDPOINTS.CUSTOMER_PORTAL;
+
 export const customerPortalApi = {
-  // Profile Management
-  getMyProfile: () => api.get('/customer/profile'),
-  updateMyProfile: (data) => api.put('/customer/profile', data),
-  
-  // Loan Products
-  getLoanProducts: () => api.get('/loan-products'),
-  
-  // Loan Applications
-  applyForLoan: (data) => api.post('/loans/apply', data),
-  createApplication: (data) => api.post('/loans/application', data),
-  getMyApplications: () => api.get('/loans/my-applications'),
-  getApplicationDetails: (id) => api.get(`/loans/application/${id}`),
-  withdrawApplication: (id) => api.patch(`/loans/application/${id}/withdraw`),
-  
-  // Active Loans & Disbursement
-  getMyActiveLoans: () => api.get('/loans/my-active-loans'),
-  getLoanDetails: (id) => api.get(`/loans/${id}`),
-  getRepaymentSchedule: (loanId) => api.get(`/loans/${loanId}/schedule`),
-  getDisbursementDetails: (loanId) => api.get(`/loans/${loanId}/disbursement`),
-  
-  // e-KYC Services
-  initiateDigilocker: () => api.post('/ekyc/digilocker/initiate'),
-  checkDigilockerStatus: (transactionId) => api.get(`/ekyc/digilocker/status/${transactionId}`),
-  verifyPan: (panNumber) => api.post('/ekyc/pan/verify', { panNumber }),
-  getKycStatus: () => api.get('/ekyc/status'),
-  uploadAadhaar: (formData) => api.post('/ekyc/aadhaar/upload', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  }),
-  uploadPan: (formData) => api.post('/ekyc/pan/upload', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  }),
+  getMyProfile: () => api.get(`${customerPortal}/profile`),
+  updateMyProfile: (data) => api.put(`${customerPortal}/profile`, data),
+
+  getLoanProducts: () => api.get(ENDPOINTS.LOAN_PRODUCTS),
+  applyForLoan: (data) => api.post(`${customerPortal}/applications`, data),
+  getMyApplications: (params) =>
+    api.get(`${customerPortal}/applications`, { params }),
+  getApplicationDetails: (id) =>
+    api.get(`${customerPortal}/applications/${id}`),
+  withdrawApplication: (id, data = {}) =>
+    api.patch(`${customerPortal}/applications/${id}/withdraw`, data),
+
+  getMyActiveLoans: (params) =>
+    api.get(`${customerPortal}/loans`, { params }),
+  getLoanDetails: (id) => api.get(`${customerPortal}/loans/${id}`),
+  getRepaymentSchedule: (loanId) =>
+    api.get(`${customerPortal}/loans/${loanId}/schedule`),
+  getDisbursementDetails: (loanId) =>
+    api.get(`${customerPortal}/loans/${loanId}/disbursement`),
+
+  getKycStatus: () => api.get(`${customerPortal}/kyc/status`),
+  uploadKycDocument: (formData) =>
+    api.post(`${customerPortal}/kyc`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
 };

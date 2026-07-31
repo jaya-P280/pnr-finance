@@ -70,7 +70,7 @@ class UserRepository {
             SELECT role_id
             FROM roles
             WHERE role_id = ?
-            AND is_active = TRUE
+            AND status = 'ACTIVE'
             LIMIT 1
             `,
             [roleId]
@@ -583,6 +583,10 @@ class UserRepository {
 
         return rows[0] || null;
 
+    }
+
+    async getAllAdmins(userId){
+        
     }
 
 }

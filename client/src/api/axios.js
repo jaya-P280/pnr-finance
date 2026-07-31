@@ -39,7 +39,11 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    const isRefreshRequest = originalRequest?.url?.includes("/auth/refresh");
+    const hasRefreshSession =
+      Boolean(getRefreshTokenCallback?.()) ||
+      window.sessionStorage.getItem("pnrg.auth.session") === "1";
+    if (error.response?.status === 401 && hasRefreshSession && !isRefreshRequest && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
@@ -68,7 +72,6 @@ api.interceptors.response.use(
         if (onTokenRefreshCallback) {
           onTokenRefreshCallback(null, null);
         }
-        window.location.href = "/login";
         return Promise.reject(refreshError);
       }
     }

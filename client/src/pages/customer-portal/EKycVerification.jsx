@@ -16,7 +16,9 @@ const EKycVerification = () => {
   const [loading, setLoading] = useState(true);
   const [verifyingPan, setVerifyingPan] = useState(false);
   const [panNumber, setPanNumber] = useState('');
+  const [aadhaarNumber, setAadhaarNumber] = useState('');
   const [aadhaarFile, setAadhaarFile] = useState(null);
+  const [aadhaarBackFile, setAadhaarBackFile] = useState(null);
   const [panFile, setPanFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [digilockerInitiating, setDigilockerInitiating] = useState(false);
@@ -28,7 +30,7 @@ const EKycVerification = () => {
   const fetchKycStatus = async () => {
     try {
       const response = await customerPortalApi.getKycStatus();
-      setKycStatus(response.data);
+      setKycStatus(response.data.data);
     } catch (error) {
       console.log(error)
       setKycStatus({ aadhaarVerified: false, panVerified: false, digilockerConnected: false });
@@ -46,40 +48,33 @@ const EKycVerification = () => {
 
     setVerifyingPan(true);
     try {
-      await customerPortalApi.verifyPan(panNumber.toUpperCase());
-      toast.success('PAN verified successfully!');
-      fetchKycStatus();
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'PAN verification failed');
+      toast.error('Upload Aadhaar front/back and PAN together to submit KYC.');
     } finally {
       setVerifyingPan(false);
     }
   };
 
   const handleFileUpload = async (type) => {
-    const file = type === 'aadhaar' ? aadhaarFile : panFile;
-    if (!file) {
-      toast.error('Please select a file');
+    if (!aadhaarNumber || aadhaarNumber.length !== 12 || !panNumber || panNumber.length !== 10 || !aadhaarFile || !aadhaarBackFile || !panFile) {
+      toast.error('Enter Aadhaar and PAN numbers and select all three documents.');
       return;
     }
 
     const formData = new FormData();
-    formData.append('document', file);
+    formData.append('aadhaarNumber', aadhaarNumber);
+    formData.append('panNumber', panNumber.toUpperCase());
+    formData.append('aadhaarFront', aadhaarFile);
+    formData.append('aadhaarBack', aadhaarBackFile);
+    formData.append('panImage', panFile);
 
     setUploading(true);
     try {
-      if (type === 'aadhaar') {
-        await customerPortalApi.uploadAadhaar(formData);
-        toast.success('Aadhaar uploaded successfully!');
-      } else {
-        await customerPortalApi.uploadPan(formData);
-        toast.success('PAN card uploaded successfully!');
-      }
+      await customerPortalApi.uploadKycDocument(formData);
+      toast.success('KYC documents submitted successfully!');
       fetchKycStatus();
-      
-      // Clear file input
-      if (type === 'aadhaar') setAadhaarFile(null);
-      else setPanFile(null);
+      setAadhaarFile(null);
+      setAadhaarBackFile(null);
+      setPanFile(null);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Upload failed');
     } finally {
@@ -90,14 +85,7 @@ const EKycVerification = () => {
   const handleDigilockerInitiate = async () => {
     setDigilockerInitiating(true);
     try {
-      const response = await customerPortalApi.initiateDigilocker();
-      // Redirect to DigiLocker authorization URL
-      if (response.data.authorizationUrl) {
-        window.open(response.data.authorizationUrl, '_blank');
-        toast.info('Please complete authentication in the DigiLocker window');
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to initiate DigiLocker');
+      toast.info('DigiLocker integration is not configured yet. Please upload your documents.');
     } finally {
       setDigilockerInitiating(false);
     }
@@ -253,6 +241,14 @@ const EKycVerification = () => {
               )}
             </div>
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+              <input
+                type="text"
+                value={aadhaarNumber}
+                onChange={(e) => setAadhaarNumber(e.target.value.replace(/\D/g, ''))}
+                placeholder="Aadhaar number (12 digits)"
+                maxLength="12"
+                className="mb-3 w-full px-3 py-2 border border-gray-300 rounded-md"
+              />
               <FileText className="mx-auto h-8 w-8 text-gray-400" />
               <p className="mt-2 text-sm text-gray-600">
                 {aadhaarFile ? aadhaarFile.name : 'Drop your Aadhaar PDF here or click to browse'}
@@ -265,6 +261,16 @@ const EKycVerification = () => {
                 className="mt-2"
                 disabled={kycStatus?.aadhaarVerified}
               />
+              <input
+                type="file"
+                accept=".pdf,image/jpeg,image/png,image/webp"
+                onChange={(e) => setAadhaarBackFile(e.target.files[0])}
+                className="mt-2"
+                disabled={kycStatus?.aadhaarVerified}
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                {aadhaarBackFile ? `Back: ${aadhaarBackFile.name}` : 'Also select Aadhaar back'}
+              </p>
             </div>
             <button
               onClick={() => handleFileUpload('aadhaar')}

@@ -1,6 +1,6 @@
 import express from "express";
 import authController from "./auth.controller.js";
-import { loginValidation, registerValidation } from "./auth.validation.js";
+import { loginValidation, registerValidation, updateProfileValidation } from "./auth.validation.js";
 import validationMiddleware from "../../middleware/validation.middleware.js";
 import authenticate from "./auth.middleware.js";
 
@@ -11,5 +11,6 @@ router.post("/register", registerValidation, validationMiddleware, authControlle
 router.post("/refresh", authController.refresh);
 router.post("/logout", authController.logout);
 router.get("/me", authenticate, authController.getProfile);
+router.put("/me", authenticate, updateProfileValidation, validationMiddleware, authController.updateProfile);
 
 export default router;

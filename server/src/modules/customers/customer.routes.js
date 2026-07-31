@@ -21,7 +21,9 @@ import {
 
 import authMiddleware from "../auth/auth.middleware.js";
 import authorize from "../../middleware/authorize.middleware.js";
+import branchScope from "../../middleware/branchScope.middleware.js";
 import validationMiddleware from "../../middleware/validation.middleware.js";
+import kycUpload from "../../middleware/kycUpload.middleware.js";
 
 const router = express.Router();
 
@@ -33,7 +35,7 @@ router.post(
   validationMiddleware,
   customerController.createCustomer,
 );
-router.get("/", authMiddleware, customerController.getCustomers);
+router.get("/", authMiddleware, authorize("CUSTOMER_VIEW"), branchScope, customerController.getCustomers);
 router.get(
   "/:id",
   authMiddleware,
@@ -69,7 +71,12 @@ router.delete(
 router.post(
   "/:id/kyc",
   authMiddleware,
-  authorize("CUSTOMER_UPDATE"),
+  authorize("CUSTOMER_VIEW"),
+  branchScope,
+  // KYC documents are uploaded through the customer portal only. Staff can
+  // review/verify them but cannot upload documents on a customer's behalf.
+  authorize("CUSTOMER_KYC_UPLOAD"),
+  kycUpload,
   uploadCustomerKycValidation,
   validationMiddleware,
   customerController.uploadCustomerKyc,
@@ -77,7 +84,8 @@ router.post(
 router.patch(
   "/:id/kyc/verify",
   authMiddleware,
-  authorize("CUSTOMER_VERIFY"),
+  authorize("CUSTOMER_VIEW"),
+  authorize("CUSTOMER_KYC_VERIFY"),
   verifyCustomerKycValidation,
   validationMiddleware,
   customerController.verifyCustomerKyc,
@@ -85,7 +93,8 @@ router.patch(
 router.patch(
   "/:id/kyc/reject",
   authMiddleware,
-  authorize("CUSTOMER_VERIFY"),
+  authorize("CUSTOMER_VIEW"),
+  authorize("CUSTOMER_KYC_VERIFY"),
   rejectCustomerKycValidation,
   validationMiddleware,
   customerController.rejectCustomerKyc,
@@ -166,7 +175,7 @@ router.get(
 router.get(
   "/kyc/queue",
   authMiddleware,
-  authorize("CUSTOMER_VERIFY"),
+  authorize("CUSTOMER_KYC_VIEW"),
   customerController.getKycQueue,
 );
 export default router;

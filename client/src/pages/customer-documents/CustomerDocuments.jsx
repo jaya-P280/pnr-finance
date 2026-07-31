@@ -113,7 +113,7 @@ function KycVerificationSection() {
   const [tab, setTab] = useState("pending");
   const [search, setSearch] = useState("");
   const [branchId, setBranchId] = useState("");
-  const [viewItem, setViewItem] = useState(null);
+  const [viewCustomerId, setViewCustomerId] = useState(null);
   const [previewFile, setPreviewFile] = useState(null);
   const [remarks, setRemarks] = useState("");
   const [confirmReject, setConfirmReject] = useState(false);
@@ -144,7 +144,7 @@ function KycVerificationSection() {
     mutationFn: (customerId) => customerDocumentsService.verifyKyc(customerId),
     onSuccess: () => {
       toast.success("KYC verified.");
-      setViewItem(null);
+      setViewCustomerId(null);
       invalidateQueue();
     },
     onError: (e) => toast.error(getErrorMessage(e, "Unable to verify KYC.")),
@@ -152,10 +152,10 @@ function KycVerificationSection() {
 
   const rejectKyc = useMutation({
     mutationFn: () =>
-      customerDocumentsService.rejectKyc(viewItem.customer_id, remarks),
+      customerDocumentsService.rejectKyc(viewCustomerId, remarks),
     onSuccess: () => {
       toast.success("KYC rejected.");
-      setViewItem(null);
+      setViewCustomerId(null);
       setConfirmReject(false);
       invalidateQueue();
     },
@@ -181,21 +181,14 @@ function KycVerificationSection() {
     REJECTED: 0,
   };
   const branches = branchesQuery.data?.branches || [];
+  const viewItem =
+    rows.find((row) => row.customer_id === viewCustomerId) || null;
 
   const openView = (item) => {
     setRemarks("");
     setConfirmReject(false);
-    setViewItem(item);
+    setViewCustomerId(item.customer_id);
   };
-
-  // Keep the open dialog's snapshot in sync once the queue refetches after an upload,
-  // so newly uploaded documents show up without closing/reopening the dialog.
-  useEffect(() => {
-    if (!viewItem) return;
-    const updated = rows.find((r) => r.customer_id === viewItem.customer_id);
-    if (updated && updated !== viewItem) setViewItem(updated);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queueQuery.data]);
 
   const handleFileSelect = (doc, file, event) => {
     if (!file || !viewItem) return;
@@ -355,7 +348,7 @@ function KycVerificationSection() {
 
       <Dialog
         open={Boolean(viewItem)}
-        onClose={() => setViewItem(null)}
+        onClose={() => setViewCustomerId(null)}
         fullWidth
         maxWidth="md"
       >
@@ -368,7 +361,7 @@ function KycVerificationSection() {
                   <Typography variant="subtitle2" color="#64748B" gutterBottom>
                     Customer Information
                   </Typography>
-                  <Stack direction="row" spacing={4} flexWrap="wrap">
+                  <Stack direction="row" spacing={4} sx={{ flexWrap: "wrap" }}>
                     <Typography variant="body2">
                       Code: <b>{viewItem.customer_code}</b>
                     </Typography>
@@ -439,7 +432,7 @@ function KycVerificationSection() {
                   <Typography variant="subtitle2" color="#64748B" gutterBottom>
                     Mandatory Documents
                   </Typography>
-                  <Stack direction="row" spacing={2} flexWrap="wrap">
+                  <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap" }}>
                     {MANDATORY_DOCS.map((doc) => {
                       const isUploadingThis =
                         uploadKyc.isPending && uploadingKey === doc.key;
@@ -574,7 +567,7 @@ function KycVerificationSection() {
                     Upload isn't wired for these document types yet — shown for
                     reference only.
                   </Alert>
-                  <Stack direction="row" spacing={1} flexWrap="wrap">
+                  <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
                     {ADDITIONAL_DOCS.map((doc) => (
                       <Chip
                         key={doc.key}
@@ -605,7 +598,7 @@ function KycVerificationSection() {
               </Stack>
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => setViewItem(null)}>Cancel</Button>
+              <Button onClick={() => setViewCustomerId(null)}>Cancel</Button>
               {viewItem.kyc_status === "PENDING" && (
                 <>
                   <Button

@@ -25,7 +25,7 @@ import useAuth from "../../hooks/useAuth";
 export default function Settings() {
   const { user } = useAuth();
   const roleName = user?.role_name || user?.role || "";
-  const canViewSettings = ["SUPER_ADMIN", "ADMIN"].includes(roleName);
+  const canViewSettings = roleName === "ADMIN";
   const canUpdateSettings = roleName === "ADMIN";
   const [isEditing, setIsEditing] = useState(false);
   const [saved, setSaved] = useState(false);

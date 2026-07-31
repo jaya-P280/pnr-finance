@@ -18,7 +18,7 @@ export default function Permissions() {
           : groups.map((group) => (
             <Paper key={group.moduleName} elevation={0} sx={{ border: "1px solid #E2E8F0", borderRadius: 3, p: 3, mb: 2 }}>
               <Typography variant="subtitle1" fontWeight={700} gutterBottom>{group.moduleName}</Typography>
-              <Stack direction="row" spacing={1} flexWrap="wrap">
+              <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
                 {group.permissions.map((perm) => (
                   <Chip key={perm.permission_id} label={perm.permission_name} size="small" title={perm.description || ""} sx={{ mb: 1 }} />
                 ))}

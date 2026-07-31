@@ -3,6 +3,7 @@ import logger from "../../config/logger.js";
 import repository from "./initialize.repository.js";
 import {
   DEFAULT_ADMIN,
+  DEFAULT_DEMO_USERS,
   DEFAULT_SUPER_ADMIN,
   DEFAULT_BRANCH,
   DEFAULT_PERMISSIONS,
@@ -68,6 +69,17 @@ class InitializeService {
       )) {
         const roleId = roleMap[roleName];
         if (!roleId) continue;
+
+        // Replacing permissions keeps existing system roles in sync with the
+        // declarative map when access is added or intentionally removed.
+        if (roleName) {
+          const permissionIds = permNames
+            .map((permissionName) => permissionMap[permissionName])
+            .filter(Boolean);
+          await repository.replaceRolePermissions(connection, roleId, permissionIds);
+          logger.info(`  ${roleName} permissions synchronized`);
+          continue;
+        }
 
         for (const permName of permNames) {
           const permId = permissionMap[permName];
@@ -156,6 +168,28 @@ class InitializeService {
         );
       } else {
         logger.info("Default Admin already exists");
+      }
+
+      // --- Create demo staff users for the remaining system roles ---
+      for (const demoUser of DEFAULT_DEMO_USERS) {
+        const existing = await repository.findAdmin(connection, demoUser.email);
+        if (existing) {
+          logger.info(`Demo user already exists: ${demoUser.role_name}`);
+          continue;
+        }
+
+        const passwordHash = await bcrypt.hash(demoUser.password, 12);
+        await repository.createAdmin(connection, {
+          branch_id: branchId,
+          role_id: roleMap[demoUser.role_name],
+          employee_code: demoUser.employee_code,
+          first_name: demoUser.first_name,
+          last_name: demoUser.last_name,
+          email: demoUser.email,
+          phone: demoUser.phone,
+          password_hash: passwordHash,
+        });
+        logger.info(`Demo user created: ${demoUser.role_name}`);
       }
 
       await repository.commit(connection);

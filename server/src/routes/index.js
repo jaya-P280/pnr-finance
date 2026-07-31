@@ -5,6 +5,7 @@ import userRouter from "../modules/users/user.routes.js";
 import branchRoutes from "../modules/branches/branch.routes.js";
 import customerRoutes from "../modules/customers/customer.routes.js";
 import roleRoutes from "../modules/roles/role.routes.js";
+import permissionRoutes from "../modules/permissions/permission.routes.js";
 import loanRouter from "../modules/loan-products/loanProducts.routes.js";
 import loanApplicationRouter from "../modules/loan-applications/loanApplications.routes.js";
 import groupRoutes from "../modules/groups/groups.routes.js";
@@ -14,6 +15,7 @@ import settingsRoutes from "../modules/settings/settings.routes.js";
 import dashboardRoutes from "../modules/dashboard/dashboard.routes.js";
 import reportRoutes from "../modules/reports/reports.routes.js";
 import emiRoutes from "../modules/emi/emi.routes.js";
+import customerPortalRoutes from "../modules/customer-portal/customerPortal.routes.js";
 
 const router = express.Router();
 
@@ -23,6 +25,7 @@ router.use("/users", userRouter);
 router.use("/branches", branchRoutes);
 router.use("/customers", customerRoutes);
 router.use("/roles", roleRoutes);
+router.use("/permissions", permissionRoutes);
 router.use("/loan-products", loanRouter);
 router.use("/loan-application", loanApplicationRouter);
 router.use("/loans", loanRoutes);
@@ -32,5 +35,6 @@ router.use("/settings", settingsRoutes);
 router.use("/dashboard", dashboardRoutes);
 router.use("/reports", reportRoutes);
 router.use("/emi", emiRoutes);
+router.use("/customer", customerPortalRoutes);
 
 export default router;

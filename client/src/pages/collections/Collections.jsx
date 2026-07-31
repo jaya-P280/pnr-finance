@@ -74,7 +74,7 @@ export default function Collections() {
       title="Collection Management"
       subtitle="Track daily collections, generate receipts, and monitor overdue payments."
       actions={
-        <Stack direction="row" spacing={2} flexWrap="wrap">
+        <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap" }}>
           <TextField
             size="small"
             placeholder="Search collections..."

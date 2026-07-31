@@ -57,6 +57,32 @@ export const DEFAULT_PERMISSIONS = [
   },
 
   {
+    permission_name: "ROLE_VIEW",
+    module_name: "ROLE",
+    description: "View roles and their assignments",
+  },
+  {
+    permission_name: "ROLE_CREATE",
+    module_name: "ROLE",
+    description: "Create roles",
+  },
+  {
+    permission_name: "ROLE_UPDATE",
+    module_name: "ROLE",
+    description: "Update roles and their assignments",
+  },
+  {
+    permission_name: "ROLE_DELETE",
+    module_name: "ROLE",
+    description: "Delete roles",
+  },
+  {
+    permission_name: "PERMISSION_VIEW",
+    module_name: "PERMISSION",
+    description: "View available permissions",
+  },
+
+  {
     permission_name: "BRANCH_CREATE",
     module_name: "BRANCH",
     description: "Create branches",
@@ -96,6 +122,21 @@ export const DEFAULT_PERMISSIONS = [
     permission_name: "CUSTOMER_DELETE",
     module_name: "CUSTOMER",
     description: "Delete customers",
+  },
+  {
+    permission_name: "CUSTOMER_KYC_VIEW",
+    module_name: "CUSTOMER_KYC",
+    description: "View customer KYC status and documents",
+  },
+  {
+    permission_name: "CUSTOMER_KYC_UPLOAD",
+    module_name: "CUSTOMER_KYC",
+    description: "Upload customer KYC documents on behalf of a customer",
+  },
+  {
+    permission_name: "CUSTOMER_KYC_VERIFY",
+    module_name: "CUSTOMER_KYC",
+    description: "Verify or reject customer KYC",
   },
 
   {
@@ -170,6 +211,16 @@ export const DEFAULT_PERMISSIONS = [
     module_name: "LOAN_APPLICATION",
     description: "Reject applications",
   },
+  {
+    permission_name: "LOAN_APPLICATION_DISBURSE",
+    module_name: "LOAN_APPLICATION",
+    description: "Disburse approved applications",
+  },
+  {
+    permission_name: "LOAN_APPLICATION_DELETE",
+    module_name: "LOAN_APPLICATION",
+    description: "Delete loan applications",
+  },
 
   {
     permission_name: "LOAN_CREATE",
@@ -196,6 +247,11 @@ export const DEFAULT_PERMISSIONS = [
     module_name: "LOAN",
     description: "Foreclose loans",
   },
+  {
+    permission_name: "LOAN_DEFAULT",
+    module_name: "LOAN",
+    description: "Mark loans as defaulted",
+  },
 
   {
     permission_name: "COLLECTION_CREATE",
@@ -211,6 +267,11 @@ export const DEFAULT_PERMISSIONS = [
     permission_name: "COLLECTION_UPDATE",
     module_name: "COLLECTION",
     description: "Update collections",
+  },
+  {
+    permission_name: "COLLECTION_DELETE",
+    module_name: "COLLECTION",
+    description: "Delete collections",
   },
 
   {
@@ -234,32 +295,22 @@ export const DEFAULT_PERMISSIONS = [
 // Which roles get which permissions (by permission name)
 export const ROLE_PERMISSIONS_MAP = {
   SUPER_ADMIN: [
-    "DASHBOARD_VIEW",
     "USER_CREATE",
-    "USER_VIEW", // Can ONLY create/view ADMIN users (enforced in user.service.js)
-    "SETTINGS_VIEW",
+    "USER_VIEW",
   ],
   ADMIN: DEFAULT_PERMISSIONS.map((p) => p.permission_name), // ALL permissions
   BRANCH_MANAGER: [
     "DASHBOARD_VIEW",
     "BRANCH_VIEW",
-    "BRANCH_UPDATE",
-    "CUSTOMER_CREATE",
     "CUSTOMER_VIEW",
-    "CUSTOMER_UPDATE",
-    "GROUP_CREATE",
-    "GROUP_VIEW",
-    "GROUP_UPDATE",
+    "CUSTOMER_KYC_VIEW",
+    "CUSTOMER_KYC_VERIFY",
     "LOAN_PRODUCT_VIEW",
-    "LOAN_APPLICATION_CREATE",
     "LOAN_APPLICATION_VIEW",
     "LOAN_APPLICATION_VERIFY",
     "LOAN_APPLICATION_APPROVE",
     "LOAN_APPLICATION_REJECT",
-    "LOAN_CREATE",
     "LOAN_VIEW",
-    "LOAN_UPDATE",
-    "LOAN_CLOSE",
     "COLLECTION_CREATE",
     "COLLECTION_VIEW",
     "COLLECTION_UPDATE",
@@ -267,11 +318,13 @@ export const ROLE_PERMISSIONS_MAP = {
   ],
   FIELD_OFFICER: [
     "DASHBOARD_VIEW",
-    "CUSTOMER_CREATE",
     "CUSTOMER_VIEW",
-    "CUSTOMER_UPDATE",
-    "LOAN_APPLICATION_CREATE",
+    "CUSTOMER_KYC_VIEW",
+    "GROUP_CREATE",
+    "GROUP_VIEW",
+    "GROUP_UPDATE",
     "LOAN_APPLICATION_VIEW",
+    "LOAN_APPLICATION_DISBURSE",
     "LOAN_VIEW",
     "COLLECTION_CREATE",
     "COLLECTION_VIEW",
@@ -285,6 +338,7 @@ export const ROLE_PERMISSIONS_MAP = {
   ],
   CUSTOMER: [
     "DASHBOARD_VIEW",
+    "LOAN_PRODUCT_VIEW",
     "LOAN_APPLICATION_CREATE",
     "LOAN_APPLICATION_VIEW",
     "LOAN_APPLICATION_UPDATE",
@@ -320,3 +374,35 @@ export const DEFAULT_SUPER_ADMIN = {
   phone: "9999999998",
   password: "SuperAdmin@123",
 };
+
+// Demo staff accounts let each branch-level role be tested immediately.
+// No extra demo account is created for SUPER_ADMIN, ADMIN, or CUSTOMER.
+export const DEFAULT_DEMO_USERS = [
+  {
+    role_name: "BRANCH_MANAGER",
+    employee_code: "BM0001",
+    first_name: "Branch",
+    last_name: "Manager",
+    email: "branchmanager@pnrgfinance.com",
+    phone: "9999999997",
+    password: "BranchManager@123",
+  },
+  {
+    role_name: "FIELD_OFFICER",
+    employee_code: "FO0001",
+    first_name: "Field",
+    last_name: "Officer",
+    email: "fieldofficer@pnrgfinance.com",
+    phone: "9999999996",
+    password: "FieldOfficer@123",
+  },
+  {
+    role_name: "ACCOUNTANT",
+    employee_code: "ACC0001",
+    first_name: "Accounts",
+    last_name: "Officer",
+    email: "accountant@pnrgfinance.com",
+    phone: "9999999995",
+    password: "Accountant@123",
+  },
+];

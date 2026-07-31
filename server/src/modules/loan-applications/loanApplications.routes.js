@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import authenticate from "../../modules/auth/auth.middleware.js";
 import authorize from "../../middleware/authorize.middleware.js";
+import branchScope from "../../middleware/branchScope.middleware.js";
 import validateRequest from "../../middleware/validation.middleware.js";
 
 import loanApplicationController from "./loanApplications.controller.js";
@@ -31,6 +32,7 @@ router.get(
   "/",
   authenticate,
   authorize("LOAN_APPLICATION_VIEW"),
+  branchScope,
   listLoanApplicationsValidation,
   validateRequest,
   loanApplicationController.getLoanApplications
@@ -40,6 +42,7 @@ router.get(
   "/:id",
   authenticate,
   authorize("LOAN_APPLICATION_VIEW"),
+  branchScope,
   getLoanApplicationValidation,
   validateRequest,
   loanApplicationController.getLoanApplicationById

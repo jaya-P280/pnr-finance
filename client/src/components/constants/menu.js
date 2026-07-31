@@ -8,33 +8,20 @@ import AssessmentIcon from "@mui/icons-material/Assessment";
 import SettingsIcon from "@mui/icons-material/Settings";
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 import AssignmentIndIcon from "@mui/icons-material/AssignmentInd";
-import GroupsIcon from "@mui/icons-material/Groups";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import BusinessIcon from "@mui/icons-material/Business";
-import ClassIcon from "@mui/icons-material/Class";
-import SecurityIcon from "@mui/icons-material/Security";
-import DescriptionIcon from "@mui/icons-material/Description";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
-import CreditCardIcon from "@mui/icons-material/CreditCard";
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
-import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 
-// Role-based menu access configuration
 const ROLE_ACCESS = {
-  // SUPER_ADMIN: Only create admin users + own profile/settings
-  SUPER_ADMIN: ["/dashboard", "/users", "/settings", "/profile"],
-  // ADMIN: Full system access
+  SUPER_ADMIN: ["/users", "/profile", "/settings"],
   ADMIN: [
     "/dashboard",
     "/users",
     "/roles",
     "/permissions",
     "/branches",
-    "/groups",
-    "/customers",
     "/customer-documents",
     "/loan-products",
-    "/loan-applications",
     "/loans",
     "/collections",
     "/cash-book",
@@ -43,23 +30,22 @@ const ROLE_ACCESS = {
     "/loan-reports",
     "/collection-reports",
     "/customer-reports",
-    "/settings",
     "/profile",
+    "/settings",
   ],
   BRANCH_MANAGER: [
     "/dashboard",
-    "/branches",
     "/groups",
     "/customers",
     "/customer-documents",
     "/loan-products",
-    "/loan-applications",
     "/loans",
     "/collections",
     "/loan-reports",
     "/collection-reports",
     "/customer-reports",
     "/profile",
+    "/settings",
   ],
   FIELD_OFFICER: [
     "/dashboard",
@@ -69,6 +55,7 @@ const ROLE_ACCESS = {
     "/loan-applications",
     "/collections",
     "/profile",
+    "/settings",
   ],
   ACCOUNTANT: [
     "/dashboard",
@@ -81,7 +68,6 @@ const ROLE_ACCESS = {
     "/customer-reports",
     "/profile",
   ],
-  // CUSTOMER: Normal user portal - can manage own account, apply loans, view status
   CUSTOMER: [
     "/customer/dashboard",
     "/customer/profile",
@@ -89,6 +75,7 @@ const ROLE_ACCESS = {
     "/customer/apply-loan",
     "/customer/loans",
     "/customer/ekyc",
+    "/customer/settings",
   ],
 };
 
@@ -96,72 +83,118 @@ export function getFilteredMenu(userRole) {
   const allowedPaths = ROLE_ACCESS[userRole] || ROLE_ACCESS.FIELD_OFFICER;
 
   function filterItems(items) {
-    return items.filter((item) => {
+    return items
+      .map((item) => {
+        if (!item.children) return item;
+
+        return {
+          ...item,
+          children: filterItems(item.children),
+        };
+      })
+      .filter((item) => {
       if (item.children) {
-        const filteredChildren = filterItems(item.children);
-        item.children = filteredChildren;
-        return filteredChildren.length > 0;
+        return item.children.length > 0;
       }
       return item.path ? allowedPaths.includes(item.path) : true;
-    });
+      });
   }
 
-  // Customer Portal Menu
-  if (userRole === 'CUSTOMER') {
+  if (userRole === "SUPER_ADMIN") {
     return [
       {
-        section: "Overview",
+        section: "Administration",
         items: [
-          { 
-            title: "Dashboard", 
-            icon: DashboardIcon, 
-            path: "/customer/dashboard" 
+          {
+            title: "Users",
+            icon: PeopleIcon,
+            path: "/users",
           },
         ],
       },
       {
         section: "My Account",
         items: [
-          { 
-            title: "Profile", 
-            icon: PersonIcon, 
-            path: "/customer/profile" 
+          {
+            title: "My Profile",
+            icon: PersonIcon,
+            path: "/profile",
           },
-          { 
-            title: "e-KYC Status", 
-            icon: VerifiedUserIcon, 
-            path: "/customer/ekyc" 
-          },
-        ],
-      },
-      {
-        section: "Loans",
-        items: [
-          { 
-            title: "My Applications", 
-            icon: AssignmentIndIcon, 
-            path: "/customer/applications" 
-          },
-          { 
-            title: "Apply for Loan", 
-            icon: FolderOpenIcon, 
-            path: "/customer/apply-loan" 
-          },
-          { 
-            title: "Active Loans", 
-            icon: AccountBalanceWalletIcon, 
-            path: "/customer/loans" 
+          {
+            title: "Settings",
+            icon: SettingsIcon,
+            path: "/settings",
           },
         ],
       },
     ];
   }
 
-  // Admin/Employee Portal Menu
+  if (userRole === "CUSTOMER") {
+    return [
+      {
+        section: "Overview",
+        items: [
+          {
+            title: "Dashboard",
+            icon: DashboardIcon,
+            path: "/customer/dashboard",
+          },
+        ],
+      },
+      {
+        section: "My Account",
+        items: [
+          {
+            title: "Profile",
+            icon: PersonIcon,
+            path: "/customer/profile",
+          },
+          {
+            title: "e-KYC Status",
+            icon: VerifiedUserIcon,
+            path: "/customer/ekyc",
+          },
+          {
+            title: "Settings",
+            icon: SettingsIcon,
+            path: "/customer/settings",
+          },
+        ],
+      },
+      {
+        section: "Loans",
+        items: [
+          {
+            title: "My Applications",
+            icon: AssignmentIndIcon,
+            path: "/customer/applications",
+          },
+          {
+            title: "Apply for Loan",
+            icon: FolderOpenIcon,
+            path: "/customer/apply-loan",
+          },
+          {
+            title: "Active Loans",
+            icon: AccountBalanceWalletIcon,
+            path: "/customer/loans",
+          },
+        ],
+      },
+    ];
+  }
+
   const menu = [
     {
       section: "Dashboard",
-      items: [{ title: "Dashboard", icon: DashboardIcon, path: "/dashboard" }],
+      items: [
+        {
+          title: "Dashboard",
+          icon: DashboardIcon,
+          path: "/dashboard",
+        },
+      ],
     },
     {
       section: "Master",
@@ -176,7 +209,7 @@ export function getFilteredMenu(userRole) {
           ],
         },
         {
-          title: "Organization",
+          title: "Groups & Branches",
           icon: ApartmentIcon,
           children: [
             { title: "Branches", path: "/branches" },
@@ -188,16 +221,11 @@ export function getFilteredMenu(userRole) {
           icon: PersonIcon,
           children: [
             { title: "Customers", path: "/customers" },
-            {
-              title: "eKYC",
-              icon: VerifiedUserIcon,
-              path: "/customer-documents",
-            },
+            { title: "eKYC Verification", path: "/customer-documents" },
           ],
         },
       ],
     },
-    // FLATTENED: Loans section heading → direct items (no redundant wrapper)
     {
       section: "Loans",
       items: [
@@ -211,7 +239,11 @@ export function getFilteredMenu(userRole) {
           icon: AssignmentIndIcon,
           path: "/loan-applications",
         },
-        { title: "Loans", icon: BusinessIcon, path: "/loans" },
+        {
+          title: "Loans",
+          icon: BusinessIcon,
+          path: "/loans",
+        },
         {
           title: "Collections",
           icon: ReceiptLongIcon,
@@ -219,20 +251,34 @@ export function getFilteredMenu(userRole) {
         },
       ],
     },
-    // FLATTENED: Finance section
     {
       section: "Finance",
       items: [
-        { title: "Cash Book", icon: PaidIcon, path: "/cash-book" },
-        { title: "Expenses", icon: PaidIcon, path: "/expenses" },
-        { title: "Income", icon: PaidIcon, path: "/income" },
+        {
+          title: "Cash Book",
+          icon: PaidIcon,
+          path: "/cash-book",
+        },
+        {
+          title: "Expenses",
+          icon: PaidIcon,
+          path: "/expenses",
+        },
+        {
+          title: "Income",
+          icon: PaidIcon,
+          path: "/income",
+        },
       ],
     },
-    // FLATTENED: Reports section
     {
       section: "Reports",
       items: [
-        { title: "Loan Reports", icon: AssessmentIcon, path: "/loan-reports" },
+        {
+          title: "Loan Reports",
+          icon: AssessmentIcon,
+          path: "/loan-reports",
+        },
         {
           title: "Collection Reports",
           icon: AssessmentIcon,
@@ -246,8 +292,19 @@ export function getFilteredMenu(userRole) {
       ],
     },
     {
-      section: "System",
-      items: [{ title: "Settings", icon: SettingsIcon, path: "/settings" }],
+      section: "My Account",
+      items: [
+        {
+          title: "My Profile",
+          icon: PersonIcon,
+          path: "/profile",
+        },
+        {
+          title: "Settings",
+          icon: SettingsIcon,
+          path: "/settings",
+        },
+      ],
     },
   ];
 

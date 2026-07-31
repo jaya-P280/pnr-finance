@@ -10,13 +10,11 @@ import {
   Collapse,
 } from "@mui/material";
 import { NavLink, useLocation } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import MenuOpenIcon from "@mui/icons-material/MenuOpen";
 import IconButton from "@mui/material/IconButton";
-
-
 import getFilteredMenu from "../../components/constants/menu";
 import useAuth from "../../hooks/useAuth";
 import { DRAWER_WIDTH } from "../constants/layout.constants";
@@ -25,11 +23,8 @@ export default function Sidebar({ mobile, onClose, open, onToggleSidebar }) {
   const location = useLocation();
   const activePath = location.pathname;
   const { user } = useAuth();
-  const roleName = user?.role_name || user?.role || "FIELD_OFFICER"
-  const menuItems = useMemo(
-    () => getFilteredMenu(roleName),
-    [user],
-  );
+  const roleName = user?.role_name || user?.role || "FIELD_OFFICER";
+  const menuItems = useMemo(() => getFilteredMenu(roleName), [roleName]);
 
   const activeSections = useMemo(
     () =>
@@ -41,19 +36,15 @@ export default function Sidebar({ mobile, onClose, open, onToggleSidebar }) {
         }
         return acc;
       }, {}),
-    [activePath],
+    [activePath, menuItems],
   );
 
-  const [expandedMenus, setExpandedMenus] = useState(() => activeSections);
-
-  useEffect(() => {
-    setExpandedMenus((prev) => ({ ...prev, ...activeSections }));
-  }, [activeSections]);
+  const [expandedMenus, setExpandedMenus] = useState({});
 
   const toggleMenu = (title) => {
     setExpandedMenus((prev) => ({
       ...prev,
-      [title]: !prev[title],
+      [title]: !(prev[title] ?? activeSections[title] ?? false),
     }));
   };
 
@@ -142,6 +133,10 @@ export default function Sidebar({ mobile, onClose, open, onToggleSidebar }) {
                   )
                 : false;
               const active = itemActive || childActive;
+              const expanded =
+                expandedMenus[item.title] ??
+                activeSections[item.title] ??
+                false;
 
               return (
                 <Box key={item.title}>
@@ -187,7 +182,7 @@ export default function Sidebar({ mobile, onClose, open, onToggleSidebar }) {
                       }}
                     />
                     {hasChildren &&
-                      (expandedMenus[item.title] ? (
+                      (expanded ? (
                         <ExpandLessIcon />
                       ) : (
                         <ExpandMoreIcon />
@@ -196,7 +191,7 @@ export default function Sidebar({ mobile, onClose, open, onToggleSidebar }) {
 
                   {hasChildren && (
                     <Collapse
-                      in={expandedMenus[item.title]}
+                      in={expanded}
                       timeout="auto"
                       unmountOnExit
                     >

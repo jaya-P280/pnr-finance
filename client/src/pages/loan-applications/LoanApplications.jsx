@@ -28,6 +28,7 @@ import SectionPage from "../../components/layout/SectionPage";
 import customerService from "../../services/customer.service";
 import loanProductService from "../../services/loanProduct.service";
 import loanApplicationService from "../../services/loanApplication.service";
+import useAuth from "../../hooks/useAuth";
 
 const emptyForm = {
   customerId: "",
@@ -64,6 +65,12 @@ const toPayload = (form) => {
 };
 
 export default function LoanApplications() {
+  const { user } = useAuth();
+  const roleName = user?.role_name || user?.role;
+  const canCreate = ["ADMIN", "FIELD_OFFICER"].includes(roleName);
+  const canVerify = ["ADMIN", "BRANCH_MANAGER"].includes(roleName);
+  const canApprove = ["ADMIN", "BRANCH_MANAGER"].includes(roleName);
+  const canDisburse = ["ADMIN", "FIELD_OFFICER"].includes(roleName);
   const [search, setSearch] = useState("");
   const [dialog, setDialog] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -79,11 +86,13 @@ export default function LoanApplications() {
   const customersQuery = useQuery({
     queryKey: ["customers", "form"],
     queryFn: () => customerService.getAll({ limit: 100, status: "ACTIVE" }),
+    enabled: dialog?.mode === "create" || dialog?.mode === "edit",
   });
 
   const loanProductsQuery = useQuery({
     queryKey: ["loanProducts", "form"],
     queryFn: () => loanProductService.getAll({ limit: 100, status: "ACTIVE" }),
+    enabled: dialog?.mode === "create" || dialog?.mode === "edit",
   });
 
   const invalidateApplications = () =>
@@ -245,13 +254,13 @@ export default function LoanApplications() {
           >
             Search
           </Button>
-          <Button
+          {canCreate && <Button
             variant="contained"
             startIcon={<AddIcon />}
             onClick={openCreate}
           >
             New Application
-          </Button>
+          </Button>}
         </Stack>
       }
     >
@@ -314,12 +323,12 @@ export default function LoanApplications() {
                         spacing={1}
                         sx={{ flexWrap: "wrap" }}
                       >
-                        {canEditOrDelete(app.application_status) && (
+                        {canCreate && canEditOrDelete(app.application_status) && (
                           <Button size="small" onClick={() => openEdit(app)}>
                             Edit
                           </Button>
                         )}
-                        {app.application_status === "PENDING" && (
+                        {canCreate && app.application_status === "PENDING" && (
                           <Button
                             size="small"
                             onClick={() =>
@@ -329,7 +338,7 @@ export default function LoanApplications() {
                             Send for Review
                           </Button>
                         )}
-                        {app.application_status === "UNDER_REVIEW" && (
+                        {canVerify && app.application_status === "UNDER_REVIEW" && (
                           <Button
                             size="small"
                             onClick={() =>
@@ -339,7 +348,7 @@ export default function LoanApplications() {
                             Verify
                           </Button>
                         )}
-                        {app.application_status === "VERIFIED" && (
+                        {canApprove && app.application_status === "VERIFIED" && (
                           <Button
                             size="small"
                             color="success"
@@ -353,7 +362,7 @@ export default function LoanApplications() {
                             Approve
                           </Button>
                         )}
-                        {["PENDING", "UNDER_REVIEW", "VERIFIED"].includes(
+                        {canApprove && ["PENDING", "UNDER_REVIEW", "VERIFIED"].includes(
                           app.application_status,
                         ) && (
                           <Button
@@ -367,7 +376,7 @@ export default function LoanApplications() {
                             Reject
                           </Button>
                         )}
-                        {app.application_status === "APPROVED" && (
+                        {canDisburse && app.application_status === "APPROVED" && (
                           <Button
                             size="small"
                             color="success"
@@ -378,7 +387,7 @@ export default function LoanApplications() {
                             Disburse
                           </Button>
                         )}
-                        {canEditOrDelete(app.application_status) && (
+                        {canCreate && canEditOrDelete(app.application_status) && (
                           <Button
                             size="small"
                             color="error"

@@ -38,7 +38,7 @@ export default function Roles() {
   const [dialog, setDialog] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [permTreeRole, setPermTreeRole] = useState(null);
-  const [selectedPermissions, setSelectedPermissions] = useState(new Set());
+  const [selectedPermissions, setSelectedPermissions] = useState(null);
   const queryClient = useQueryClient();
 
   const rolesQuery = useQuery({
@@ -103,7 +103,7 @@ export default function Roles() {
     mutationFn: () =>
       roleService.updatePermissions(
         permTreeRole.role_id,
-        Array.from(selectedPermissions),
+        Array.from(effectivePermissions),
       ),
     onSuccess: () => {
       toast.success("Role permissions updated.");
@@ -117,6 +117,14 @@ export default function Roles() {
 
   const roles = rolesQuery.data?.roles || [];
   const modules = treeQuery.data?.modules || [];
+  const initialPermissions = new Set(
+    modules.flatMap((module) =>
+      module.permissions
+        .filter((permission) => permission.selected)
+        .map((permission) => permission.permissionId),
+    ),
+  );
+  const effectivePermissions = selectedPermissions ?? initialPermissions;
 
   const openCreate = () => {
     setForm(emptyForm);
@@ -133,30 +141,12 @@ export default function Roles() {
 
   const openPermissionTree = (role) => {
     setPermTreeRole(role);
-    setSelectedPermissions(new Set());
+    setSelectedPermissions(null);
   };
-
-  // Seed the checkbox set once the tree loads, from each permission's `selected` flag
-  if (
-    treeQuery.data &&
-    permTreeRole &&
-    selectedPermissions.size === 0 &&
-    !treeQuery.isFetching
-  ) {
-    const initial = new Set();
-    treeQuery.data.modules.forEach((m) =>
-      m.permissions.forEach((p) => {
-        if (p.selected) initial.add(p.permissionId);
-      }),
-    );
-    if (initial.size && selectedPermissions.size === 0) {
-      // only seed once; avoid overwriting user's in-progress edits on refetch
-    }
-  }
 
   const togglePermission = (id) => {
     setSelectedPermissions((prev) => {
-      const next = new Set(prev);
+      const next = new Set(prev ?? initialPermissions);
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
@@ -393,27 +383,15 @@ export default function Roles() {
                   </Typography>
                   <Stack direction="row" flexWrap="wrap">
                     {module.permissions.map((perm) => {
-                      const checked =
-                        selectedPermissions.has(perm.permissionId) ||
-                        (selectedPermissions.size === 0 &&
-                          !savePermissions.isSuccess &&
-                          perm.selected &&
-                          !Array.from(selectedPermissions).length &&
-                          treeQuery.isFetched &&
-                          false);
                       return (
                         <FormControlLabel
                           key={perm.permissionId}
                           sx={{ width: { xs: "100%", sm: "50%", md: "33%" } }}
                           control={
                             <Checkbox
-                              checked={
-                                selectedPermissions.has(perm.permissionId) ||
-                                (selectedPermissions.size === 0 &&
-                                  perm.selected &&
-                                  treeQuery.dataUpdatedAt &&
-                                  selectedPermissions.__seeded !== true)
-                              }
+                              checked={effectivePermissions.has(
+                                perm.permissionId,
+                              )}
                               onChange={() =>
                                 togglePermission(perm.permissionId)
                               }
@@ -434,7 +412,7 @@ export default function Roles() {
           <Button
             variant="contained"
             disabled={
-              savePermissions.isPending || selectedPermissions.size === 0
+              savePermissions.isPending || effectivePermissions.size === 0
             }
             onClick={() => savePermissions.mutate()}
           >

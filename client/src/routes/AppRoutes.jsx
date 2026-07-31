@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 
 import DashboardLayout from "../layouts/DashboardLayout";
 import ProtectedRoute from "./ProtectedRoute";
@@ -6,36 +6,34 @@ import PublicRoute from "./PublicRoute";
 
 import Login from "../pages/auth/Login";
 import PasswordSetup from "../pages/auth/PasswordSetup";
-import Dashboard from "../pages/dashboard/Dashboard";
-import UsersList from "../pages/users/UsersList";
+import Register from "../pages/auth/Register";
 import BranchList from "../pages/branches/BranchList";
-import CustomerList from "../pages/customers/CustomersList";
-import Profile from "../pages/profile/Profile";
-import Roles from "../pages/roles/Roles";
-import Permissions from "../pages/permissions/Permissions";
-import Groups from "../pages/groups/Groups";
-import CustomerDocuments from "../pages/customer-documents/CustomerDocuments";
-import LoanProducts from "../pages/loan-products/LoanProducts";
-import LoanApplications from "../pages/loan-applications/LoanApplications";
-import Loans from "../pages/loans/Loans";
 import Collections from "../pages/collections/Collections";
+import CustomerDocuments from "../pages/customer-documents/CustomerDocuments";
+import ApplyLoan from "../pages/customer-portal/ApplyLoan";
+import CustomerDashboard from "../pages/customer-portal/CustomerDashboard";
+import EKycVerification from "../pages/customer-portal/EKycVerification";
+import LoanApplicationDetail from "../pages/customer-portal/LoanApplicationDetail";
+import MyLoanApplications from "../pages/customer-portal/MyLoanApplications";
+import MyLoans from "../pages/customer-portal/MyLoans";
+import RepaymentSchedule from "../pages/customer-portal/RepaymentSchedule";
+import CustomerList from "../pages/customers/CustomersList";
+import Dashboard from "../pages/dashboard/Dashboard";
 import CashBook from "../pages/finance/CashBook";
 import Expenses from "../pages/finance/Expenses";
 import Income from "../pages/finance/Income";
-import LoanReports from "../pages/reports/LoanReports";
+import Groups from "../pages/groups/Groups";
+import LoanApplications from "../pages/loan-applications/LoanApplications";
+import LoanProducts from "../pages/loan-products/LoanProducts";
+import Loans from "../pages/loans/Loans";
+import Permissions from "../pages/permissions/Permissions";
+import Profile from "../pages/profile/Profile";
 import CollectionReports from "../pages/reports/CollectionReports";
 import CustomerReports from "../pages/reports/CustomerReports";
-import Settings from "../pages/settings/Settings";
-import CustomerRegistration from "../pages/customer-portal/CustomerRegistration";
-import EKycVerification from "../pages/customer-portal/EKycVerification";
-import MyLoanApplications from "../pages/customer-portal/MyLoanApplications";
-import LoanApplicationDetail from "../pages/customer-portal/LoanApplicationDetail";
-import MyLoans from "../pages/customer-portal/MyLoans";
-import RepaymentSchedule from "../pages/customer-portal/RepaymentSchedule";
-import Register from "../pages/auth/Register";    // ← ADD IMPORT
-
-// Inside <Route element={<PublicRoute />}>:
-  
+import LoanReports from "../pages/reports/LoanReports";
+import Roles from "../pages/roles/Roles";
+import UnifiedSettings from "../pages/settings/UnifiedSettings";
+import UsersList from "../pages/users/UsersList";
 
 export default function AppRoutes() {
   return (
@@ -67,16 +65,26 @@ export default function AppRoutes() {
           <Route path="/loan-reports" element={<LoanReports />} />
           <Route path="/collection-reports" element={<CollectionReports />} />
           <Route path="/customer-reports" element={<CustomerReports />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/customer/dashboard" element={<Dashboard />} />
+          <Route path="/settings" element={<UnifiedSettings />} />
+
+          <Route path="/customer/dashboard" element={<CustomerDashboard />} />
           <Route path="/customer/profile" element={<Profile />} />
+          <Route path="/customer/settings" element={<UnifiedSettings />} />
           <Route path="/customer/ekyc" element={<EKycVerification />} />
-          <Route path="/customer/applications" element={<MyLoanApplications />} />
-          <Route path="/customer/applications/:id" element={<LoanApplicationDetail />} />
-          <Route path="/customer/apply-loan" element={<CustomerRegistration />} />
+          <Route
+            path="/customer/applications"
+            element={<MyLoanApplications />}
+          />
+          <Route
+            path="/customer/applications/:id"
+            element={<LoanApplicationDetail />}
+          />
+          <Route path="/customer/apply-loan" element={<ApplyLoan />} />
           <Route path="/customer/loans" element={<MyLoans />} />
-          <Route path="/customer/loans/:loanId" element={<RepaymentSchedule />} />
-          <Route path="/customer/loans/:loanId/schedule" element={<RepaymentSchedule />} />
+          <Route
+            path="/customer/loans/:loanId/schedule"
+            element={<RepaymentSchedule />}
+          />
         </Route>
       </Route>
 

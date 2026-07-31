@@ -23,7 +23,7 @@ class AuthRepository {
     return rows[0];
   }
 
-    async findUserById(UserId) {
+  async findUserById(UserId) {
     const [rows] = await pool.execute(
       `SELECT 
           u.user_id,
@@ -42,6 +42,16 @@ class AuthRepository {
       [UserId],
     );
     return rows[0];
+  }
+
+  async updateOwnProfile(userId, data) {
+    await pool.execute(
+      `UPDATE users
+       SET first_name = ?, last_name = ?, mobile_number = ?, updated_at = CURRENT_TIMESTAMP
+       WHERE user_id = ? AND deleted_at IS NULL`,
+      [data.firstName, data.lastName || null, data.mobileNumber || null, userId],
+    );
+    return this.findUserById(userId);
   }
 
   async saveRefreshToken(userId, tokenHash, expireAt) {

@@ -24,6 +24,11 @@ class AuthService {
     const response = await authApi.getProfile();
     return response.data.data;
   }
+
+  async updateProfile(payload) {
+    const response = await authApi.updateProfile(payload);
+    return response.data.data;
+  }
 }
 
 export default new AuthService();

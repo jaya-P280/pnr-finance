@@ -65,6 +65,14 @@ router.get(
   roleController.getRolePermissions
 );
 
+router.get(
+  "/:id/permission-tree",
+  authorize("ROLE_VIEW"),
+  getRoleValidation,
+  validationMiddleware,
+  roleController.getPermissionTree
+);
+
 router.put(
   "/:id/permissions",
   authorize("ROLE_UPDATE"),

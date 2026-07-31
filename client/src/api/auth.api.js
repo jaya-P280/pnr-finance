@@ -6,3 +6,4 @@ export const register = (data) => api.post(ENDPOINTS.AUTH.REGISTER, data);  // â
 export const refresh = () => api.post(ENDPOINTS.AUTH.REFRESH);
 export const logout = () => api.post(ENDPOINTS.AUTH.LOGOUT);
 export const getProfile = () => api.get(ENDPOINTS.AUTH.PROFILE);
+export const updateProfile = (data) => api.put(ENDPOINTS.AUTH.PROFILE, data);

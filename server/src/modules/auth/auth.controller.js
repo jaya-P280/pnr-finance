@@ -79,6 +79,12 @@ class AuthController {
     user.profile_image = getFullImageUrl(req, user.profile_image, "users");
     return res.status(200).json(new ApiResponse(200, "Profile fetched", user));
   });
+
+  updateProfile = asyncHandler(async (req, res) => {
+    const user = await authService.updateProfile(req.user.user_id, req.body);
+    user.profile_image = getFullImageUrl(req, user.profile_image, "users");
+    return res.status(200).json(new ApiResponse(200, "Profile updated", user));
+  });
 }
 
 export default new AuthController();
