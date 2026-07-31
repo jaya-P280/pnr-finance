@@ -138,7 +138,8 @@ class UserRepository {
             page,
             limit,
             search,
-            roleId,
+             roleId,
+             roleName,
             branchId,
             status,
             sortBy,
@@ -205,6 +206,11 @@ class UserRepository {
 
         }
 
+        if (roleName) {
+            sql += ` AND r.role_name = ?`;
+            values.push(roleName);
+        }
+
         if (branchId) {
 
             sql += `
@@ -247,9 +253,10 @@ class UserRepository {
 
         const {
 
-            search,
-            roleId,
-            branchId,
+             search,
+             roleId,
+             roleName,
+             branchId,
             status
 
         } = filters;
@@ -261,6 +268,7 @@ class UserRepository {
             COUNT(*) AS total
 
         FROM users u
+        INNER JOIN roles r ON r.role_id = u.role_id
 
         WHERE
 
@@ -303,6 +311,11 @@ class UserRepository {
 
             values.push(roleId);
 
+        }
+
+        if (roleName) {
+            sql += ` AND r.role_name = ?`;
+            values.push(roleName);
         }
 
         if (branchId) {

@@ -129,7 +129,13 @@ export function AuthProvider({ children }) {
     const timer = window.setTimeout(() => {
       void initializeSession();
     }, 0);
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(timer);
+      // React Strict Mode intentionally mounts, cleans up, and mounts again
+      // in development. Reset the guard so the second mount can complete the
+      // bootstrap and release route loading.
+      hasInitialized.current = false;
+    };
   }, [initializeSession]);
 
   const value = useMemo(

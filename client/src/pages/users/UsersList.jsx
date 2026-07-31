@@ -28,6 +28,7 @@ import SectionPage from "../../components/layout/SectionPage";
 import branchService from "../../services/branch.service";
 import roleService from "../../services/role.service";
 import userService from "../../services/user.service";
+import useAuth from "../../hooks/useAuth";
 
 const emptyForm = {
   firstName: "",
@@ -43,6 +44,8 @@ const getErrorMessage = (error, fallback) =>
   error?.response?.data?.message || error?.message || fallback;
 
 export default function UsersList() {
+  const { user } = useAuth();
+  const isSuperAdmin = (user?.role_name || user?.role) === "SUPER_ADMIN";
   const [search, setSearch] = useState("");
   const [dialog, setDialog] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -71,6 +74,7 @@ export default function UsersList() {
         ...form,
         roleId: Number(form.roleId),
         branchId: Number(form.branchId),
+        phone: form.mobileNumber,
       };
       return dialog.mode === "create"
         ? userService.create(payload)
@@ -112,11 +116,24 @@ export default function UsersList() {
 
   const users = usersQuery.data?.users || [];
   const branches = branchesQuery.data?.branches || [];
-  const roles = rolesQuery.data || [];
+  const roles = Array.isArray(rolesQuery.data?.roles)
+    ? rolesQuery.data.roles
+    : [];
+  const selectableRoles = isSuperAdmin
+    ? roles.filter((role) => (role.role_name || role.roleName) === "ADMIN")
+    : roles;
   const formLoading = rolesQuery.isLoading || branchesQuery.isLoading;
 
   const openCreate = () => {
-    setForm(emptyForm);
+    const adminRole = selectableRoles.find(
+      (role) => (role.role_name || role.roleName) === "ADMIN",
+    );
+    setForm({
+      ...emptyForm,
+      roleId: isSuperAdmin
+        ? String(adminRole?.role_id || adminRole?.roleId || "")
+        : "",
+    });
     setDialog({ mode: "create" });
   };
 
@@ -365,9 +382,9 @@ export default function UsersList() {
                   disabled={formLoading}
                 >
                   <MenuItem value="">Select a role</MenuItem>
-                  {roles.map((role) => (
-                    <MenuItem key={role.roleId} value={String(role.roleId)}>
-                      {role.roleName}
+                   {selectableRoles.map((role) => (
+                     <MenuItem key={role.role_id || role.roleId} value={String(role.role_id || role.roleId)}>
+                       {role.role_name || role.roleName}
                     </MenuItem>
                   ))}
                 </TextField>

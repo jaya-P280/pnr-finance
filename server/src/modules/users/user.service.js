@@ -186,7 +186,7 @@ class UserService {
     }
   }
 
-  async getUsers(query) {
+  async getUsers(query, currentUser) {
     const page = Number(query.page) || 1;
     const limit = Number(query.limit) || 10;
     const filters = {
@@ -194,6 +194,7 @@ class UserService {
       limit,
       search: query.search?.trim() || null,
       roleId: query.roleId ? Number(query.roleId) : null,
+      roleName: currentUser?.role_name === "SUPER_ADMIN" ? "ADMIN" : null,
       branchId: query.branchId ? Number(query.branchId) : null,
       status: query.status || null,
       sortBy: query.sortBy || "created_at",

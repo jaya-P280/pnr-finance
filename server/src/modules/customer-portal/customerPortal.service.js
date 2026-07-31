@@ -139,7 +139,8 @@ class CustomerPortalService {
   }
 
   async getLinkedCustomer(userId) {
-    const customer = await customerPortalRepository.getCustomerByUserId(userId);
+    let customer = await customerPortalRepository.getCustomerByUserId(userId);
+    if (!customer) customer = await customerPortalRepository.createCustomerForUser(userId);
     if (!customer) {
       throw new ApiError(
         404,

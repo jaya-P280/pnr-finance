@@ -67,7 +67,7 @@ const toPayload = (form) => {
 export default function LoanApplications() {
   const { user } = useAuth();
   const roleName = user?.role_name || user?.role;
-  const canCreate = ["ADMIN", "FIELD_OFFICER"].includes(roleName);
+  const canCreate = roleName === "ADMIN";
   const canVerify = ["ADMIN", "BRANCH_MANAGER"].includes(roleName);
   const canApprove = ["ADMIN", "BRANCH_MANAGER"].includes(roleName);
   const canDisburse = ["ADMIN", "FIELD_OFFICER"].includes(roleName);

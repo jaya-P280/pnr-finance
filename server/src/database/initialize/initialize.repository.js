@@ -180,6 +180,30 @@ class InitializeRepository {
         FOREIGN KEY (created_by) REFERENCES users(user_id)
       )`,
 
+      // --- CUSTOMER KYC ---
+      `CREATE TABLE IF NOT EXISTS customer_kyc (
+        customer_kyc_id INT AUTO_INCREMENT PRIMARY KEY,
+        customer_id INT NOT NULL UNIQUE,
+        aadhaar_number VARCHAR(12),
+        pan_number VARCHAR(10),
+        aadhaar_front VARCHAR(500),
+        aadhaar_back VARCHAR(500),
+        pan_image VARCHAR(500),
+        customer_photo VARCHAR(500),
+        signature_image VARCHAR(500),
+        bank_passbook VARCHAR(500),
+        income_proof VARCHAR(500),
+        address_proof VARCHAR(500),
+        kyc_status ENUM('PENDING','VERIFIED','REJECTED') DEFAULT 'PENDING',
+        verified_by INT NULL,
+        verified_at TIMESTAMP NULL,
+        remarks TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE,
+        FOREIGN KEY (verified_by) REFERENCES users(user_id)
+      )`,
+
       // --- CUSTOMER FAMILY ---
       `CREATE TABLE IF NOT EXISTS customer_family (
         family_id INT AUTO_INCREMENT PRIMARY KEY,

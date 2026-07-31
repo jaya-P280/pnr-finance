@@ -297,6 +297,7 @@ export const ROLE_PERMISSIONS_MAP = {
   SUPER_ADMIN: [
     "USER_CREATE",
     "USER_VIEW",
+    "ROLE_VIEW",
   ],
   ADMIN: DEFAULT_PERMISSIONS.map((p) => p.permission_name), // ALL permissions
   BRANCH_MANAGER: [
@@ -320,6 +321,7 @@ export const ROLE_PERMISSIONS_MAP = {
     "DASHBOARD_VIEW",
     "CUSTOMER_VIEW",
     "CUSTOMER_KYC_VIEW",
+    "LOAN_PRODUCT_VIEW",
     "GROUP_CREATE",
     "GROUP_VIEW",
     "GROUP_UPDATE",

@@ -49,6 +49,20 @@ class CustomerPortalRepository {
     return rows[0] || null;
   }
 
+  async createCustomerForUser(userId) {
+    await pool.execute(
+      `INSERT INTO customers
+        (customer_code, branch_id, first_name, last_name, mobile_number, email, created_by)
+       SELECT CONCAT('CUST-', u.user_id), u.branch_id, u.first_name, u.last_name,
+              COALESCE(NULLIF(u.mobile_number, ''), '0000000000'), u.email, u.user_id
+       FROM users u
+       WHERE u.user_id = ? AND u.deleted_at IS NULL
+       ON DUPLICATE KEY UPDATE customer_id = customer_id`,
+      [userId],
+    );
+    return this.getCustomerByUserId(userId);
+  }
+
   async updateProfile(userId, customerId, data) {
     const userFields = [];
     const userValues = [];
