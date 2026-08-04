@@ -10,13 +10,13 @@ class AuthService {
     const response = await authApi.register(payload);
     return response.data;
   }
-  async refresh() {
-    const response = await authApi.refresh();
+  async refresh(refreshToken) {
+    const response = await authApi.refresh(refreshToken);
     return response.data.data;
   }
 
-  async logout() {
-    const response = await authApi.logout();
+  async logout(refreshToken) {
+    const response = await authApi.logout(refreshToken);
     return response.data;
   }
 

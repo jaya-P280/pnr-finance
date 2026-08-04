@@ -297,7 +297,7 @@ class InitializeRepository {
         insurance_fee DECIMAL(15,2) DEFAULT 0,
         penalty DECIMAL(15,2) DEFAULT 0,
         penalty_type ENUM('FLAT','PERCENTAGE') DEFAULT 'PERCENTAGE',
-        recovery_frequency ENUM('DAILY','WEEKLY','BI_WEEKLY','MONTHLY') DEFAULT 'MONTHLY',
+        recovery_frequency ENUM('DAILY','WEEKLY','BI_WEEKLY','MONTHLY','YEARLY','ONE_TIME') DEFAULT 'MONTHLY',
         holiday_excluded TINYINT(1) DEFAULT 0,
         include_gst TINYINT(1) DEFAULT 0,
         status ENUM('ACTIVE','INACTIVE') DEFAULT 'ACTIVE',
@@ -320,7 +320,7 @@ class InitializeRepository {
         approved_amount DECIMAL(15,2),
         tenure INT NOT NULL,
         interest_rate DECIMAL(5,2) NOT NULL DEFAULT 0,
-        recovery_frequency ENUM('DAILY','WEEKLY','BI_WEEKLY','MONTHLY') DEFAULT 'MONTHLY',
+        recovery_frequency ENUM('DAILY','WEEKLY','BI_WEEKLY','MONTHLY','YEARLY','ONE_TIME') DEFAULT 'MONTHLY',
         purpose TEXT,
         remarks TEXT,
         application_status ENUM('DRAFT','PENDING','UNDER_REVIEW','VERIFIED','APPROVED','REJECTED','DISBURSED') DEFAULT 'PENDING',
@@ -371,7 +371,7 @@ class InitializeRepository {
         total_payable DECIMAL(15,2) DEFAULT 0,
         outstanding_amount DECIMAL(15,2) DEFAULT 0,
         tenure INT NOT NULL,
-        recovery_frequency ENUM('DAILY','WEEKLY','BI_WEEKLY','MONTHLY') DEFAULT 'MONTHLY',
+        recovery_frequency ENUM('DAILY','WEEKLY','BI_WEEKLY','MONTHLY','YEARLY','ONE_TIME') DEFAULT 'MONTHLY',
         disbursement_date DATE,
         first_due_date DATE,
         maturity_date DATE,
@@ -449,6 +449,65 @@ class InitializeRepository {
         FOREIGN KEY (collected_by) REFERENCES users(user_id),
         FOREIGN KEY (created_by) REFERENCES users(user_id)
       )`,
+
+      // --- TASKS ---
+      `CREATE TABLE IF NOT EXISTS tasks (
+        task_id INT AUTO_INCREMENT PRIMARY KEY,
+        task_title VARCHAR(255) NOT NULL,
+        description TEXT,
+        category ENUM('FIELD_VISIT', 'DOCUMENT_VERIFICATION', 'LOAN_COLLECTION', 'GROUP_MEETING', 'KYC_AUDIT', 'CUSTOMER_ONBOARDING', 'OTHER') DEFAULT 'FIELD_VISIT',
+        priority ENUM('LOW', 'MEDIUM', 'HIGH', 'URGENT') DEFAULT 'MEDIUM',
+        status ENUM('PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED') DEFAULT 'PENDING',
+        due_date DATE,
+        assigned_to INT,
+        branch_id INT,
+        customer_id INT,
+        created_by INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (assigned_to) REFERENCES users(user_id),
+        FOREIGN KEY (branch_id) REFERENCES branches(branch_id),
+        FOREIGN KEY (customer_id) REFERENCES customers(customer_id),
+        FOREIGN KEY (created_by) REFERENCES users(user_id)
+      )`,
+
+      // --- EXPENSES ---
+      `CREATE TABLE IF NOT EXISTS expenses (
+        expense_id INT AUTO_INCREMENT PRIMARY KEY,
+        expense_number VARCHAR(30) NOT NULL UNIQUE,
+        category VARCHAR(100) NOT NULL,
+        amount DECIMAL(15,2) NOT NULL,
+        payment_method ENUM('CASH','BANK_TRANSFER','CHEQUE','UPI') DEFAULT 'CASH',
+        expense_date DATE NOT NULL,
+        paid_to VARCHAR(200),
+        branch_id INT,
+        receipt_ref VARCHAR(100),
+        description TEXT,
+        created_by INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (branch_id) REFERENCES branches(branch_id),
+        FOREIGN KEY (created_by) REFERENCES users(user_id)
+      )`,
+
+      // --- INCOME ---
+      `CREATE TABLE IF NOT EXISTS income (
+        income_id INT AUTO_INCREMENT PRIMARY KEY,
+        income_number VARCHAR(30) NOT NULL UNIQUE,
+        category VARCHAR(100) NOT NULL,
+        amount DECIMAL(15,2) NOT NULL,
+        payment_method ENUM('CASH','BANK_TRANSFER','CHEQUE','UPI') DEFAULT 'CASH',
+        income_date DATE NOT NULL,
+        received_from VARCHAR(200),
+        branch_id INT,
+        receipt_ref VARCHAR(100),
+        description TEXT,
+        created_by INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (branch_id) REFERENCES branches(branch_id),
+        FOREIGN KEY (created_by) REFERENCES users(user_id)
+      )`,
     ];
 
     for (const sql of queries) {
@@ -474,6 +533,9 @@ class InitializeRepository {
       if (!rows.length) await connection.query(`ALTER TABLE ${table} ADD COLUMN ${definition}`);
     }
     await connection.query(`ALTER TABLE loan_applications MODIFY COLUMN application_status ENUM('DRAFT','PENDING','UNDER_REVIEW','VERIFIED','APPROVED','REJECTED','DISBURSED') DEFAULT 'PENDING'`);
+    await connection.query(`ALTER TABLE loan_products MODIFY COLUMN recovery_frequency ENUM('DAILY','WEEKLY','BI_WEEKLY','MONTHLY','YEARLY','ONE_TIME') DEFAULT 'MONTHLY'`);
+    await connection.query(`ALTER TABLE loan_applications MODIFY COLUMN recovery_frequency ENUM('DAILY','WEEKLY','BI_WEEKLY','MONTHLY','YEARLY','ONE_TIME') DEFAULT 'MONTHLY'`);
+    await connection.query(`ALTER TABLE loans MODIFY COLUMN recovery_frequency ENUM('DAILY','WEEKLY','BI_WEEKLY','MONTHLY','YEARLY','ONE_TIME') DEFAULT 'MONTHLY'`);
     const [legacyColumns] = await connection.query(`SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'loan_products' AND COLUMN_NAME IN ('min_amount', 'max_amount', 'min_tenure', 'max_tenure')`);
     if (legacyColumns.length === 4) {
       await connection.query(`UPDATE loan_products SET minimum_amount = COALESCE(minimum_amount, min_amount), maximum_amount = COALESCE(maximum_amount, max_amount), minimum_tenure = COALESCE(minimum_tenure, min_tenure), maximum_tenure = COALESCE(maximum_tenure, max_tenure)`);

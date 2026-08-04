@@ -125,6 +125,12 @@ class CustomerPortalRepository {
   }
 
   async getApplicationsByCustomerId(customerId, filters) {
+    const page = Math.max(Number.parseInt(filters.page, 10) || 1, 1);
+    const limit = Math.min(
+      Math.max(Number.parseInt(filters.limit, 10) || 10, 1),
+      100,
+    );
+    const offset = (page - 1) * limit;
     const params = [customerId];
     let sql = `
       SELECT
@@ -157,8 +163,9 @@ class CustomerPortalRepository {
       params.push(filters.status);
     }
 
-    sql += " ORDER BY la.created_at DESC LIMIT ? OFFSET ?";
-    params.push(filters.limit, (filters.page - 1) * filters.limit);
+    // Keep pagination values as validated integers. Some MySQL-compatible
+    // servers reject LIMIT/OFFSET placeholders in prepared statements.
+    sql += ` ORDER BY la.created_at DESC LIMIT ${limit} OFFSET ${offset}`;
 
     const [applications] = await pool.query(sql, params);
 
@@ -180,10 +187,10 @@ class CustomerPortalRepository {
     return {
       applications,
       pagination: {
-        page: filters.page,
-        limit: filters.limit,
+        page,
+        limit,
         totalRecords: countRows[0].total,
-        totalPages: Math.ceil(countRows[0].total / filters.limit),
+        totalPages: Math.ceil(countRows[0].total / limit),
       },
     };
   }
@@ -222,6 +229,12 @@ class CustomerPortalRepository {
   }
 
   async getLoansByCustomerId(customerId, filters) {
+    const page = Math.max(Number.parseInt(filters.page, 10) || 1, 1);
+    const limit = Math.min(
+      Math.max(Number.parseInt(filters.limit, 10) || 10, 1),
+      100,
+    );
+    const offset = (page - 1) * limit;
     const params = [customerId];
     let sql = `
       SELECT
@@ -264,8 +277,7 @@ class CustomerPortalRepository {
       params.push(filters.status);
     }
 
-    sql += " ORDER BY l.created_at DESC LIMIT ? OFFSET ?";
-    params.push(filters.limit, (filters.page - 1) * filters.limit);
+    sql += ` ORDER BY l.created_at DESC LIMIT ${limit} OFFSET ${offset}`;
 
     const [loans] = await pool.query(sql, params);
 
@@ -287,10 +299,10 @@ class CustomerPortalRepository {
     return {
       loans,
       pagination: {
-        page: filters.page,
-        limit: filters.limit,
+        page,
+        limit,
         totalRecords: countRows[0].total,
-        totalPages: Math.ceil(countRows[0].total / filters.limit),
+        totalPages: Math.ceil(countRows[0].total / limit),
       },
     };
   }
@@ -375,24 +387,55 @@ class CustomerPortalRepository {
   async getKycStatus(customerId) {
     const [rows] = await pool.execute(
       `SELECT
-         kyc_status AS status,
-         verified_at AS verifiedAt,
-         remarks,
-         CASE
-           WHEN kyc_status = 'VERIFIED' AND aadhaar_front IS NOT NULL THEN 1
-           ELSE 0
-         END AS aadhaarVerified,
-         CASE
-           WHEN kyc_status = 'VERIFIED' AND pan_image IS NOT NULL THEN 1
-           ELSE 0
-         END AS panVerified
-       FROM customer_kyc
-       WHERE customer_id = ?
+         c.aadhaar_number AS aadhaarNumber,
+         c.pan_number AS panNumber,
+         c.aadhaar_verified AS aadhaarVerified,
+         c.pan_verified AS panVerified,
+         COALESCE(ck.kyc_status, CASE WHEN c.aadhaar_verified = 1 THEN 'VERIFIED' ELSE 'PENDING' END) AS status,
+         ck.verified_at AS verifiedAt,
+         ck.remarks
+       FROM customers c
+       LEFT JOIN customer_kyc ck ON ck.customer_id = c.customer_id
+       WHERE c.customer_id = ?
        LIMIT 1`,
       [customerId],
     );
 
     return rows[0] || null;
+  }
+
+  async updateDigiLockerKyc(customerId, { aadhaarNumber, digilockerRefId }) {
+    await pool.execute(
+      `UPDATE customers SET aadhaar_number = ?, aadhaar_verified = 1, updated_at = CURRENT_TIMESTAMP WHERE customer_id = ?`,
+      [aadhaarNumber, customerId],
+    );
+    const remarks = `Verified via DigiLocker e-KYC (Ref: ${digilockerRefId || "DGL-" + Date.now()})`;
+    await pool.execute(
+      `INSERT INTO customer_kyc (customer_id, aadhaar_number, kyc_status, verified_at, remarks)
+       VALUES (?, ?, 'VERIFIED', CURRENT_TIMESTAMP, ?)
+       ON DUPLICATE KEY UPDATE 
+         aadhaar_number = VALUES(aadhaar_number),
+         kyc_status = 'VERIFIED',
+         verified_at = CURRENT_TIMESTAMP,
+         remarks = VALUES(remarks)`,
+      [customerId, aadhaarNumber, remarks],
+    );
+    return { success: true, aadhaarNumber, aadhaarVerified: true, digilockerRefId };
+  }
+
+  async updatePanKyc(customerId, { panNumber }) {
+    await pool.execute(
+      `UPDATE customers SET pan_number = ?, pan_verified = 1, updated_at = CURRENT_TIMESTAMP WHERE customer_id = ?`,
+      [panNumber, customerId],
+    );
+    await pool.execute(
+      `INSERT INTO customer_kyc (customer_id, pan_number, remarks)
+       VALUES (?, ?, 'Verified PAN via NSDL Check')
+       ON DUPLICATE KEY UPDATE
+         pan_number = VALUES(pan_number)`,
+      [customerId, panNumber],
+    );
+    return { success: true, panNumber, panVerified: true };
   }
 }
 

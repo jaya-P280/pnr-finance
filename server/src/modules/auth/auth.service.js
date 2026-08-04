@@ -6,12 +6,16 @@ import ApiError from "../../shared/ApiError.js";
 import auditService from "../audit/audit.service.js";
 
 class AuthService {
-  async login(email, password, metadata) {
-    const user = await authRepository.findUserByEmail(email);
+  async login(email, password, metadata = {}) {
+    const cleanEmail = email ? String(email).trim().toLowerCase() : "";
+    const cleanPassword = password ? String(password).trim() : "";
+
+    const user = await authRepository.findUserByEmail(cleanEmail);
     if (!user) throw new ApiError(401, "Invalid email or password");
+    if (user.status !== "ACTIVE") throw new ApiError(403, "Your account is inactive or suspended. Please contact administrator.");
 
     const permissions = await authRepository.getUserPermissions(user.user_id);
-    const matched = await passwordService.compare(password, user.password_hash);
+    const matched = await passwordService.compare(cleanPassword, user.password_hash);
     if (!matched) throw new ApiError(401, "Invalid email or password");
 
     const tokenPayload = { ...user, permissions };
@@ -38,39 +42,53 @@ class AuthService {
   }
 
   async register(data) {
-    const existing = await authRepository.findUserByEmail(data.email);
+    const cleanEmail = data.email ? String(data.email).trim().toLowerCase() : "";
+    const existing = await authRepository.findUserByEmail(cleanEmail);
     if (existing) throw new ApiError(409, "Email already registered.");
 
-    // All SQL queries go to repository — service only coordinates
+    // All registered users via public portal receive the CUSTOMER role
     const role = await authRepository.findDefaultCustomerRole();
-    if (!role) throw new ApiError(500, "Default role not configured.");
+    if (!role) throw new ApiError(500, "Default customer role not configured.");
 
     const lastUser = await authRepository.getLastEmployeeCode();
     const employeeCode = CodeGenerator.generate(
-      "EMP",
+      "CUST",
       lastUser?.employee_code,
       4,
     );
 
     const branch = await authRepository.getDefaultBranch();
-    const branchId = data.branchId || branch?.branch_id || null;
+    const branchId = data.branchId || branch?.branch_id || 1;
 
     const passwordHash = await passwordService.hash(data.password);
 
-    await authRepository.createUser({
+    const userId = await authRepository.createUser({
       employeeCode,
       firstName: data.firstName,
       lastName: data.lastName || null,
-      email: data.email,
+      email: cleanEmail,
       passwordHash,
       mobileNumber: data.mobileNumber || null,
       roleId: role.role_id,
       branchId,
     });
 
+    // Automatically populate customers table so registered customers appear in ERP
+    const lastCust = await authRepository.getLastCustomerCode();
+    const customerCode = CodeGenerator.generate("CUST", lastCust?.customer_code, 4);
+    await authRepository.createCustomerRecord({
+      customerCode,
+      branchId: branchId || 1,
+      firstName: data.firstName,
+      lastName: data.lastName || null,
+      mobileNumber: data.mobileNumber || "0000000000",
+      email: cleanEmail,
+      createdBy: userId,
+    });
+
     return {
       employeeCode,
-      message: "Registration Successful",
+      message: "Customer Registration Successful",
     };
   }
 
@@ -87,6 +105,10 @@ class AuthService {
     if (!stored) throw new ApiError(401, "Invalid refresh token");
 
     const user = await authRepository.findUserById(payload.sub);
+    if (!user || user.status !== "ACTIVE") {
+      throw new ApiError(401, "User no longer active or valid.");
+    }
+
     const permissions = await authRepository.getUserPermissions(user.user_id);
     const tokenPayload = { ...user, permissions };
     const newAccess = tokenService.generateAccessToken(tokenPayload);
@@ -102,17 +124,23 @@ class AuthService {
     return { accessToken: newAccess, refreshToken: newRefresh };
   }
 
-  async logout(refreshToken, metadata) {
-    const payload = tokenService.verifyRefreshToken(refreshToken);
-    await authRepository.revokeRefreshToken(payload.sub);
-    await auditService.log({
-      userId: payload.sub,
-      action: "LOGOUT",
-      module: "AUTH",
-      description: "User logged out",
-      ipAddress: metadata.ipAddress,
-      userAgent: metadata.userAgent,
-    });
+  async logout(refreshToken, metadata = {}) {
+    try {
+      const payload = tokenService.verifyRefreshToken(refreshToken);
+      if (payload?.sub) {
+        await authRepository.revokeRefreshToken(payload.sub);
+        await auditService.log({
+          userId: payload.sub,
+          action: "LOGOUT",
+          module: "AUTH",
+          description: "User logged out",
+          ipAddress: metadata.ipAddress,
+          userAgent: metadata.userAgent,
+        });
+      }
+    } catch {
+      // Ignore token verification errors during logout (e.g. token already expired)
+    }
   }
 }
 

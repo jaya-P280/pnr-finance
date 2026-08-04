@@ -21,8 +21,8 @@ class GroupService {
     const response = await groupApi.deleteGroup(id);
     return response.data;
   }
-  async addMember(groupId, customerId) {
-    const response = await groupApi.addGroupMember(groupId, { customerId });
+  async addMember(groupId, customerId, role = "MEMBER") {
+    const response = await groupApi.addGroupMember(groupId, { customerId, role });
     return response.data;
   }
   async removeMember(groupId, customerId) {

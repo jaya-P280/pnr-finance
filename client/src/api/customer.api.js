@@ -68,8 +68,8 @@ export const customerPortalApi = {
     api.get(`${customerPortal}/loans/${loanId}/disbursement`),
 
   getKycStatus: () => api.get(`${customerPortal}/kyc/status`),
-  uploadKycDocument: (formData) =>
-    api.post(`${customerPortal}/kyc`, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    }),
+  verifyDigiLockerKyc: (data) =>
+    api.post(`${customerPortal}/kyc/digilocker`, data),
+  verifyPanKyc: (data) =>
+    api.post(`${customerPortal}/kyc/pan`, data),
 };

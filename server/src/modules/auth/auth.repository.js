@@ -16,9 +16,9 @@ class AuthRepository {
           u.status                          
        FROM users u
        INNER JOIN roles r ON r.role_id = u.role_id
-       WHERE u.email = (?)
+       WHERE LOWER(u.email) = LOWER(?)
          AND u.deleted_at IS NULL`,
-      [email],
+      [email ? String(email).trim() : ""],
     );
     return rows[0];
   }
@@ -55,24 +55,18 @@ class AuthRepository {
   }
 
   async saveRefreshToken(userId, tokenHash, expireAt) {
-    const [row] = await pool.execute(
-      `
-            SELECT COUNT(*) as USERS FROM refresh_tokens where user_id = ?`,
+    const [rows] = await pool.execute(
+      `SELECT COUNT(*) as user_count FROM refresh_tokens WHERE user_id = ?`,
       [userId],
     );
 
-    if (row[0]["USERS"] == 1) {
+    const count = rows[0]?.user_count || rows[0]?.["COUNT(*)"] || 0;
+
+    if (Number(count) > 0) {
       await this.updateRefreshToken(userId, tokenHash, expireAt);
     } else {
       await pool.execute(
-        `
-                    INSERT INTO refresh_tokens
-                    (
-                        user_id,
-                        token_hash ,
-                        expires_at 
-                    ) VALUES (?,?,?)
-                `,
+        `INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)`,
         [userId, tokenHash, expireAt],
       );
     }
@@ -80,12 +74,7 @@ class AuthRepository {
 
   async findRefreshToken(hash) {
     const [rows] = await pool.execute(
-      `
-            SELECT * 
-            FROM refresh_tokens
-            WHERE token_hash=?
-            AND is_revoked = FALSE ;
-            `,
+      `SELECT * FROM refresh_tokens WHERE token_hash = ? AND (is_revoked = 0 OR is_revoked = FALSE)`,
       [hash],
     );
     return rows[0];
@@ -93,14 +82,7 @@ class AuthRepository {
 
   async updateRefreshToken(userId, tokenHash, expireAt) {
     await pool.execute(
-      `
-            UPDATE refresh_tokens
-            SET
-                token_hash = ?,
-                expires_at = ?,
-                updated_at = NOW()
-            WHERE user_id = ?; 
-            `,
+      `UPDATE refresh_tokens SET token_hash = ?, expires_at = ? WHERE user_id = ?`,
       [tokenHash, expireAt, userId],
     );
   }
@@ -156,17 +138,42 @@ async findDefaultCustomerRole() {
   }
 
   async createUser(data) {
-  const [result] = await pool.execute(
-    `INSERT INTO users (employee_code, first_name, last_name, email, password_hash, mobile_number, role_id, branch_id, status, is_first_login)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', 0)`,    // ← CHANGED from 'PENDING', 1
-    [
-      data.employeeCode, data.firstName, data.lastName,
-      data.email, data.passwordHash, data.mobileNumber,
-      data.roleId, data.branchId,
-    ],
-  );
-  return result.insertId;
-}
+    const [result] = await pool.execute(
+      `INSERT INTO users (employee_code, first_name, last_name, email, password_hash, mobile_number, role_id, branch_id, status, is_first_login)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', 0)`,
+      [
+        data.employeeCode, data.firstName, data.lastName,
+        data.email, data.passwordHash, data.mobileNumber,
+        data.roleId, data.branchId,
+      ],
+    );
+    return result.insertId;
+  }
+
+  async getLastCustomerCode() {
+    const [rows] = await pool.execute(
+      `SELECT customer_code FROM customers ORDER BY customer_id DESC LIMIT 1`,
+    );
+    return rows[0] || null;
+  }
+
+  async createCustomerRecord(data) {
+    const [result] = await pool.execute(
+      `INSERT INTO customers
+       (customer_code, branch_id, first_name, last_name, mobile_number, email, status, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', ?)`,
+      [
+        data.customerCode,
+        data.branchId,
+        data.firstName,
+        data.lastName || null,
+        data.mobileNumber || "0000000000",
+        data.email,
+        data.createdBy || null,
+      ],
+    );
+    return result.insertId;
+  }
 }
 
 export default new AuthRepository();

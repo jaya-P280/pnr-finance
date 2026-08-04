@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import logger from "../../config/logger.js";
 import repository from "./initialize.repository.js";
+import CodeGenerator from "../../shared/codeGenerator.helper.js";
 import {
   DEFAULT_ADMIN,
   DEFAULT_DEMO_USERS,
@@ -190,6 +191,134 @@ class InitializeService {
           password_hash: passwordHash,
         });
         logger.info(`Demo user created: ${demoUser.role_name}`);
+      }
+
+      // --- Seed Initial Financial Records (Expenses & Income) ---
+      const [expCount] = await connection.execute(`SELECT COUNT(*) AS total FROM expenses`);
+      if (expCount[0]?.total === 0) {
+        const today = new Date().toISOString().split("T")[0];
+        const sampleExpenses = [
+          ["EXP-2026-0001", "Office Rent", 25000.00, "BANK_TRANSFER", today, "Commercial Plaza Ltd", branchId, "REF-RENT-01", "Monthly Head Office Rent", 2],
+          ["EXP-2026-0002", "Salaries", 85000.00, "BANK_TRANSFER", today, "Staff Accounts", branchId, "REF-SAL-01", "Branch Staff Salaries", 2],
+          ["EXP-2026-0003", "Fuel & Conveyance", 3200.00, "CASH", today, "Field Officers", branchId, "REF-FUEL-01", "Field Officer Travel Allowance", 2],
+          ["EXP-2026-0004", "Utilities", 4500.00, "UPI", today, "State Electricity Board", branchId, "REF-UTIL-01", "Electricity & Water Bill", 2],
+          ["EXP-2026-0005", "Tea & Refreshments", 1200.00, "CASH", today, "Local Vendor", branchId, "REF-TEA-01", "Client & Staff Refreshments", 2]
+        ];
+        for (const exp of sampleExpenses) {
+          await connection.execute(
+            `INSERT INTO expenses (expense_number, category, amount, payment_method, expense_date, paid_to, branch_id, receipt_ref, description, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            exp
+          );
+        }
+        logger.info("Sample Expenses seeded");
+      }
+
+      const [incCount] = await connection.execute(`SELECT COUNT(*) AS total FROM income`);
+      if (incCount[0]?.total === 0) {
+        const today = new Date().toISOString().split("T")[0];
+        const sampleIncome = [
+          ["INC-2026-0001", "Loan Processing Fee", 15000.00, "UPI", today, "Batch Applicants #101-110", branchId, "PROC-881", "Loan Processing Fees Collected", 2],
+          ["INC-2026-0002", "Documentation Fee", 5000.00, "CASH", today, "New Customer Onboarding", branchId, "DOC-102", "Legal Documentation Charges", 2],
+          ["INC-2026-0003", "Late Payment Penalty", 1800.00, "CASH", today, "Overdue Accounts", branchId, "PEN-554", "Overdue Penalty Charges Collected", 2],
+          ["INC-2026-0004", "Advisory Fees", 7500.00, "BANK_TRANSFER", today, "Self Help Groups", branchId, "ADV-301", "Micro-enterprise Consulting Fee", 2]
+        ];
+        for (const inc of sampleIncome) {
+          await connection.execute(
+            `INSERT INTO income (income_number, category, amount, payment_method, income_date, received_from, branch_id, receipt_ref, description, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            inc
+          );
+        }
+        logger.info("Sample Income seeded");
+      }
+
+      // --- Sync/Backfill CUSTOMER users into customers table ---
+      const [custRoleRows] = await connection.execute(
+        `SELECT role_id FROM roles WHERE role_name = 'CUSTOMER' LIMIT 1`
+      );
+      if (custRoleRows.length > 0) {
+        const customerRoleId = custRoleRows[0].role_id;
+        const [unlinkedUsers] = await connection.execute(
+          `SELECT u.* FROM users u 
+           LEFT JOIN customers c ON LOWER(u.email) = LOWER(c.email)
+           WHERE u.role_id = ? AND c.customer_id IS NULL AND u.deleted_at IS NULL`,
+          [customerRoleId]
+        );
+        for (const u of unlinkedUsers) {
+          const [lastC] = await connection.execute(
+            `SELECT customer_code FROM customers ORDER BY customer_id DESC LIMIT 1`
+          );
+          const cCode = CodeGenerator.generate("CUST", lastC[0]?.customer_code, 4);
+          await connection.execute(
+            `INSERT INTO customers (customer_code, branch_id, first_name, last_name, mobile_number, email, status, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', ?)`,
+            [
+              cCode,
+              u.branch_id || branchId,
+              u.first_name,
+              u.last_name || null,
+              u.mobile_number || "0000000000",
+              u.email,
+              u.user_id,
+            ]
+          );
+          logger.info(`Backfilled customer record for registered user: ${u.email}`);
+        }
+      }
+
+      // --- Seed Sample Customers if empty ---
+      const [custCount] = await connection.execute(`SELECT COUNT(*) AS total FROM customers`);
+      if (custCount[0]?.total === 0) {
+        const sampleCustomers = [
+          ["CUST0001", branchId, "Rajesh", "Kumar", "MALE", "1988-05-12", "9876543210", "9876543211", "rajesh.kumar@example.com", "123456789012", "ABCDE1234F", "Farmer", 25000, "Village Road, Plot 12", "Hyderabad", "Telangana", "500001", 1],
+          ["CUST0002", branchId, "Priya", "Sharma", "FEMALE", "1992-08-20", "9876543220", "9876543221", "priya.sharma@example.com", "234567890123", "BCDEF2345G", "Small Business", 30000, "Market Yard, Shop 4", "Hyderabad", "Telangana", "500002", 1],
+          ["CUST0003", branchId, "Amit", "Patel", "MALE", "1990-11-15", "9876543230", "9876543231", "amit.patel@example.com", "345678901234", "CDEFG3456H", "Trader", 45000, "Station Road, Shop 10", "Hyderabad", "Telangana", "500003", 1],
+          ["CUST0004", branchId, "Sunita", "Devi", "FEMALE", "1985-03-25", "9876543240", "9876543241", "sunita.devi@example.com", "456789012345", "DEFGH4567I", "Tailoring", 20000, "Gandhi Nagar", "Hyderabad", "Telangana", "500004", 1],
+          ["CUST0005", branchId, "Ramesh", "Verma", "MALE", "1994-07-08", "9876543250", "9876543251", "ramesh.verma@example.com", "567890123456", "EFGHI5678J", "Dairy Farming", 35000, "Subhash Nagar", "Hyderabad", "Telangana", "500005", 1]
+        ];
+        for (const c of sampleCustomers) {
+          await connection.execute(
+            `INSERT INTO customers (customer_code, branch_id, first_name, last_name, gender, date_of_birth, mobile_number, alternate_mobile, email, aadhaar_number, pan_number, occupation, monthly_income, address, city, state, pincode, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            c
+          );
+        }
+        logger.info("Sample Customers seeded");
+      }
+
+      // --- Seed Sample Customer Groups & Group Members if empty ---
+      const [groupCount] = await connection.execute(`SELECT COUNT(*) AS total FROM customer_groups`);
+      if (groupCount[0]?.total === 0) {
+        const [allCusts] = await connection.execute(`SELECT customer_id FROM customers ORDER BY customer_id ASC`);
+        const cIds = allCusts.map((c) => c.customer_id);
+
+        if (cIds.length >= 2) {
+          const [g1] = await connection.execute(
+            `INSERT INTO customer_groups (group_code, group_name, branch_id, description, meeting_day, status, created_by)
+             VALUES ('GRP0001', 'Maha Lakshmi Self Help Group', ?, 'Community self-help group for women entrepreneurs', 'MONDAY', 'ACTIVE', 1)`,
+            [branchId]
+          );
+          const g1Id = g1.insertId;
+
+          if (cIds[0]) await connection.execute(`INSERT INTO group_members (group_id, customer_id, role, added_by) VALUES (?, ?, 'LEADER', 1)`, [g1Id, cIds[0]]);
+          if (cIds[1]) await connection.execute(`INSERT INTO group_members (group_id, customer_id, role, added_by) VALUES (?, ?, 'MEMBER', 1)`, [g1Id, cIds[1]]);
+          if (cIds[3]) await connection.execute(`INSERT INTO group_members (group_id, customer_id, role, added_by) VALUES (?, ?, 'MEMBER', 1)`, [g1Id, cIds[3]]);
+        }
+
+        if (cIds.length >= 4) {
+          const [g2] = await connection.execute(
+            `INSERT INTO customer_groups (group_code, group_name, branch_id, description, meeting_day, status, created_by)
+             VALUES ('GRP0002', 'Sai Ram Micro Enterprise Group', ?, 'Local micro business group for traders and farmers', 'WEDNESDAY', 'ACTIVE', 1)`,
+            [branchId]
+          );
+          const g2Id = g2.insertId;
+
+          if (cIds[2]) await connection.execute(`INSERT INTO group_members (group_id, customer_id, role, added_by) VALUES (?, ?, 'LEADER', 1)`, [g2Id, cIds[2]]);
+          if (cIds[4]) await connection.execute(`INSERT INTO group_members (group_id, customer_id, role, added_by) VALUES (?, ?, 'MEMBER', 1)`, [g2Id, cIds[4]]);
+        }
+
+        logger.info("Sample Customer Groups & Members seeded");
       }
 
       await repository.commit(connection);

@@ -34,7 +34,7 @@ app.use(morgan("dev"));
 
 app.use("/api/v1", routes);
 
-app.use(notFoundMiddleware);
+app.use("/api", notFoundMiddleware);
 app.use(errorMiddleWare);
 
 export default app;

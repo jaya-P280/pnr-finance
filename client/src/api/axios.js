@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: import.meta.env.VITE_API_BASE_URL || "/api/v1",
   timeout: 30000,
   withCredentials: true,
   headers: {
@@ -42,15 +42,19 @@ api.interceptors.response.use(
     const isRefreshRequest = originalRequest?.url?.includes("/auth/refresh");
     const hasRefreshSession =
       Boolean(getRefreshTokenCallback?.()) ||
+      Boolean(window.localStorage.getItem("pnrg.refresh_token")) ||
       window.sessionStorage.getItem("pnrg.auth.session") === "1";
     if (error.response?.status === 401 && hasRefreshSession && !isRefreshRequest && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
-        const refreshToken = getRefreshTokenCallback ? getRefreshTokenCallback() : null;
+        const refreshToken =
+          (getRefreshTokenCallback ? getRefreshTokenCallback() : null) ||
+          window.localStorage.getItem("pnrg.refresh_token");
 
+        const apiBase = import.meta.env.VITE_API_BASE_URL || "/api/v1";
         const response = await axios.post(
-          `${import.meta.env.VITE_API_BASE_URL}/auth/refresh`,
+          `${apiBase}/auth/refresh`,
           // The refresh token is normally in an HttpOnly cookie. Sending the
           // in-memory token as a fallback preserves compatibility with older
           // sessions without exposing the cookie to JavaScript.
@@ -68,6 +72,7 @@ api.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
+        window.sessionStorage.removeItem("pnrg.auth.session");
         // Clear tokens via callback
         if (onTokenRefreshCallback) {
           onTokenRefreshCallback(null, null);

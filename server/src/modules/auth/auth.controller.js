@@ -16,7 +16,7 @@ class AuthController {
     res.cookie("PNRG_REFRESH_TOKEN", data.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
       path: "/",
     });
@@ -25,6 +25,7 @@ class AuthController {
       new ApiResponse(200, "Login Successful", {
         user: data.user,
         accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
       }),
     );
   });
@@ -45,13 +46,14 @@ class AuthController {
     res.cookie("PNRG_REFRESH_TOKEN", data.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
       path: "/",
     });
 
     return res.status(200).json(new ApiResponse(200, "Token Refreshed", {
       accessToken: data.accessToken,
+      refreshToken: data.refreshToken,
     }));
   });
 
@@ -67,7 +69,7 @@ class AuthController {
     res.clearCookie("PNRG_REFRESH_TOKEN", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "lax",
       path: "/",
     });
 

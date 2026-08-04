@@ -11,20 +11,26 @@ import AssignmentIndIcon from "@mui/icons-material/AssignmentInd";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import BusinessIcon from "@mui/icons-material/Business";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
+import AssignmentIcon from "@mui/icons-material/Assignment";
 
 const ROLE_ACCESS = {
-  SUPER_ADMIN: ["/users", "/profile", "/settings"],
+  SUPER_ADMIN: ["/users", "/profile"],
   ADMIN: [
     "/dashboard",
+    "/tasks",
     "/users",
     "/roles",
     "/permissions",
     "/branches",
     "/customer-documents",
+    "/customers",
+    "/groups",
     "/loan-products",
+    "/loan-applications",
     "/loans",
     "/collections",
     "/cash-book",
+    "/cashbook",
     "/expenses",
     "/income",
     "/loan-reports",
@@ -35,30 +41,36 @@ const ROLE_ACCESS = {
   ],
   BRANCH_MANAGER: [
     "/dashboard",
+    "/tasks",
     "/groups",
     "/customers",
     "/customer-documents",
     "/loan-products",
+    "/loan-applications",
     "/loans",
     "/collections",
+    "/cash-book",
+    "/cashbook",
+    "/expenses",
+    "/income",
     "/loan-reports",
     "/collection-reports",
     "/customer-reports",
     "/profile",
-    "/settings",
   ],
   FIELD_OFFICER: [
     "/dashboard",
+    "/tasks",
     "/customers",
     "/customer-documents",
     "/groups",
     "/loan-applications",
     "/collections",
     "/profile",
-    "/settings",
   ],
   ACCOUNTANT: [
     "/dashboard",
+    "/tasks",
     "/collections",
     "/cash-book",
     "/expenses",
@@ -75,11 +87,11 @@ const ROLE_ACCESS = {
     "/customer/apply-loan",
     "/customer/loans",
     "/customer/ekyc",
-    "/customer/settings",
   ],
 };
 
-export function getFilteredMenu(userRole) {
+export function getFilteredMenu(rawRole) {
+  const userRole = (rawRole || "").toUpperCase().replace(/\s+/g, "_");
   const allowedPaths = ROLE_ACCESS[userRole] || ROLE_ACCESS.FIELD_OFFICER;
 
   function filterItems(items) {
@@ -114,18 +126,7 @@ export function getFilteredMenu(userRole) {
       },
       {
         section: "My Account",
-        items: [
-          {
-            title: "My Profile",
-            icon: PersonIcon,
-            path: "/profile",
-          },
-          {
-            title: "Settings",
-            icon: SettingsIcon,
-            path: "/settings",
-          },
-        ],
+        items: [{ title: "My Profile", icon: PersonIcon, path: "/profile" }],
       },
     ];
   }
@@ -154,11 +155,6 @@ export function getFilteredMenu(userRole) {
             title: "e-KYC Status",
             icon: VerifiedUserIcon,
             path: "/customer/ekyc",
-          },
-          {
-            title: "Settings",
-            icon: SettingsIcon,
-            path: "/customer/settings",
           },
         ],
       },
@@ -193,6 +189,11 @@ export function getFilteredMenu(userRole) {
           title: "Dashboard",
           icon: DashboardIcon,
           path: "/dashboard",
+        },
+        {
+          title: "Field Tasks",
+          icon: AssignmentIcon,
+          path: "/tasks",
         },
       ],
     },

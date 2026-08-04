@@ -50,9 +50,15 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 8,
-          height: 46,
           textTransform: "none",
           boxShadow: "none",
+          fontWeight: 600,
+        },
+        sizeMedium: {
+          height: 42,
+        },
+        sizeLarge: {
+          height: 48,
         },
         containedPrimary: {
           boxShadow: "0 8px 20px rgba(15, 118, 110, 0.12)",

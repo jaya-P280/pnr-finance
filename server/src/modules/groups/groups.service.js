@@ -88,7 +88,7 @@ class GroupService {
   }
 
   // --- Members ---
-  async addMember(groupId, customerId, currentUser) {
+  async addMember(groupId, customerId, currentUser, role = "MEMBER") {
     const group = await groupRepository.findById(groupId);
     if (!group) throw new ApiError(404, GROUP_MESSAGES.NOT_FOUND);
     const already = await groupRepository.isMember(groupId, customerId);
@@ -96,7 +96,7 @@ class GroupService {
 
     const connection = await groupRepository.beginTransaction();
     try {
-      await groupRepository.addMember(connection, { groupId, customerId, role: "MEMBER", addedBy: currentUser.user_id });
+      await groupRepository.addMember(connection, { groupId, customerId, role: role || "MEMBER", addedBy: currentUser.user_id });
       await groupRepository.commit(connection);
     } catch (error) {
       await groupRepository.rollback(connection);

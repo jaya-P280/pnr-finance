@@ -129,18 +129,20 @@ class CustomerPortalController {
     res.json(new ApiResponse(200, "KYC status retrieved successfully.", status));
   });
 
-  uploadKycDocument = asyncHandler(async (req, res) => {
-    const result = await customerPortalService.uploadKycDocument(
+  verifyDigiLockerKyc = asyncHandler(async (req, res) => {
+    const result = await customerPortalService.verifyDigiLockerKyc(
       req.user.user_id,
-      req.files,
       req.body,
-      req.user,
-      {
-        ipAddress: req.ip,
-        userAgent: req.get("User-Agent"),
-      },
     );
-    res.json(new ApiResponse(200, "KYC documents uploaded successfully.", result));
+    res.json(new ApiResponse(200, "DigiLocker e-KYC verified successfully.", result));
+  });
+
+  verifyPanKyc = asyncHandler(async (req, res) => {
+    const result = await customerPortalService.verifyPanKyc(
+      req.user.user_id,
+      req.body,
+    );
+    res.json(new ApiResponse(200, "PAN verified successfully.", result));
   });
 }
 

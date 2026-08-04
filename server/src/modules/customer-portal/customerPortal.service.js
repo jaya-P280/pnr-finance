@@ -27,6 +27,17 @@ class CustomerPortalService {
 
   async createApplication(userId, data, currentUser) {
     const customer = await this.getLinkedCustomer(userId);
+    const kycStatus = await customerPortalRepository.getKycStatus(
+      customer.customer_id,
+    );
+
+    if (!kycStatus?.aadhaarVerified || !kycStatus?.panVerified) {
+      throw new ApiError(
+        403,
+        "Complete and verify both Aadhaar and PAN e-KYC before applying for a loan.",
+      );
+    }
+
     return loanApplicationService.createLoanApplication(
       {
         customerId: customer.customer_id,
@@ -121,21 +132,25 @@ class CustomerPortalService {
     );
   }
 
-  async uploadKycDocument(
-    userId,
-    files,
-    body,
-    currentUser,
-    metadata,
-  ) {
+  async verifyDigiLockerKyc(userId, data) {
     const customer = await this.getLinkedCustomer(userId);
-    return customerService.uploadCustomerKyc(
-      customer.customer_id,
-      files,
-      body,
-      currentUser,
-      metadata,
-    );
+    if (!data.aadhaarNumber) {
+      throw new ApiError(400, "Aadhaar number is required");
+    }
+    return customerPortalRepository.updateDigiLockerKyc(customer.customer_id, {
+      aadhaarNumber: data.aadhaarNumber,
+      digilockerRefId: data.digilockerRefId || `DGL-${Date.now()}`,
+    });
+  }
+
+  async verifyPanKyc(userId, data) {
+    const customer = await this.getLinkedCustomer(userId);
+    if (!data.panNumber) {
+      throw new ApiError(400, "PAN number is required");
+    }
+    return customerPortalRepository.updatePanKyc(customer.customer_id, {
+      panNumber: data.panNumber.toUpperCase(),
+    });
   }
 
   async getLinkedCustomer(userId) {

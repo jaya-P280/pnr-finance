@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { customerPortalApi } from "../../api/customer.api";
+import toast from "react-hot-toast";
 import {
   Calculate as Calculator,
-  CreditCard,
   CheckCircle,
   ArrowForward as ArrowRight,
   UploadFile as Upload,
@@ -14,74 +15,100 @@ import {
   Person as User,
   MedicalServices as Stethoscope,
   School as GraduationCap,
-} from '@mui/icons-material';
-import { customerPortalApi } from '../../api/customer.api';
-import toast from 'react-hot-toast';
+  ArrowBack,
+  Shield,
+  Percent,
+  Payments,
+  AttachMoney,
+  Done,
+} from "@mui/icons-material";
 
-const ApplyLoan = () => {
+export default function ApplyLoan() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  
+  const [activeStep, setActiveStep] = useState(1);
+
   const [formData, setFormData] = useState({
-    loanProductId: '',
+    loanProductId: "",
     amount: 50000,
     tenureMonths: 12,
-    purpose: 'Personal',
-    employmentType: 'Salaried',
-    monthlyIncome: '',
-    documents: null
+    purpose: "Personal",
+    employmentType: "Salaried",
+    monthlyIncome: "50000",
+    documents: null,
   });
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await customerPortalApi.getLoanProducts();
-        const productList = (response.data?.data || []).map((product) => ({
-          ...product,
-          loan_product_id: product.loan_product_id ?? product.id,
-          product_name: product.product_name ?? product.name,
-          interestRate: Number(product.interest_rate ?? product.interestRate ?? 0),
-          maxAmount: Number(product.maximum_amount ?? product.maxAmount ?? 0),
-          minTenure: product.minimum_tenure ?? product.minTenure ?? 1,
-          maxTenure: product.maximum_tenure ?? product.maxTenure ?? 60,
+  const fetchProducts = useCallback(async () => {
+    try {
+      const response = await customerPortalApi.getLoanProducts();
+      const body = response.data;
+      const rawList = Array.isArray(body)
+        ? body
+        : Array.isArray(body?.data)
+        ? body.data
+        : Array.isArray(body?.data?.products)
+        ? body.data.products
+        : Array.isArray(body?.products)
+        ? body.products
+        : [];
+      const productList = rawList.map((product) => ({
+        ...product,
+        loan_product_id: product.loan_product_id ?? product.id,
+        product_name: product.product_name ?? product.name ?? "Personal Loan",
+        interestRate: Number(product.interest_rate ?? product.interestRate ?? 12),
+        maxAmount: Number(product.maximum_amount ?? product.maxAmount ?? 500000),
+        minTenure: product.minimum_tenure ?? product.minTenure ?? 3,
+        maxTenure: product.maximum_tenure ?? product.maxTenure ?? 60,
+      }));
+
+      setProducts(productList);
+      if (productList.length > 0) {
+        setSelectedProduct(productList[0]);
+        setFormData((prev) => ({
+          ...prev,
+          loanProductId: productList[0].loan_product_id,
+          amount: Math.min(50000, productList[0].maxAmount || 500000),
         }));
-        setProducts(productList);
-        if (productList.length > 0) {
-          setSelectedProduct(productList[0]);
-          setFormData(prev => ({ ...prev, loanProductId: productList[0].loan_product_id }));
-        }
-      } catch (error) {
-        console.error("Failed to fetch products", error);
-        toast.error("Could not load loan products");
       }
-    };
-    fetchProducts();
+    } catch (error) {
+      console.error("Failed to fetch products", error);
+      toast.error("Could not load loan products");
+    }
   }, []);
 
+  const verifyKycAndLoadProducts = useCallback(async () => {
+    try {
+      const response = await customerPortalApi.getKycStatus();
+      const kycStatus = response.data?.data || response.data || {};
+      if (!kycStatus.aadhaarVerified || !kycStatus.panVerified) {
+        toast.error("Complete your Aadhaar and PAN e-KYC before applying for a loan.");
+        navigate("/customer/ekyc", { replace: true, state: { requiredForLoan: true } });
+        return;
+      }
+      await fetchProducts();
+    } catch (error) {
+      toast.error("Unable to verify your e-KYC status. Please try again.");
+    }
+  }, [fetchProducts, navigate]);
+
+  useEffect(() => {
+    verifyKycAndLoadProducts();
+  }, [verifyKycAndLoadProducts]);
+
   const emiDetails = useMemo(() => {
-    const principal = Number(formData.amount);
-    const annualRate = Number(selectedProduct?.interestRate || 0);
-    const months = Number(formData.tenureMonths);
+    const principal = Number(formData.amount || 0);
+    const annualRate = Number(selectedProduct?.interestRate || 12);
+    const months = Number(formData.tenureMonths || 12);
 
     if (!principal || !months) {
       return { monthlyEmi: 0, totalInterest: 0, totalPayment: 0 };
     }
 
-    if (annualRate <= 0) {
-      return {
-        monthlyEmi: Math.round(principal / months),
-        totalInterest: 0,
-        totalPayment: principal,
-      };
-    }
-
     const monthlyRate = annualRate / 12 / 100;
     const compoundFactor = (1 + monthlyRate) ** months;
-    const emi =
-      (principal * monthlyRate * compoundFactor) /
-      (compoundFactor - 1);
+    const emi = (principal * monthlyRate * compoundFactor) / (compoundFactor - 1);
     const totalPayment = emi * months;
 
     return {
@@ -93,22 +120,25 @@ const ApplyLoan = () => {
 
   const handleProductSelect = (product) => {
     setSelectedProduct(product);
-    setFormData(prev => ({ ...prev, loanProductId: product.loan_product_id }));
+    setFormData((prev) => ({
+      ...prev,
+      loanProductId: product.loan_product_id,
+      amount: Math.min(prev.amount, product.maxAmount || 500000),
+    }));
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleFileChange = (e) => {
-    setFormData(prev => ({ ...prev, documents: e.target.files[0] }));
+    setFormData((prev) => ({ ...prev, documents: e.target.files[0] }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!selectedProduct) {
+    if (!formData.loanProductId) {
       toast.error("Please select a loan product");
       return;
     }
@@ -120,290 +150,375 @@ const ApplyLoan = () => {
         requestedAmount: Number(formData.amount),
         tenure: Number(formData.tenureMonths),
         purpose: formData.purpose,
-        remarks: formData.monthlyIncome
-          ? `Employment: ${formData.employmentType}; Monthly income: ${formData.monthlyIncome}`
-          : `Employment: ${formData.employmentType}`,
+        employmentType: formData.employmentType,
+        monthlyIncome: Number(formData.monthlyIncome || 0),
       };
 
       await customerPortalApi.applyForLoan(payload);
-      
       toast.success("Loan application submitted successfully!");
-      navigate('/customer/applications');
+      navigate("/customer/applications");
     } catch (error) {
-      console.error("Application error:", error);
-      toast.error(error.response?.data?.message || "Failed to submit application");
+      console.error("Submission failed", error);
+      toast.error(error.response?.data?.message || "Failed to submit loan application");
     } finally {
       setLoading(false);
     }
   };
 
-  const purposeOptions = [
-    { value: 'Personal', label: 'Personal Needs', icon: User },
-    { value: 'Business', label: 'Business Expansion', icon: Briefcase },
-    { value: 'Home', label: 'Home Renovation', icon: Home },
-    { value: 'Vehicle', label: 'Vehicle Purchase', icon: Car },
-    { value: 'Medical', label: 'Medical Emergency', icon: Stethoscope },
-    { value: 'Education', label: 'Education', icon: GraduationCap },
+  const steps = [
+    { num: 1, title: "Product & Amount" },
+    { num: 2, title: "Employment & Income" },
+    { num: 3, title: "Upload Documents" },
+    { num: 4, title: "Review & Submit" },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
-        
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Apply for a Loan</h1>
-          <p className="mt-2 text-gray-600">Choose a product and calculate your EMI instantly</p>
+    <div className="space-y-8 max-w-5xl mx-auto pb-12">
+      {/* Header */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <button
+            onClick={() => navigate("/customer/dashboard")}
+            className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-800 mb-2 transition-colors"
+          >
+            <ArrowBack className="w-3.5 h-3.5" /> Back to Dashboard
+          </button>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Apply for a New Loan</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Customize loan amount, select tenure, and complete instant application</p>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
-            {/* LEFT COLUMN: Form Inputs */}
-            <div className="lg:col-span-2 space-y-6">
-              
-              {/* 1. Select Product */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                  <CreditCard className="h-5 w-5 mr-2 text-blue-600" />
-                  Select Loan Product
-                </h2>
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold border border-emerald-200">
+          <Shield className="w-4 h-4" /> 100% Secure & Instant Evaluation
+        </div>
+      </div>
+
+      {/* Stepper Navigation */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {steps.map((s) => {
+            const isDone = activeStep > s.num;
+            const isCurrent = activeStep === s.num;
+            return (
+              <button
+                key={s.num}
+                onClick={() => isDone && setActiveStep(s.num)}
+                disabled={!isDone && !isCurrent}
+                className={`flex items-center gap-3 p-3 rounded-xl transition-all text-left ${
+                  isCurrent
+                    ? "bg-teal-700 text-white shadow-md shadow-teal-700/20"
+                    : isDone
+                    ? "bg-teal-50 text-teal-800 cursor-pointer"
+                    : "bg-slate-50 text-slate-400 opacity-60"
+                }`}
+              >
+                <div
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
+                    isCurrent
+                      ? "bg-white text-teal-700"
+                      : isDone
+                      ? "bg-teal-700 text-white"
+                      : "bg-slate-200 text-slate-600"
+                  }`}
+                >
+                  {isDone ? <Done className="w-4 h-4" /> : s.num}
+                </div>
+                <span className="text-xs font-bold truncate">{s.title}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Main Form Body */}
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {/* STEP 1: Product & Amount Selection */}
+        {activeStep === 1 && (
+          <div className="space-y-6">
+            {/* Loan Product Selection */}
+            <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+              <h2 className="text-lg font-bold text-slate-900">Select Loan Scheme</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {products.length === 0 ? (
-                  <p className="text-gray-500 text-center py-4">No loan products available currently.</p>
+                  <div className="col-span-full py-8 text-center text-slate-400 text-sm">Loading loan products...</div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {products.map((product) => (
-                      <div 
-                        key={product.loan_product_id}
-                        onClick={() => handleProductSelect(product)}
-                        className={`cursor-pointer rounded-lg border-2 p-4 transition-all duration-200 ${
-                          selectedProduct?.loan_product_id === product.loan_product_id 
-                            ? 'border-blue-600 bg-blue-50 ring-1 ring-blue-600' 
-                            : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+                  products.map((p) => {
+                    const isSelected = selectedProduct?.loan_product_id === p.loan_product_id;
+                    return (
+                      <div
+                        key={p.loan_product_id}
+                        onClick={() => handleProductSelect(p)}
+                        className={`p-5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between space-y-3 ${
+                          isSelected
+                            ? "border-teal-700 bg-teal-50/50 shadow-md"
+                            : "border-slate-200 hover:border-slate-300 bg-white"
                         }`}
                       >
-                        <div className="flex justify-between items-start mb-2">
-                          <h3 className="font-bold text-gray-900">{product.product_name}</h3>
-                          {selectedProduct?.loan_product_id === product.loan_product_id && (
-                            <CheckCircle className="h-5 w-5 text-blue-600" />
-                          )}
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-teal-100 text-teal-800">
+                              {p.interestRate}% p.a.
+                            </span>
+                            {isSelected && <CheckCircle className="w-5 h-5 text-teal-700" />}
+                          </div>
+                          <h3 className="font-bold text-slate-900 text-base">{p.product_name}</h3>
+                          <p className="text-xs text-slate-500 mt-1">
+                            Up to ₹{Number(p.maxAmount || 500000).toLocaleString("en-IN")}
+                          </p>
                         </div>
-                        <p className="text-sm text-gray-600 mb-1">Interest: <span className="font-medium">{product.interestRate}% p.a.</span></p>
-                        <p className="text-xs text-gray-500">Max Amount: ₹{product.maxAmount.toLocaleString()}</p>
-                        <p className="text-xs text-gray-500">Tenure: {product.minTenure} - {product.maxTenure} months</p>
+                        <p className="text-[11px] text-slate-400">Tenure: {p.minTenure} - {p.maxTenure} months</p>
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })
                 )}
-              </div>
-
-              {/* 2. Loan Details */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                  <Calculator className="h-5 w-5 mr-2 text-blue-600" />
-                  Loan Details
-                </h2>
-                
-                <div className="space-y-6">
-                  {/* Amount Slider */}
-                  <div>
-                    <div className="flex justify-between mb-2">
-                      <label className="text-sm font-medium text-gray-700">Loan Amount</label>
-                      <span className="text-sm font-bold text-blue-600">₹{formData.amount.toLocaleString()}</span>
-                    </div>
-                    <input
-                      type="range"
-                      name="amount"
-                      min="10000"
-                      max={selectedProduct?.maxAmount || 500000}
-                      step="5000"
-                      value={formData.amount}
-                      onChange={handleChange}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                    />
-                    <div className="flex justify-between text-xs text-gray-500 mt-1">
-                      <span>₹10k</span>
-                      <span>₹{selectedProduct?.maxAmount ? (selectedProduct.maxAmount/1000).toFixed(0) + 'k' : '500k'}</span>
-                    </div>
-                  </div>
-
-                  {/* Tenure Slider */}
-                  <div>
-                    <div className="flex justify-between mb-2">
-                      <label className="text-sm font-medium text-gray-700">Tenure (Months)</label>
-                      <span className="text-sm font-bold text-blue-600">{formData.tenureMonths} Months</span>
-                    </div>
-                    <input
-                      type="range"
-                      name="tenureMonths"
-                      min="3"
-                      max="60"
-                      step="1"
-                      value={formData.tenureMonths}
-                      onChange={handleChange}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                    />
-                    <div className="flex justify-between text-xs text-gray-500 mt-1">
-                      <span>3 Mo</span>
-                      <span>60 Mo</span>
-                    </div>
-                  </div>
-
-                  {/* Purpose */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Purpose of Loan</label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      {purposeOptions.map((opt) => (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          onClick={() => setFormData(prev => ({ ...prev, purpose: opt.value }))}
-                          className={`flex flex-col items-center justify-center p-3 rounded-lg border transition-all ${
-                            formData.purpose === opt.value
-                              ? 'border-blue-600 bg-blue-50 text-blue-700'
-                              : 'border-gray-200 hover:bg-gray-50 text-gray-600'
-                          }`}
-                        >
-                          <opt.icon className="h-6 w-6 mb-1" />
-                          <span className="text-xs font-medium">{opt.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Employment & Income */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Employment Type</label>
-                      <select
-                        name="employmentType"
-                        value={formData.employmentType}
-                        onChange={handleChange}
-                        className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-blue-500 focus:border-blue-500"
-                      >
-                        <option value="Salaried">Salaried</option>
-                        <option value="Self-Employed">Self Employed</option>
-                        <option value="Business">Business Owner</option>
-                        <option value="Farmer">Farmer</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Income (₹)</label>
-                      <input
-                        type="number"
-                        name="monthlyIncome"
-                        value={formData.monthlyIncome}
-                        onChange={handleChange}
-                        placeholder="e.g. 25000"
-                        className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 3. Documents */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                  <FileText className="h-5 w-5 mr-2 text-blue-600" />
-                  Documents (Optional)
-                </h2>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-50 transition-colors">
-                  <Upload className="h-10 w-10 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium text-blue-600">Click to upload</span> or drag and drop
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">PDF, JPG, PNG (Max 5MB)</p>
-                  <input 
-                    type="file" 
-                    className="hidden" 
-                    id="doc-upload"
-                    onChange={handleFileChange}
-                    accept=".pdf,.jpg,.jpeg,.png"
-                  />
-                  <label htmlFor="doc-upload" className="mt-3 inline-block px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer">
-                    Select Files
-                  </label>
-                  {formData.documents && (
-                    <p className="mt-2 text-sm text-green-600 flex items-center justify-center">
-                      <CheckCircle className="h-4 w-4 mr-1" /> {formData.documents.name}
-                    </p>
-                  )}
-                </div>
               </div>
             </div>
 
-            {/* RIGHT COLUMN: Summary Card */}
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 sticky top-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-6">Repayment Summary</h2>
-                
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center pb-4 border-b border-gray-100">
-                    <span className="text-gray-600">Loan Amount</span>
-                    <span className="font-semibold text-gray-900">₹{formData.amount.toLocaleString()}</span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center pb-4 border-b border-gray-100">
-                    <span className="text-gray-600">Interest Rate</span>
-                    <span className="font-semibold text-gray-900">{selectedProduct?.interestRate || 0}% p.a.</span>
-                  </div>
+            {/* Slider & Calculator */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-6">
+                <h2 className="text-lg font-bold text-slate-900">Customize Loan Details</h2>
 
-                  <div className="flex justify-between items-center pb-4 border-b border-gray-100">
-                    <span className="text-gray-600">Tenure</span>
-                    <span className="font-semibold text-gray-900">{formData.tenureMonths} Months</span>
+                {/* Amount Slider */}
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold uppercase text-slate-500">Loan Amount (₹)</label>
+                    <span className="text-xl font-extrabold text-teal-700">
+                      ₹{Number(formData.amount).toLocaleString("en-IN")}
+                    </span>
                   </div>
-
-                  {/* EMI Highlight */}
-                  <div className="bg-blue-50 rounded-lg p-4 my-4">
-                    <p className="text-sm text-blue-800 mb-1">Estimated Monthly EMI</p>
-                    <p className="text-3xl font-bold text-blue-600">₹{emiDetails.monthlyEmi.toLocaleString()}</p>
+                  <input
+                    type="range"
+                    min="10000"
+                    max={selectedProduct?.maxAmount || 500000}
+                    step="5000"
+                    value={formData.amount}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, amount: Number(e.target.value) }))}
+                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-teal-700"
+                  />
+                  <div className="flex justify-between text-xs text-slate-400 font-mono">
+                    <span>₹10,000</span>
+                    <span>₹{Number(selectedProduct?.maxAmount || 500000).toLocaleString("en-IN")}</span>
                   </div>
+                </div>
 
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between text-gray-600">
-                      <span>Total Interest</span>
-                      <span>₹{emiDetails.totalInterest.toLocaleString()}</span>
+                {/* Tenure Slider */}
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold uppercase text-slate-500">Tenure (Months)</label>
+                    <span className="text-xl font-extrabold text-teal-700">{formData.tenureMonths} Months</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={selectedProduct?.minTenure || 3}
+                    max={selectedProduct?.maxTenure || 60}
+                    step="3"
+                    value={formData.tenureMonths}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, tenureMonths: Number(e.target.value) }))}
+                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-teal-700"
+                  />
+                  <div className="flex justify-between text-xs text-slate-400 font-mono">
+                    <span>{selectedProduct?.minTenure || 3} Months</span>
+                    <span>{selectedProduct?.maxTenure || 60} Months</span>
+                  </div>
+                </div>
+
+                {/* Purpose Selection */}
+                <div>
+                  <label className="block text-xs font-bold uppercase text-slate-500 mb-2">Loan Purpose</label>
+                  <select
+                    name="purpose"
+                    value={formData.purpose}
+                    onChange={handleChange}
+                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                  >
+                    <option value="Personal">Personal Expense</option>
+                    <option value="Home Improvement">Home Improvement</option>
+                    <option value="Education">Higher Education</option>
+                    <option value="Medical">Medical Emergency</option>
+                    <option value="Business Expansion">Business Expansion</option>
+                    <option value="Vehicle Purchase">Vehicle Purchase</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* EMI Preview Card */}
+              <div className="bg-gradient-to-br from-slate-900 via-teal-950 to-slate-900 rounded-2xl p-6 text-white shadow-xl flex flex-col justify-between space-y-6">
+                <div>
+                  <div className="flex items-center gap-2 text-teal-400 text-xs font-bold uppercase tracking-wider mb-3">
+                    <Calculator className="w-4 h-4" /> EMI Calculator Breakdown
+                  </div>
+                  <p className="text-xs text-slate-400">Estimated monthly repayment based on current interest rates.</p>
+
+                  <div className="mt-6 space-y-4">
+                    <div className="p-4 rounded-xl bg-white/10 border border-white/10">
+                      <span className="text-xs text-slate-300">Estimated Monthly EMI</span>
+                      <p className="text-3xl font-extrabold text-white mt-1">
+                        ₹{emiDetails.monthlyEmi.toLocaleString("en-IN")}
+                      </p>
                     </div>
-                    <div className="flex justify-between text-gray-900 font-bold text-base pt-2 border-t border-gray-200">
-                      <span>Total Payable</span>
-                      <span>₹{emiDetails.totalPayment.toLocaleString()}</span>
+
+                    <div className="grid grid-cols-2 gap-3 text-xs">
+                      <div className="p-3 rounded-lg bg-white/5 border border-white/5">
+                        <span className="text-slate-400">Total Interest</span>
+                        <p className="font-bold text-amber-300 mt-0.5">₹{emiDetails.totalInterest.toLocaleString("en-IN")}</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-white/5 border border-white/5">
+                        <span className="text-slate-400">Total Payable</span>
+                        <p className="font-bold text-teal-300 mt-0.5">₹{emiDetails.totalPayment.toLocaleString("en-IN")}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 <button
-                  type="submit"
-                  disabled={loading || !selectedProduct}
-                  className="w-full mt-8 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3.5 rounded-lg font-bold shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
+                  type="button"
+                  onClick={() => setActiveStep(2)}
+                  className="w-full py-3.5 bg-teal-700 hover:bg-teal-600 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-teal-700/30 transition-all flex items-center justify-center gap-2"
                 >
-                  {loading ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      Apply Now <ArrowRight className="ml-2 h-5 w-5" />
-                    </>
-                  )}
+                  Continue to Step 2 <ArrowRight className="w-4 h-4" />
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
 
-                <p className="text-xs text-gray-500 text-center mt-4 flex items-center justify-center">
-                  <Info className="h-3 w-3 mr-1" />
-                  This is a preliminary application. Final approval subject to verification.
-                </p>
+        {/* STEP 2: Employment & Income Details */}
+        {activeStep === 2 && (
+          <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-6">
+            <h2 className="text-lg font-bold text-slate-900">Employment & Financial Profile</h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-xs font-bold uppercase text-slate-500 mb-2">Employment Type</label>
+                <select
+                  name="employmentType"
+                  value={formData.employmentType}
+                  onChange={handleChange}
+                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                >
+                  <option value="Salaried">Salaried Employee</option>
+                  <option value="Self Employed">Self Employed / Business Owner</option>
+                  <option value="Professional">Doctor / Lawyer / CA</option>
+                  <option value="Government Employee">Government Sector</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase text-slate-500 mb-2">Net Monthly Income (₹)</label>
+                <input
+                  type="number"
+                  name="monthlyIncome"
+                  required
+                  value={formData.monthlyIncome}
+                  onChange={handleChange}
+                  placeholder="e.g. 50000"
+                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                />
               </div>
             </div>
 
+            <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setActiveStep(1)}
+                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl"
+              >
+                Back
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveStep(3)}
+                className="px-6 py-2.5 bg-teal-700 hover:bg-teal-800 text-white font-semibold text-xs rounded-xl flex items-center gap-1.5"
+              >
+                Next Step <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-        </form>
-      </div>
+        )}
+
+        {/* STEP 3: Document Upload */}
+        {activeStep === 3 && (
+          <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-6">
+            <h2 className="text-lg font-bold text-slate-900">Upload Supporting Documents</h2>
+            <p className="text-xs text-slate-500">Upload income proof, salary slips, or bank statement (Optional at stage 1)</p>
+
+            <div className="border-2 border-dashed border-slate-300 hover:border-teal-600 rounded-2xl p-8 text-center bg-slate-50/50 transition-all">
+              <Upload className="w-10 h-10 text-teal-600 mx-auto mb-2" />
+              <p className="text-sm font-bold text-slate-800">Select Document File</p>
+              <p className="text-xs text-slate-400 mt-1">PDF, PNG, or JPG up to 10MB</p>
+              <input type="file" onChange={handleFileChange} className="mt-4 text-xs mx-auto" />
+              {formData.documents && (
+                <p className="text-xs font-semibold text-teal-700 mt-3">
+                  Selected: {formData.documents.name}
+                </p>
+              )}
+            </div>
+
+            <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setActiveStep(2)}
+                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl"
+              >
+                Back
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveStep(4)}
+                className="px-6 py-2.5 bg-teal-700 hover:bg-teal-800 text-white font-semibold text-xs rounded-xl flex items-center gap-1.5"
+              >
+                Review Application <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 4: Final Review & Submit */}
+        {activeStep === 4 && (
+          <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-6">
+            <h2 className="text-lg font-bold text-slate-900">Review Application Summary</h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 rounded-xl bg-slate-50 border border-slate-200/80 text-sm">
+              <div>
+                <span className="text-slate-400 text-xs">Loan Scheme</span>
+                <p className="font-bold text-slate-900">{selectedProduct?.product_name}</p>
+              </div>
+              <div>
+                <span className="text-slate-400 text-xs">Requested Loan Amount</span>
+                <p className="font-bold text-teal-700">₹{Number(formData.amount).toLocaleString("en-IN")}</p>
+              </div>
+              <div>
+                <span className="text-slate-400 text-xs">Tenure & Rate</span>
+                <p className="font-bold text-slate-900">{formData.tenureMonths} Months @ {selectedProduct?.interestRate}% p.a.</p>
+              </div>
+              <div>
+                <span className="text-slate-400 text-xs">Monthly Estimated EMI</span>
+                <p className="font-bold text-teal-700">₹{emiDetails.monthlyEmi.toLocaleString("en-IN")}</p>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setActiveStep(3)}
+                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl"
+              >
+                Back
+              </button>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-8 py-3 bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md shadow-teal-700/30 transition-all flex items-center gap-2"
+              >
+                {loading ? "Submitting..." : "Submit Loan Application"}
+              </button>
+            </div>
+          </div>
+        )}
+      </form>
     </div>
   );
-};
-
-export default ApplyLoan;
+}

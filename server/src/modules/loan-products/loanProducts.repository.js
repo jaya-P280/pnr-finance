@@ -104,6 +104,26 @@ class LoanProductRepository {
 
   async findAll(filters) {
     const params = [];
+    const page = Math.max(Number.parseInt(filters.page, 10) || 1, 1);
+    const limit = Math.min(
+      Math.max(Number.parseInt(filters.limit, 10) || 10, 1),
+      100,
+    );
+    const offset = (page - 1) * limit;
+    const sortableColumns = new Set([
+      "product_code",
+      "product_name",
+      "product_type",
+      "interest_rate",
+      "status",
+      "created_at",
+    ]);
+    const sortBy = sortableColumns.has(filters.sortBy)
+      ? filters.sortBy
+      : "created_at";
+    const sortOrder = String(filters.sortOrder).toUpperCase() === "ASC"
+      ? "ASC"
+      : "DESC";
 
     let sql = `
       SELECT
@@ -138,13 +158,10 @@ class LoanProductRepository {
     }
 
     sql += `
-      ORDER BY ${filters.sortBy} ${filters.sortOrder}
-      LIMIT ?
-      OFFSET ?
+      ORDER BY ${sortBy} ${sortOrder}
+      LIMIT ${limit}
+      OFFSET ${offset}
     `;
-
-    params.push(filters.limit);
-    params.push((filters.page - 1) * filters.limit);
 
     const [rows] = await db.query(sql, params);
 

@@ -29,6 +29,11 @@ const ENDPOINTS = {
   LOANS: "/loans",
 
   COLLECTIONS: "/collections",
+  FINANCE: {
+    CASHBOOK: "/finance/cashbook",
+    EXPENSES: "/finance/expenses",
+    INCOME: "/finance/income",
+  },
 
   REPORTS: "/reports",
   SETTINGS: "/settings",

@@ -16,6 +16,8 @@ import dashboardRoutes from "../modules/dashboard/dashboard.routes.js";
 import reportRoutes from "../modules/reports/reports.routes.js";
 import emiRoutes from "../modules/emi/emi.routes.js";
 import customerPortalRoutes from "../modules/customer-portal/customerPortal.routes.js";
+import taskRoutes from "../modules/tasks/tasks.routes.js";
+import financeRoutes from "../modules/finance/finance.routes.js";
 
 const router = express.Router();
 
@@ -31,10 +33,12 @@ router.use("/loan-application", loanApplicationRouter);
 router.use("/loans", loanRoutes);
 router.use("/groups", groupRoutes);
 router.use("/collections", collectionRoutes);
+router.use("/finance", financeRoutes);
 router.use("/settings", settingsRoutes);
 router.use("/dashboard", dashboardRoutes);
 router.use("/reports", reportRoutes);
 router.use("/emi", emiRoutes);
 router.use("/customer", customerPortalRoutes);
+router.use("/tasks", taskRoutes);
 
 export default router;

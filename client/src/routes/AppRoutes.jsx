@@ -33,6 +33,7 @@ import CustomerReports from "../pages/reports/CustomerReports";
 import LoanReports from "../pages/reports/LoanReports";
 import Roles from "../pages/roles/Roles";
 import UnifiedSettings from "../pages/settings/UnifiedSettings";
+import Tasks from "../pages/tasks/Tasks";
 import UsersList from "../pages/users/UsersList";
 
 export default function AppRoutes() {
@@ -60,11 +61,13 @@ export default function AppRoutes() {
           <Route path="/loans" element={<Loans />} />
           <Route path="/collections" element={<Collections />} />
           <Route path="/cash-book" element={<CashBook />} />
+          <Route path="/cashbook" element={<CashBook />} />
           <Route path="/expenses" element={<Expenses />} />
           <Route path="/income" element={<Income />} />
           <Route path="/loan-reports" element={<LoanReports />} />
           <Route path="/collection-reports" element={<CollectionReports />} />
           <Route path="/customer-reports" element={<CustomerReports />} />
+          <Route path="/tasks" element={<Tasks />} />
           <Route path="/settings" element={<UnifiedSettings />} />
 
           <Route path="/customer/dashboard" element={<CustomerDashboard />} />

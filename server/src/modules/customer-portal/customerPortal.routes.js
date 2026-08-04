@@ -82,12 +82,7 @@ router.get(
 );
 
 router.get("/kyc/status", customerPortalController.getKycStatus);
-router.post(
-  "/kyc",
-  kycUpload,
-  uploadKycValidation,
-  validateRequest,
-  customerPortalController.uploadKycDocument,
-);
+router.post("/kyc/digilocker", customerPortalController.verifyDigiLockerKyc);
+router.post("/kyc/pan", customerPortalController.verifyPanKyc);
 
 export default router;

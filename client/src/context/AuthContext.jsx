@@ -6,6 +6,8 @@ import { setupAuthInterceptors } from "../api/axios";
 const AuthContext = createContext(null);
 const SESSION_MARKER = "pnrg.auth.session";
 
+const REFRESH_TOKEN_KEY = "pnrg.refresh_token";
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [accessToken, setToken] = useState(null);
@@ -22,10 +24,14 @@ export function AuthProvider({ children }) {
   const saveSession = useCallback(
     (tokens, userDetails) => {
       setToken(tokens.accessToken);
-      setRefreshToken(tokens.refreshToken || null);
+      const newRefresh = tokens.refreshToken || null;
+      setRefreshToken(newRefresh);
       setUser(userDetails);
-      syncTokensWithWindow(tokens.accessToken, tokens.refreshToken);
+      syncTokensWithWindow(tokens.accessToken, newRefresh);
       window.sessionStorage.setItem(SESSION_MARKER, "1");
+      if (newRefresh) {
+        window.localStorage.setItem(REFRESH_TOKEN_KEY, newRefresh);
+      }
     },
     [syncTokensWithWindow],
   );
@@ -34,8 +40,9 @@ export function AuthProvider({ children }) {
     setToken(null);
     setRefreshToken(null);
     setUser(null);
-      syncTokensWithWindow(null, null);
-      window.sessionStorage.removeItem(SESSION_MARKER);
+    syncTokensWithWindow(null, null);
+    window.sessionStorage.removeItem(SESSION_MARKER);
+    window.localStorage.removeItem(REFRESH_TOKEN_KEY);
   }, [syncTokensWithWindow]);
 
   // Callbacks for axios interceptors
@@ -44,7 +51,11 @@ export function AuthProvider({ children }) {
     [accessToken],
   );
   const getRefreshToken = useCallback(
-    () => refreshToken || window.__AUTH_REFRESH_TOKEN__ || null,
+    () =>
+      refreshToken ||
+      window.__AUTH_REFRESH_TOKEN__ ||
+      window.localStorage.getItem(REFRESH_TOKEN_KEY) ||
+      null,
     [refreshToken],
   );
 
@@ -52,10 +63,15 @@ export function AuthProvider({ children }) {
     (newAccessToken, newRefreshToken) => {
       if (newAccessToken) {
         setToken(newAccessToken);
-        if (newRefreshToken) {
-          setRefreshToken(newRefreshToken);
+        const activeRefresh =
+          newRefreshToken ||
+          refreshToken ||
+          window.localStorage.getItem(REFRESH_TOKEN_KEY);
+        if (activeRefresh) {
+          setRefreshToken(activeRefresh);
+          window.localStorage.setItem(REFRESH_TOKEN_KEY, activeRefresh);
         }
-        syncTokensWithWindow(newAccessToken, newRefreshToken || refreshToken);
+        syncTokensWithWindow(newAccessToken, activeRefresh);
       } else {
         clearSession();
       }
@@ -79,7 +95,11 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(async () => {
     try {
-      await authService.logout();
+      const activeRefresh =
+        refreshToken ||
+        window.__AUTH_REFRESH_TOKEN__ ||
+        window.localStorage.getItem(REFRESH_TOKEN_KEY);
+      await authService.logout(activeRefresh);
     } catch (error) {
       toast.error(
         `Logout failed: ${error?.response?.data?.message || error?.message || "Unknown error"}`,
@@ -87,30 +107,38 @@ export function AuthProvider({ children }) {
     }
 
     clearSession();
-  }, [clearSession]);
+  }, [refreshToken, clearSession]);
 
   const initializeSession = useCallback(
     async () => {
-      // Do not call the refresh endpoint for a fresh, anonymous browser tab.
-      // This avoids a 401 retry/noise loop when no refresh cookie exists.
-      if (window.sessionStorage.getItem(SESSION_MARKER) !== "1") {
+      const activeRefresh =
+        refreshToken ||
+        window.__AUTH_REFRESH_TOKEN__ ||
+        window.localStorage.getItem(REFRESH_TOKEN_KEY);
+
+      // Do not call the refresh endpoint if neither marker nor token exists
+      if (
+        window.sessionStorage.getItem(SESSION_MARKER) !== "1" &&
+        !activeRefresh
+      ) {
         setLoading(false);
         return;
       }
       setLoading(true);
 
       try {
-        const refreshed = await authService.refresh();
+        const refreshed = await authService.refresh(activeRefresh);
         if (!refreshed?.accessToken) {
           clearSession();
           return;
         }
         setToken(refreshed.accessToken);
-        setRefreshToken(refreshed.refreshToken || null);
-        syncTokensWithWindow(
-          refreshed.accessToken,
-          refreshed.refreshToken || null,
-        );
+        const newRefresh = refreshed.refreshToken || activeRefresh;
+        setRefreshToken(newRefresh || null);
+        if (newRefresh) {
+          window.localStorage.setItem(REFRESH_TOKEN_KEY, newRefresh);
+        }
+        syncTokensWithWindow(refreshed.accessToken, newRefresh || null);
 
         const profile = await authService.getProfile();
         setUser(profile);
@@ -120,7 +148,7 @@ export function AuthProvider({ children }) {
         setLoading(false);
       }
     },
-    [clearSession, syncTokensWithWindow],
+    [refreshToken, clearSession, syncTokensWithWindow],
   );
 
   useEffect(() => {

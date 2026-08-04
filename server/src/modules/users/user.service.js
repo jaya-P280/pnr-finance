@@ -27,6 +27,20 @@ class UserService {
           );
         }
       }
+      if (createdBy.role_name === "ADMIN") {
+        const [targetRole] = await pool.execute(
+          `SELECT role_name FROM roles WHERE role_id = ?`,
+          [data.roleId],
+        );
+        if (
+          ["SUPER_ADMIN", "ADMIN", "CUSTOMER"].includes(targetRole[0]?.role_name)
+        ) {
+          throw new ApiError(
+            403,
+            "Admin can only create Employee accounts (Branch Manager, Field Officer, Accountant).",
+          );
+        }
+      }
       if (createdBy.role_name === "BRANCH_MANAGER") {
         const [targetRole] = await pool.execute(
           `SELECT role_name FROM roles WHERE role_id = ?`,

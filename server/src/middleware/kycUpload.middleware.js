@@ -4,7 +4,7 @@ import path from "path";
 import multer from "multer";
 import ApiError from "../shared/ApiError.js";
 
-const uploadDirectory = path.join(import.meta.dirname, "..", "uploads", "kyc");
+const uploadDirectory = path.join(process.cwd(), "uploads", "kyc");
 fs.mkdirSync(uploadDirectory, { recursive: true });
 
 const storage = multer.diskStorage({

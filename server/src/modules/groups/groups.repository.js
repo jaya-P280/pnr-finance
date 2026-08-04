@@ -37,7 +37,8 @@ class GroupRepository {
     let sql = `
       SELECT cg.*, b.branch_name,
         (SELECT COUNT(*) FROM group_members gm WHERE gm.group_id = cg.group_id AND gm.deleted_at IS NULL) AS member_count,
-        (SELECT COUNT(*) FROM loans l WHERE l.group_id = cg.group_id AND l.status = 'ACTIVE') AS active_loans
+        (SELECT COUNT(*) FROM loans l WHERE l.group_id = cg.group_id AND l.status = 'ACTIVE') AS active_loans,
+        COALESCE((SELECT SUM(col.total_amount) FROM collections col INNER JOIN loans l ON l.loan_id = col.loan_id WHERE l.group_id = cg.group_id), 0) AS total_collected
       FROM customer_groups cg
       INNER JOIN branches b ON b.branch_id = cg.branch_id
       WHERE cg.deleted_at IS NULL
@@ -75,7 +76,10 @@ class GroupRepository {
 
   async findById(id) {
     const [rows] = await db.execute(
-      `SELECT cg.*, b.branch_name
+      `SELECT cg.*, b.branch_name,
+        (SELECT COUNT(*) FROM group_members gm WHERE gm.group_id = cg.group_id AND gm.deleted_at IS NULL) AS member_count,
+        (SELECT COUNT(*) FROM loans l WHERE l.group_id = cg.group_id AND l.status = 'ACTIVE') AS active_loans,
+        COALESCE((SELECT SUM(col.total_amount) FROM collections col INNER JOIN loans l ON l.loan_id = col.loan_id WHERE l.group_id = cg.group_id), 0) AS total_collected
        FROM customer_groups cg
        INNER JOIN branches b ON b.branch_id = cg.branch_id
        WHERE cg.group_id = ? AND cg.deleted_at IS NULL`,
@@ -101,11 +105,12 @@ class GroupRepository {
   // --- Members ---
   async getMembers(groupId) {
     const [rows] = await db.execute(
-      `SELECT gm.*, CONCAT(c.first_name, ' ', c.last_name) customer_name, c.mobile_number, c.customer_code
+      `SELECT gm.*, CONCAT(c.first_name, ' ', COALESCE(c.last_name, '')) customer_name, c.mobile_number, c.customer_code, c.email, COALESCE(ck.kyc_status, 'PENDING') AS kyc_status
        FROM group_members gm
        INNER JOIN customers c ON c.customer_id = gm.customer_id
+       LEFT JOIN customer_kyc ck ON ck.customer_id = c.customer_id
        WHERE gm.group_id = ? AND gm.deleted_at IS NULL
-       ORDER BY gm.joined_at DESC`,
+       ORDER BY gm.role DESC, gm.joined_at DESC`,
       [groupId],
     );
     return rows;

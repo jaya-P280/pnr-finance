@@ -213,8 +213,9 @@ class LoanRepository {
       params.push(filters.toDate);
     }
 
+    const sortCol = filters.sortBy.includes(".") ? filters.sortBy : `l.${filters.sortBy}`;
     sql += `
-      ORDER BY ${filters.sortBy} ${filters.sortOrder}
+      ORDER BY ${sortCol} ${filters.sortOrder}
       LIMIT ?
       OFFSET ?
     `;

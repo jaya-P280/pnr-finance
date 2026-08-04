@@ -18,11 +18,13 @@ const authenticate = async (req, res, next) => {
 
     const decode = jwt.verify(token, env.JWT.ACCESS_SECRET);
     const user = await authRepository.findUserById(decode.sub);
-    user.profile_image = getFullImageUrl(req, user.profile_image, "users");
-
     if (!user) {
-      throw new ApiError(401, "User not Found");
+      throw new ApiError(401, "User not found");
     }
+    if (user.status !== "ACTIVE") {
+      throw new ApiError(403, "User account is suspended or inactive");
+    }
+    user.profile_image = getFullImageUrl(req, user.profile_image, "users");
     req.user = {
       ...user,
       permissions: decode.permissions,

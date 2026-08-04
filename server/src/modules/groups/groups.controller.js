@@ -40,7 +40,7 @@ class GroupController {
 
   addMember = async (req, res, next) => {
     try {
-      await groupService.addMember(req.params.id, req.body.customerId, req.user);
+      await groupService.addMember(req.params.id, req.body.customerId, req.user, req.body.role);
       res.json(new ApiResponse(200, GROUP_MESSAGES.MEMBER_ADDED));
     } catch (error) { next(error); }
   };
