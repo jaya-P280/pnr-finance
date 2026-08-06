@@ -277,7 +277,7 @@ export default function Tasks() {
 
         {/* Stats Cards */}
         <Grid container spacing={2.5} sx={{ mb: 3 }}>
-          <Grid xs={12} sm={6} md={2.4}>
+          <Grid item xs={12} sm={6} md={2.4}>
             <Card elevation={0} sx={{ border: "1px solid #E2E8F0", borderRadius: 3 }}>
               <CardContent sx={{ p: 2.5 }}>
                 <Typography variant="caption" color="#64748B" fontWeight={600}>
@@ -290,7 +290,7 @@ export default function Tasks() {
             </Card>
           </Grid>
 
-          <Grid xs={12} sm={6} md={2.4}>
+          <Grid item xs={12} sm={6} md={2.4}>
             <Card elevation={0} sx={{ border: "1px solid #FEF3C7", bgcolor: "#FFFBEB", borderRadius: 3 }}>
               <CardContent sx={{ p: 2.5 }}>
                 <Typography variant="caption" color="#D97706" fontWeight={700}>
@@ -303,7 +303,7 @@ export default function Tasks() {
             </Card>
           </Grid>
 
-          <Grid xs={12} sm={6} md={2.4}>
+          <Grid item xs={12} sm={6} md={2.4}>
             <Card elevation={0} sx={{ border: "1px solid #E0F2FE", bgcolor: "#F0F9FF", borderRadius: 3 }}>
               <CardContent sx={{ p: 2.5 }}>
                 <Typography variant="caption" color="#0284C7" fontWeight={700}>
@@ -316,7 +316,7 @@ export default function Tasks() {
             </Card>
           </Grid>
 
-          <Grid xs={12} sm={6} md={2.4}>
+          <Grid item xs={12} sm={6} md={2.4}>
             <Card elevation={0} sx={{ border: "1px solid #D1FAE5", bgcolor: "#ECFDF5", borderRadius: 3 }}>
               <CardContent sx={{ p: 2.5 }}>
                 <Typography variant="caption" color="#059669" fontWeight={700}>
@@ -329,7 +329,7 @@ export default function Tasks() {
             </Card>
           </Grid>
 
-          <Grid xs={12} sm={6} md={2.4}>
+          <Grid item xs={12} sm={6} md={2.4}>
             <Card elevation={0} sx={{ border: "1px solid #FEE2E2", bgcolor: "#FEF2F2", borderRadius: 3 }}>
               <CardContent sx={{ p: 2.5 }}>
                 <Typography variant="caption" color="#DC2626" fontWeight={700}>
@@ -363,7 +363,7 @@ export default function Tasks() {
             </Tabs>
 
             <Grid container spacing={2}  sx={{ alignItems: "center" }}>
-              <Grid xs={12} md={5}>
+              <Grid item xs={12} md={5}>
                 <TextField
                   fullWidth
                   size="small"
@@ -378,7 +378,7 @@ export default function Tasks() {
                 />
               </Grid>
 
-              <Grid xs={12} sm={6} md={3.5}>
+              <Grid item xs={12} sm={6} md={3.5}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Category</InputLabel>
                   <Select
@@ -396,7 +396,7 @@ export default function Tasks() {
                 </FormControl>
               </Grid>
 
-              <Grid xs={12} sm={6} md={3.5}>
+              <Grid item xs={12} sm={6} md={3.5}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Priority</InputLabel>
                   <Select
@@ -449,7 +449,7 @@ export default function Tasks() {
               CATEGORY_OPTIONS.find((c) => c.value === task.category) || CATEGORY_OPTIONS[0];
 
             return (
-              <Grid key={task.task_id} xs={12} md={6} lg={4}>
+              <Grid item key={task.task_id} xs={12} md={6} lg={4}>
                 <Card
                   elevation={0}
                   sx={{
@@ -658,7 +658,7 @@ export default function Tasks() {
               />
 
               <Grid container spacing={2}>
-                <Grid xs={12} sm={6}>
+                <Grid item xs={12} sm={6}>
                   <FormControl fullWidth required size="small">
                     <InputLabel>Category</InputLabel>
                     <Select
@@ -675,7 +675,7 @@ export default function Tasks() {
                   </FormControl>
                 </Grid>
 
-                <Grid xs={12} sm={6}>
+                <Grid item xs={12} sm={6}>
                   <FormControl fullWidth required size="small">
                     <InputLabel>Priority</InputLabel>
                     <Select
@@ -694,7 +694,7 @@ export default function Tasks() {
               </Grid>
 
               <Grid container spacing={2}>
-                <Grid xs={12} sm={6}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
                     type="date"
@@ -705,7 +705,7 @@ export default function Tasks() {
                   />
                 </Grid>
 
-                <Grid xs={12} sm={6}>
+                <Grid item xs={12} sm={6}>
                   <FormControl fullWidth size="small">
                     <InputLabel>Assign To Officer</InputLabel>
                     <Select
@@ -725,7 +725,7 @@ export default function Tasks() {
               </Grid>
 
               <Grid container spacing={2}>
-                <Grid xs={12} sm={6}>
+                <Grid item xs={12} sm={6}>
                   <FormControl fullWidth size="small">
                     <InputLabel>Branch</InputLabel>
                     <Select
@@ -743,7 +743,7 @@ export default function Tasks() {
                   </FormControl>
                 </Grid>
 
-                <Grid xs={12} sm={6}>
+                <Grid item xs={12} sm={6}>
                   <FormControl fullWidth size="small">
                     <InputLabel>Customer (Optional)</InputLabel>
                     <Select

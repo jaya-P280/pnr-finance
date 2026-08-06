@@ -7,11 +7,11 @@ class DashboardService {
       await Promise.all([
         dashboardRepository.getTotalCustomers(branchId),
         dashboardRepository.getActiveLoans(branchId),
-        dashboardRepository.getPendingApplications(),
+        dashboardRepository.getPendingApplications(branchId),
         dashboardRepository.getOverdueLoans(branchId),
-        dashboardRepository.getTodayCollection(),
-        dashboardRepository.getMonthlyCollection(),
-        dashboardRepository.getMonthlyChart(),
+        dashboardRepository.getTodayCollection(branchId),
+        dashboardRepository.getMonthlyCollection(branchId),
+        dashboardRepository.getMonthlyChart(branchId),
         dashboardRepository.getBranchPerformance(),
       ]);
 

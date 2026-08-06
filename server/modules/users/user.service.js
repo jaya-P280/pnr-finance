@@ -3,6 +3,7 @@ import crypto from "crypto";
 import logger from "../../config/logger.js";
 import ApiError from "../../shared/ApiError.js";
 import userRepository from "./user.repository.js";
+import authRepository from "../auth/auth.repository.js";
 import { EMPLOYEE, USER_MESSAGES } from "./user.constants.js";
 import { profile } from "console";
 import pool from "../../database/db.js";
@@ -31,23 +32,36 @@ class UserService {
         }
 
         if (createdBy.role_name === "SUPER_ADMIN") {
-          const [adminRole] = await pool.execute(
-            `SELECT role_id FROM roles WHERE role_name = 'ADMIN'`,
+          const [targetRole] = await pool.execute(
+            `SELECT role_name FROM roles WHERE role_id = ?`,
+            [data.roleId],
           );
-          if (!adminRole[0] || Number(data.roleId) !== adminRole[0].role_id) {
+          const targetRoleName = targetRole[0]?.role_name;
+
+          if (
+            !["ADMIN", "BRANCH_MANAGER", "FIELD_OFFICER", "ACCOUNTANT"].includes(
+              targetRoleName,
+            )
+          ) {
             throw new ApiError(
               403,
-              "Super Admin can only create Admin accounts.",
+              "Super Admin can only create Admin, Branch Manager, Field Officer, and Accountant accounts.",
             );
           }
         }
         if (createdBy.role_name === "ADMIN") {
+          const [targetRole] = await pool.execute(
+            `SELECT role_name FROM roles WHERE role_id = ?`,
+            [data.roleId],
+          );
+          const targetRoleName = targetRole[0]?.role_name;
+
           if (
             ["SUPER_ADMIN", "ADMIN", "CUSTOMER"].includes(targetRoleName)
           ) {
             throw new ApiError(
               403,
-              "Admin can only create Employee accounts (Branch Manager, Field Officer, Accountant).",
+              "Admin can only create Branch Manager, Field Officer, and Accountant accounts.",
             );
           }
         }
@@ -261,21 +275,34 @@ class UserService {
       throw new ApiError(404, USER_MESSAGES.NOT_FOUND);
     }
 
+    const permissions = await authRepository.getUserPermissions(userId);
+
     return {
       userId: user.user_id,
+      user_id: user.user_id,
       roleId: user.role_id,
+      role_id: user.role_id,
       branchId: user.branch_id,
+      branch_id: user.branch_id,
       employeeCode: user.employee_code,
+      employee_code: user.employee_code,
       firstName: user.first_name,
+      first_name: user.first_name,
       lastName: user.last_name,
+      last_name: user.last_name,
       email: user.email,
       mobileNumber: user.phone,
+      phone: user.phone,
       profileImage: user.profile_image,
+      profile_image: user.profile_image,
       status: user.status,
       createdAt: user.created_at,
       updatedAt: user.updatedAt,
       role: user.role_name,
+      role_name: user.role_name,
       branch: user.branch_name,
+      branch_name: user.branch_name,
+      permissions: permissions || [],
     };
   }
 

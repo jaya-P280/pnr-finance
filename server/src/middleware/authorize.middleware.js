@@ -8,15 +8,19 @@ const authorize = (...requiredPermissions) => {
 
     const roleName = req.user.role_name;
 
-    // --- ADMIN has full access (bypass all permission checks) ---
-    if (roleName === "ADMIN") {
+    // --- ADMIN and SUPER_ADMIN have full access (bypass all permission checks) ---
+    if (roleName === "ADMIN" || roleName === "SUPER_ADMIN") {
       return next();
     }
 
-    // --- SUPER_ADMIN gets NO bypass — only what's in their permissions ---
-    const permissions = req.user.permissions || [];
+    const permissions = (req.user.permissions || []).map((p) =>
+      String(p).toUpperCase().replace(/\./g, "_")
+    );
+    const normRequired = requiredPermissions.map((p) =>
+      String(p).toUpperCase().replace(/\./g, "_")
+    );
 
-    const hasAll = requiredPermissions.every((p) => permissions.includes(p));
+    const hasAll = normRequired.every((p) => permissions.includes(p));
 
     if (!hasAll) {
       return next(new ApiError(403, "You do not have permission to perform this action."));

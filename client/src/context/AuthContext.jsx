@@ -109,23 +109,22 @@ export function AuthProvider({ children }) {
     clearSession();
   }, [refreshToken, clearSession]);
 
-  const initializeSession = useCallback(
-    async () => {
-      const activeRefresh =
-        refreshToken ||
-        window.__AUTH_REFRESH_TOKEN__ ||
-        window.localStorage.getItem(REFRESH_TOKEN_KEY);
+  useEffect(() => {
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
 
-      // Do not call the refresh endpoint if neither marker nor token exists
-      if (
-        window.sessionStorage.getItem(SESSION_MARKER) !== "1" &&
-        !activeRefresh
-      ) {
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
+    const activeRefresh =
+      window.__AUTH_REFRESH_TOKEN__ ||
+      window.localStorage.getItem(REFRESH_TOKEN_KEY);
 
+    const hasSessionMarker = window.sessionStorage.getItem(SESSION_MARKER) === "1";
+
+    if (!hasSessionMarker && !activeRefresh) {
+      setLoading(false);
+      return;
+    }
+
+    async function initSession() {
       try {
         const refreshed = await authService.refresh(activeRefresh);
         if (!refreshed?.accessToken) {
@@ -142,29 +141,44 @@ export function AuthProvider({ children }) {
 
         const profile = await authService.getProfile();
         setUser(profile);
-      } catch {
+      } catch (err) {
+        console.error("Auth init session failed:", err);
         clearSession();
       } finally {
         setLoading(false);
       }
+    }
+
+    void initSession();
+  }, [clearSession, syncTokensWithWindow]);
+
+  const hasPermission = useCallback(
+    (perm) => {
+      if (!user || !user.permissions) return false;
+      const userPerms = (user.permissions || []).map((p) =>
+        String(p).toUpperCase().replace(/\./g, "_")
+      );
+      const permList = Array.isArray(perm) ? perm : [perm];
+      const normCheck = permList.map((p) =>
+        String(p).toUpperCase().replace(/\./g, "_")
+      );
+      return normCheck.some((p) => userPerms.includes(p));
     },
-    [refreshToken, clearSession, syncTokensWithWindow],
+    [user]
   );
 
-  useEffect(() => {
-    if (hasInitialized.current) return;
-    hasInitialized.current = true;
-    const timer = window.setTimeout(() => {
-      void initializeSession();
-    }, 0);
-    return () => {
-      window.clearTimeout(timer);
-      // React Strict Mode intentionally mounts, cleans up, and mounts again
-      // in development. Reset the guard so the second mount can complete the
-      // bootstrap and release route loading.
-      hasInitialized.current = false;
-    };
-  }, [initializeSession]);
+  const hasRole = useCallback(
+    (...roles) => {
+      if (!user || !user.role_name) return false;
+      const currentRole = String(user.role_name)
+        .toUpperCase()
+        .replace(/\s+/g, "_");
+      return roles
+        .map((r) => String(r).toUpperCase().replace(/\s+/g, "_"))
+        .includes(currentRole);
+    },
+    [user]
+  );
 
   const value = useMemo(
     () => ({
@@ -176,8 +190,10 @@ export function AuthProvider({ children }) {
       loading,
       login,
       logout,
+      hasPermission,
+      hasRole,
     }),
-    [user, accessToken, refreshToken, loading, login, logout],
+    [user, accessToken, refreshToken, loading, login, logout, hasPermission, hasRole],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

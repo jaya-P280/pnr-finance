@@ -9,7 +9,7 @@ const router = express.Router();
 
 router.post("/",
     authenticate,
-    authorize("USER_CREATE"),
+    authorize("ADMINISTRATOR_CREATE", "USER_CREATE"),
     createUserValidation,
     validateRequest,
     userController.createUser
@@ -17,7 +17,7 @@ router.post("/",
 
 router.get("/",
     authenticate,
-    authorize("USER_VIEW"),
+    authorize("ADMINISTRATOR_VIEW", "USER_VIEW"),
     userListValidation,
     validateRequest,
     userController.getUsers
@@ -25,7 +25,7 @@ router.get("/",
 
 router.get("/:id",
     authenticate,
-    authorize("USER_VIEW"),
+    authorize("ADMINISTRATOR_VIEW", "USER_VIEW"),
     userIdValidation,
     validateRequest,
     userController.getUserById
@@ -33,7 +33,7 @@ router.get("/:id",
 
 router.put("/:id",
     authenticate,
-    authorize("USER_UPDATE"),
+    authorize("ADMINISTRATOR_UPDATE", "USER_UPDATE"),
     updateUserValidation,
     validateRequest,
     userController.updateUser
@@ -41,7 +41,7 @@ router.put("/:id",
 
 router.patch("/:id/status",
     authenticate,
-    authorize("USER_UPDATE"),
+    authorize("ADMINISTRATOR_ACTIVATE", "USER_UPDATE"),
     userStatusValidation,
     validateRequest,
     userController.updateUserStatus
@@ -49,7 +49,7 @@ router.patch("/:id/status",
 
 router.delete("/:id",
     authenticate,
-    authorize("USER_DELETE"),
+    authorize("ADMINISTRATOR_DELETE", "USER_DELETE"),
     deleteUserValidation,
     validateRequest,
     userController.deleteUser

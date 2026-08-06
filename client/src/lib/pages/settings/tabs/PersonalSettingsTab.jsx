@@ -143,7 +143,7 @@ export default function PersonalSettingsTab() {
           Change Password
         </Typography>
         <Grid container spacing={3}>
-          <Grid xs={12} md={6}>
+          <Grid item xs={12} md={6}>
             <TextField
               fullWidth
               type={showPassword ? "text" : "password"}
@@ -172,8 +172,8 @@ export default function PersonalSettingsTab() {
               }}
             />
           </Grid>
-          <Grid xs={12} md={6} />
-          <Grid xs={12} md={6}>
+          <Grid item xs={12} md={6} />
+          <Grid item xs={12} md={6}>
             <TextField
               fullWidth
               type="password"
@@ -188,7 +188,7 @@ export default function PersonalSettingsTab() {
               }}
             />
           </Grid>
-          <Grid xs={12} md={6}>
+          <Grid item xs={12} md={6}>
             <TextField
               fullWidth
               type="password"
@@ -203,7 +203,7 @@ export default function PersonalSettingsTab() {
               }}
             />
           </Grid>
-          <Grid xs={12}>
+          <Grid item xs={12}>
             <Button
               variant="contained"
               onClick={handleChangePassword}

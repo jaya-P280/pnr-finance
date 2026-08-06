@@ -1,101 +1,126 @@
 export const DEFAULT_ROLES = [
   {
     role_name: "SUPER_ADMIN",
-    role_description: "Can only create and manage Admin accounts",
+    role_description: "Can only create and manage Administrator accounts",
   },
   {
     role_name: "ADMIN",
-    role_description: "Full system access to all modules",
+    role_description: "Full management of business operations",
   },
   {
     role_name: "BRANCH_MANAGER",
-    role_description:
-      "Branch-level operations, loan approvals, collection monitoring",
+    role_description: "Branch-level operations, staff oversight, and approvals",
   },
   {
     role_name: "FIELD_OFFICER",
-    role_description:
-      "Customer onboarding, loan applications, collection entry",
+    role_description: "Field customer onboarding, verification, and collection entry",
   },
   {
     role_name: "ACCOUNTANT",
-    role_description: "Financial records, reconciliation, accounting reports",
+    role_description: "Financial management, cash book, expenses, and financial reporting",
   },
   {
     role_name: "CUSTOMER",
-    role_description:
-      "End customer who registers via the public registration page",
+    role_description: "Self-service borrower customer portal",
   },
 ];
 
 export const DEFAULT_PERMISSIONS = [
+  // Administrator Management (SUPER_ADMIN ONLY)
+  {
+    permission_name: "ADMINISTRATOR_VIEW",
+    module_name: "ADMINISTRATOR",
+    description: "View administrator and employee accounts",
+  },
+  {
+    permission_name: "ADMINISTRATOR_CREATE",
+    module_name: "ADMINISTRATOR",
+    description: "Create administrator accounts (Admin, BM, FO, Accountant)",
+  },
+  {
+    permission_name: "ADMINISTRATOR_UPDATE",
+    module_name: "ADMINISTRATOR",
+    description: "Edit administrator account details",
+  },
+  {
+    permission_name: "ADMINISTRATOR_DELETE",
+    module_name: "ADMINISTRATOR",
+    description: "Delete administrator accounts",
+  },
+  {
+    permission_name: "ADMINISTRATOR_ACTIVATE",
+    module_name: "ADMINISTRATOR",
+    description: "Activate or deactivate administrator accounts",
+  },
+  {
+    permission_name: "ADMINISTRATOR_RESET_PASSWORD",
+    module_name: "ADMINISTRATOR",
+    description: "Reset administrator passwords",
+  },
+
+  // Dashboard
   {
     permission_name: "DASHBOARD_VIEW",
     module_name: "DASHBOARD",
-    description: "View dashboard",
+    description: "View analytics dashboard",
   },
 
+  // Staff User Management (For Admin / Branch Manager)
   {
     permission_name: "USER_CREATE",
     module_name: "USER",
-    description: "Create users",
+    description: "Create branch staff users",
   },
   {
     permission_name: "USER_VIEW",
     module_name: "USER",
-    description: "View users",
+    description: "View branch staff users",
   },
   {
     permission_name: "USER_UPDATE",
     module_name: "USER",
-    description: "Update users",
+    description: "Update branch staff users",
   },
   {
     permission_name: "USER_DELETE",
     module_name: "USER",
-    description: "Delete users",
+    description: "Delete branch staff users",
   },
 
+  // Roles & Permissions (View-only for Admin)
   {
     permission_name: "ROLE_VIEW",
     module_name: "ROLE",
-    description: "View roles and their assignments",
-  },
-  {
-    permission_name: "ROLE_CREATE",
-    module_name: "ROLE",
-    description: "Create roles",
-  },
-  {
-    permission_name: "ROLE_UPDATE",
-    module_name: "ROLE",
-    description: "Update roles and their assignments",
-  },
-  {
-    permission_name: "ROLE_DELETE",
-    module_name: "ROLE",
-    description: "Delete roles",
+    description: "View role definitions",
   },
   {
     permission_name: "PERMISSION_VIEW",
     module_name: "PERMISSION",
-    description: "View available permissions",
+    description: "View system permission definitions",
   },
 
+  // Audit Logs
+  {
+    permission_name: "AUDIT_VIEW",
+    module_name: "AUDIT",
+    description: "View audit trail logs",
+  },
+
+  // Branch Management
   {
     permission_name: "BRANCH_CREATE",
     module_name: "BRANCH",
-    description: "Create branches",
+    description: "Create new branches",
   },
   {
     permission_name: "BRANCH_VIEW",
     module_name: "BRANCH",
-    description: "View branches",
+    description: "View branch details",
   },
   {
     permission_name: "BRANCH_UPDATE",
     module_name: "BRANCH",
-    description: "Update branches",
+    description: "Update branch information",
   },
   {
     permission_name: "BRANCH_DELETE",
@@ -108,63 +133,66 @@ export const DEFAULT_PERMISSIONS = [
     description: "Manage branch configuration",
   },
 
+  // Customer Management
   {
     permission_name: "CUSTOMER_CREATE",
     module_name: "CUSTOMER",
-    description: "Create customers",
+    description: "Create new customer profiles",
   },
   {
     permission_name: "CUSTOMER_VIEW",
     module_name: "CUSTOMER",
-    description: "View customers",
+    description: "View customer profiles",
   },
   {
     permission_name: "CUSTOMER_UPDATE",
     module_name: "CUSTOMER",
-    description: "Update customers",
+    description: "Update customer information",
   },
   {
     permission_name: "CUSTOMER_DELETE",
     module_name: "CUSTOMER",
-    description: "Delete customers",
+    description: "Delete customer profiles",
   },
   {
     permission_name: "CUSTOMER_KYC_VIEW",
     module_name: "CUSTOMER_KYC",
-    description: "View customer KYC status and documents",
+    description: "View customer eKYC status and documents",
   },
   {
     permission_name: "CUSTOMER_KYC_UPLOAD",
     module_name: "CUSTOMER_KYC",
-    description: "Upload customer KYC documents on behalf of a customer",
+    description: "Upload customer eKYC documents",
   },
   {
     permission_name: "CUSTOMER_KYC_VERIFY",
     module_name: "CUSTOMER_KYC",
-    description: "Verify or reject customer KYC",
+    description: "Verify or reject customer eKYC",
   },
 
+  // Groups
   {
     permission_name: "GROUP_CREATE",
     module_name: "GROUP",
-    description: "Create groups",
+    description: "Create customer self-help groups",
   },
   {
     permission_name: "GROUP_VIEW",
     module_name: "GROUP",
-    description: "View groups",
+    description: "View customer groups",
   },
   {
     permission_name: "GROUP_UPDATE",
     module_name: "GROUP",
-    description: "Update groups",
+    description: "Update group details and assignments",
   },
   {
     permission_name: "GROUP_DELETE",
     module_name: "GROUP",
-    description: "Delete groups",
+    description: "Delete customer groups",
   },
 
+  // Loan Products
   {
     permission_name: "LOAN_PRODUCT_CREATE",
     module_name: "LOAN_PRODUCT",
@@ -186,40 +214,41 @@ export const DEFAULT_PERMISSIONS = [
     description: "Delete loan products",
   },
 
+  // Loan Applications
   {
     permission_name: "LOAN_APPLICATION_CREATE",
     module_name: "LOAN_APPLICATION",
-    description: "Create applications",
+    description: "Apply for loans",
   },
   {
     permission_name: "LOAN_APPLICATION_VIEW",
     module_name: "LOAN_APPLICATION",
-    description: "View applications",
+    description: "View loan applications",
   },
   {
     permission_name: "LOAN_APPLICATION_UPDATE",
     module_name: "LOAN_APPLICATION",
-    description: "Update applications",
+    description: "Update loan applications",
   },
   {
     permission_name: "LOAN_APPLICATION_VERIFY",
     module_name: "LOAN_APPLICATION",
-    description: "Verify applications",
+    description: "Verify loan applications",
   },
   {
     permission_name: "LOAN_APPLICATION_APPROVE",
     module_name: "LOAN_APPLICATION",
-    description: "Approve applications",
+    description: "Approve loan applications",
   },
   {
     permission_name: "LOAN_APPLICATION_REJECT",
     module_name: "LOAN_APPLICATION",
-    description: "Reject applications",
+    description: "Reject loan applications",
   },
   {
     permission_name: "LOAN_APPLICATION_DISBURSE",
     module_name: "LOAN_APPLICATION",
-    description: "Disburse approved applications",
+    description: "Disburse approved loan applications",
   },
   {
     permission_name: "LOAN_APPLICATION_DELETE",
@@ -227,20 +256,21 @@ export const DEFAULT_PERMISSIONS = [
     description: "Delete loan applications",
   },
 
+  // Loans
   {
     permission_name: "LOAN_CREATE",
     module_name: "LOAN",
-    description: "Disburse loans",
+    description: "Create active loan contracts",
   },
   {
     permission_name: "LOAN_VIEW",
     module_name: "LOAN",
-    description: "View loans",
+    description: "View active loans",
   },
   {
     permission_name: "LOAN_UPDATE",
     module_name: "LOAN",
-    description: "Update loans",
+    description: "Update loan records",
   },
   {
     permission_name: "LOAN_CLOSE",
@@ -258,116 +288,197 @@ export const DEFAULT_PERMISSIONS = [
     description: "Mark loans as defaulted",
   },
 
+  // Collections
   {
     permission_name: "COLLECTION_CREATE",
     module_name: "COLLECTION",
-    description: "Record collections",
+    description: "Record repayments and EMI collections",
   },
   {
     permission_name: "COLLECTION_VIEW",
     module_name: "COLLECTION",
-    description: "View collections",
+    description: "View collection entries",
   },
   {
     permission_name: "COLLECTION_UPDATE",
     module_name: "COLLECTION",
-    description: "Update collections",
+    description: "Update collection entries",
   },
   {
     permission_name: "COLLECTION_DELETE",
     module_name: "COLLECTION",
-    description: "Delete collections",
+    description: "Delete collection entries",
   },
 
+  // Finance
+  {
+    permission_name: "CASHBOOK_VIEW",
+    module_name: "FINANCE",
+    description: "View cash book entries",
+  },
+  {
+    permission_name: "EXPENSE_VIEW",
+    module_name: "FINANCE",
+    description: "View expense entries",
+  },
+  {
+    permission_name: "EXPENSE_CREATE",
+    module_name: "FINANCE",
+    description: "Create expense entries",
+  },
+  {
+    permission_name: "INCOME_VIEW",
+    module_name: "FINANCE",
+    description: "View income entries",
+  },
+  {
+    permission_name: "INCOME_CREATE",
+    module_name: "FINANCE",
+    description: "Create income entries",
+  },
+
+  // Reports
   {
     permission_name: "REPORT_VIEW",
     module_name: "REPORT",
-    description: "View reports",
+    description: "View business and financial reports",
   },
 
+  // Settings
   {
     permission_name: "SETTINGS_VIEW",
     module_name: "SETTINGS",
-    description: "View settings",
+    description: "View system configuration settings",
   },
   {
     permission_name: "SETTINGS_UPDATE",
     module_name: "SETTINGS",
-    description: "Update settings",
+    description: "Update system configuration settings",
   },
 ];
 
-// Which roles get which permissions (by permission name)
+// Mapping roles strictly to permissions according to enterprise RBAC spec
 export const ROLE_PERMISSIONS_MAP = {
-  SUPER_ADMIN: DEFAULT_PERMISSIONS.map((p) => p.permission_name), // ALL permissions
-  ADMIN: DEFAULT_PERMISSIONS.map((p) => p.permission_name), // ALL permissions
-  BRANCH_MANAGER: [
+  SUPER_ADMIN: [
     "DASHBOARD_VIEW",
-    "BRANCH_CREATE",
+    "ADMINISTRATOR_VIEW",
+    "ADMINISTRATOR_CREATE",
+    "ADMINISTRATOR_UPDATE",
+    "ADMINISTRATOR_DELETE",
+    "ADMINISTRATOR_ACTIVATE",
+    "ADMINISTRATOR_RESET_PASSWORD",
+  ],
+  ADMIN: [
+    "DASHBOARD_VIEW",
+    "USER_VIEW",
+    "USER_CREATE",
+    "USER_UPDATE",
+    "USER_DELETE",
+    "ROLE_VIEW",
+    "PERMISSION_VIEW",
+    "AUDIT_VIEW",
     "BRANCH_VIEW",
+    "BRANCH_CREATE",
     "BRANCH_UPDATE",
+    "BRANCH_DELETE",
     "MANAGE_BRANCH",
-    "CUSTOMER_CREATE",
     "CUSTOMER_VIEW",
+    "CUSTOMER_CREATE",
     "CUSTOMER_UPDATE",
     "CUSTOMER_DELETE",
     "CUSTOMER_KYC_VIEW",
     "CUSTOMER_KYC_UPLOAD",
     "CUSTOMER_KYC_VERIFY",
     "GROUP_VIEW",
+    "GROUP_CREATE",
     "GROUP_UPDATE",
     "GROUP_DELETE",
     "LOAN_PRODUCT_VIEW",
-    "LOAN_APPLICATION_CREATE",
+    "LOAN_PRODUCT_CREATE",
+    "LOAN_PRODUCT_UPDATE",
+    "LOAN_PRODUCT_DELETE",
     "LOAN_APPLICATION_VIEW",
+    "LOAN_APPLICATION_CREATE",
     "LOAN_APPLICATION_UPDATE",
     "LOAN_APPLICATION_VERIFY",
     "LOAN_APPLICATION_APPROVE",
     "LOAN_APPLICATION_REJECT",
     "LOAN_APPLICATION_DISBURSE",
-    "LOAN_CREATE",
+    "LOAN_APPLICATION_DELETE",
     "LOAN_VIEW",
+    "LOAN_CREATE",
     "LOAN_UPDATE",
     "LOAN_CLOSE",
     "LOAN_FORECLOSE",
     "LOAN_DEFAULT",
-    "COLLECTION_CREATE",
     "COLLECTION_VIEW",
+    "COLLECTION_CREATE",
     "COLLECTION_UPDATE",
     "COLLECTION_DELETE",
+    "CASHBOOK_VIEW",
+    "EXPENSE_VIEW",
+    "EXPENSE_CREATE",
+    "INCOME_VIEW",
+    "INCOME_CREATE",
     "REPORT_VIEW",
-    "USER_VIEW",
+    "SETTINGS_VIEW",
+    "SETTINGS_UPDATE",
   ],
-  FIELD_OFFICER: [
+  BRANCH_MANAGER: [
     "DASHBOARD_VIEW",
+    "USER_VIEW",
     "BRANCH_VIEW",
-    "CUSTOMER_CREATE",
     "CUSTOMER_VIEW",
+    "CUSTOMER_CREATE",
     "CUSTOMER_UPDATE",
     "CUSTOMER_KYC_VIEW",
     "CUSTOMER_KYC_UPLOAD",
+    "CUSTOMER_KYC_VERIFY",
+    "GROUP_VIEW",
+    "GROUP_CREATE",
+    "GROUP_UPDATE",
+    "GROUP_DELETE",
     "LOAN_PRODUCT_VIEW",
+    "LOAN_APPLICATION_VIEW",
+    "LOAN_APPLICATION_VERIFY",
+    "LOAN_APPLICATION_APPROVE",
+    "LOAN_APPLICATION_REJECT",
+    "LOAN_VIEW",
+    "COLLECTION_VIEW",
+    "COLLECTION_CREATE",
+    "REPORT_VIEW",
+  ],
+  FIELD_OFFICER: [
+    "DASHBOARD_VIEW",
+    "CUSTOMER_VIEW",
+    "CUSTOMER_CREATE",
+    "CUSTOMER_UPDATE",
+    "CUSTOMER_KYC_VIEW",
+    "CUSTOMER_KYC_UPLOAD",
     "GROUP_VIEW",
     "GROUP_UPDATE",
-    "LOAN_APPLICATION_CREATE",
+    "LOAN_PRODUCT_VIEW",
     "LOAN_APPLICATION_VIEW",
+    "LOAN_APPLICATION_CREATE",
     "LOAN_APPLICATION_UPDATE",
+    "LOAN_APPLICATION_VERIFY",
     "LOAN_APPLICATION_DISBURSE",
     "LOAN_VIEW",
-    "COLLECTION_CREATE",
     "COLLECTION_VIEW",
-    "COLLECTION_UPDATE",
+    "COLLECTION_CREATE",
   ],
   ACCOUNTANT: [
     "DASHBOARD_VIEW",
-    "BRANCH_VIEW",
-    "LOAN_VIEW",
-    "LOAN_APPLICATION_VIEW",
-    "COLLECTION_CREATE",
+    "CASHBOOK_VIEW",
+    "EXPENSE_VIEW",
+    "EXPENSE_CREATE",
+    "INCOME_VIEW",
+    "INCOME_CREATE",
     "COLLECTION_VIEW",
+    "COLLECTION_CREATE",
     "COLLECTION_UPDATE",
     "REPORT_VIEW",
-    "SETTINGS_VIEW",
+    "LOAN_VIEW",
   ],
   CUSTOMER: [
     "DASHBOARD_VIEW",
@@ -377,7 +488,6 @@ export const ROLE_PERMISSIONS_MAP = {
     "LOAN_PRODUCT_VIEW",
     "LOAN_APPLICATION_CREATE",
     "LOAN_APPLICATION_VIEW",
-    "LOAN_APPLICATION_UPDATE",
     "LOAN_VIEW",
   ],
 };

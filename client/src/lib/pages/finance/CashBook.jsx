@@ -117,7 +117,7 @@ export default function CashBook() {
     >
       {/* SUMMARY STATS */}
       <Grid container spacing={2.5} sx={{ mb: 3 }}>
-        <Grid xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ borderRadius: 3, borderLeft: "4px solid #10B981", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
             <CardContent sx={{ p: 2.5 }}>
               <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
@@ -135,7 +135,7 @@ export default function CashBook() {
           </Card>
         </Grid>
 
-        <Grid xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ borderRadius: 3, borderLeft: "4px solid #EF4444", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
             <CardContent sx={{ p: 2.5 }}>
               <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
@@ -153,7 +153,7 @@ export default function CashBook() {
           </Card>
         </Grid>
 
-        <Grid xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ borderRadius: 3, borderLeft: "4px solid #0F766E", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
             <CardContent sx={{ p: 2.5 }}>
               <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
@@ -175,7 +175,7 @@ export default function CashBook() {
           </Card>
         </Grid>
 
-        <Grid xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ borderRadius: 3, borderLeft: "4px solid #6366F1", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
             <CardContent sx={{ p: 2.5 }}>
               <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
@@ -197,7 +197,7 @@ export default function CashBook() {
       {/* FILTERS */}
       <Paper sx={{ p: 2, mb: 3, borderRadius: 3 }}>
         <Grid container spacing={2}  sx={{ alignItems: "center" }}>
-          <Grid xs={12} sm={4} md={4}>
+          <Grid item xs={12} sm={4} md={4}>
             <TextField
               fullWidth
               size="small"
@@ -211,7 +211,7 @@ export default function CashBook() {
               }}
             />
           </Grid>
-          <Grid xs={12} sm={3} md={2.5}>
+          <Grid item xs={12} sm={3} md={2.5}>
             <FormControl fullWidth size="small">
               <InputLabel>Transaction Type</InputLabel>
               <Select
@@ -225,7 +225,7 @@ export default function CashBook() {
               </Select>
             </FormControl>
           </Grid>
-          <Grid xs={12} sm={2.5} md={2.5}>
+          <Grid item xs={12} sm={2.5} md={2.5}>
             <TextField
               fullWidth
               size="small"
@@ -236,7 +236,7 @@ export default function CashBook() {
               slotProps={{ inputLabel: { shrink: true } }}
             />
           </Grid>
-          <Grid xs={12} sm={2.5} md={2.5}>
+          <Grid item xs={12} sm={2.5} md={2.5}>
             <TextField
               fullWidth
               size="small"

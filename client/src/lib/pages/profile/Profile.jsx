@@ -131,7 +131,7 @@ export default function Profile() {
         {editing ? (
           <Stack spacing={2.5}>
             <Grid container spacing={2}>
-              <Grid xs={12} sm={6}>
+              <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
                   size="small"
@@ -141,7 +141,7 @@ export default function Profile() {
                   required
                 />
               </Grid>
-              <Grid xs={12} sm={6}>
+              <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
                   size="small"
@@ -150,7 +150,7 @@ export default function Profile() {
                   onChange={(e) => setForm({ ...form, lastName: e.target.value })}
                 />
               </Grid>
-              <Grid xs={12} sm={6}>
+              <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
                   size="small"
@@ -175,7 +175,7 @@ export default function Profile() {
           </Stack>
         ) : (
           <Grid container spacing={3}>
-            <Grid xs={12} sm={6}>
+            <Grid item xs={12} sm={6}>
               <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
                 <PersonIcon sx={{ color: "#0F766E" }} />
                 <Box>
@@ -185,7 +185,7 @@ export default function Profile() {
               </Stack>
             </Grid>
 
-            <Grid xs={12} sm={6}>
+            <Grid item xs={12} sm={6}>
               <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
                 <EmailIcon sx={{ color: "#0F766E" }} />
                 <Box>
@@ -195,7 +195,7 @@ export default function Profile() {
               </Stack>
             </Grid>
 
-            <Grid xs={12} sm={6}>
+            <Grid item xs={12} sm={6}>
               <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
                 <PhoneIcon sx={{ color: "#0F766E" }} />
                 <Box>
@@ -205,7 +205,7 @@ export default function Profile() {
               </Stack>
             </Grid>
 
-            <Grid xs={12} sm={6}>
+            <Grid item xs={12} sm={6}>
               <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
                 <BadgeIcon sx={{ color: "#0F766E" }} />
                 <Box>
@@ -215,7 +215,7 @@ export default function Profile() {
               </Stack>
             </Grid>
 
-            <Grid xs={12} sm={6}>
+            <Grid item xs={12} sm={6}>
               <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
                 <BranchIcon sx={{ color: "#0F766E" }} />
                 <Box>
@@ -225,7 +225,7 @@ export default function Profile() {
               </Stack>
             </Grid>
 
-            <Grid xs={12} sm={6}>
+            <Grid item xs={12} sm={6}>
               <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
                 <SecurityIcon sx={{ color: "#0F766E" }} />
                 <Box>

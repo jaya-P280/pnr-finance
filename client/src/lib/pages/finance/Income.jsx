@@ -156,7 +156,7 @@ export default function Income() {
     >
       {/* SUMMARY STATS */}
       <Grid container spacing={2.5} sx={{ mb: 3 }}>
-        <Grid xs={12} sm={6} md={4}>
+        <Grid item xs={12} sm={6} md={4}>
           <Card sx={{ borderRadius: 3, borderLeft: "4px solid #10B981", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
             <CardContent sx={{ p: 2.5 }}>
               <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
@@ -174,7 +174,7 @@ export default function Income() {
           </Card>
         </Grid>
 
-        <Grid xs={12} sm={6} md={4}>
+        <Grid item xs={12} sm={6} md={4}>
           <Card sx={{ borderRadius: 3, borderLeft: "4px solid #0F766E", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
             <CardContent sx={{ p: 2.5 }}>
               <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
@@ -192,7 +192,7 @@ export default function Income() {
           </Card>
         </Grid>
 
-        <Grid xs={12} sm={6} md={4}>
+        <Grid item xs={12} sm={6} md={4}>
           <Card sx={{ borderRadius: 3, borderLeft: "4px solid #3B82F6", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
             <CardContent sx={{ p: 2.5 }}>
               <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
@@ -214,7 +214,7 @@ export default function Income() {
       {/* FILTER BAR */}
       <Paper sx={{ p: 2, mb: 3, borderRadius: 3 }}>
         <Grid container spacing={2}  sx={{ alignItems: "center" }}>
-          <Grid xs={12} sm={6} md={6}>
+          <Grid item xs={12} sm={6} md={6}>
             <TextField
               fullWidth
               size="small"
@@ -228,7 +228,7 @@ export default function Income() {
               }}
             />
           </Grid>
-          <Grid xs={12} sm={6} md={6}>
+          <Grid item xs={12} sm={6} md={6}>
             <FormControl fullWidth size="small">
               <InputLabel>Category</InputLabel>
               <Select
@@ -327,7 +327,7 @@ export default function Income() {
           <DialogContent sx={{ pt: 3 }}>
             <Stack spacing={2.5} sx={{ mt: 1 }}>
               <Grid container spacing={2}>
-                <Grid xs={12} sm={6}>
+                <Grid item xs={12} sm={6}>
                   <FormControl fullWidth size="small" required>
                     <InputLabel>Category</InputLabel>
                     <Select
@@ -344,7 +344,7 @@ export default function Income() {
                   </FormControl>
                 </Grid>
 
-                <Grid xs={12} sm={6}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
                     size="small"
@@ -356,7 +356,7 @@ export default function Income() {
                   />
                 </Grid>
 
-                <Grid xs={12} sm={6}>
+                <Grid item xs={12} sm={6}>
                   <FormControl fullWidth size="small">
                     <InputLabel>Payment Method</InputLabel>
                     <Select
@@ -372,7 +372,7 @@ export default function Income() {
                   </FormControl>
                 </Grid>
 
-                <Grid xs={12} sm={6}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
                     size="small"
@@ -384,7 +384,7 @@ export default function Income() {
                   />
                 </Grid>
 
-                <Grid xs={12} sm={6}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
                     size="small"
@@ -395,7 +395,7 @@ export default function Income() {
                   />
                 </Grid>
 
-                <Grid xs={12} sm={6}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
                     size="small"
@@ -406,7 +406,7 @@ export default function Income() {
                   />
                 </Grid>
 
-                <Grid xs={12}>
+                <Grid item xs={12}>
                   <TextField
                     fullWidth
                     multiline

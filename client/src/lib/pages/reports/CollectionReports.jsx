@@ -100,7 +100,7 @@ export default function CollectionReports() {
     >
       {/* KPI METRICS */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid xs={12} sm={6} md={4}>
+        <Grid item xs={12} sm={6} md={4}>
           <Card sx={{ borderRadius: 3, borderLeft: "4px solid #10B981" }}>
             <CardContent sx={{ p: 2.5 }}>
               <Typography variant="body2" color="text.secondary">
@@ -113,7 +113,7 @@ export default function CollectionReports() {
           </Card>
         </Grid>
 
-        <Grid xs={12} sm={6} md={4}>
+        <Grid item xs={12} sm={6} md={4}>
           <Card sx={{ borderRadius: 3, borderLeft: "4px solid #0F766E" }}>
             <CardContent sx={{ p: 2.5 }}>
               <Typography variant="body2" color="text.secondary">
@@ -126,7 +126,7 @@ export default function CollectionReports() {
           </Card>
         </Grid>
 
-        <Grid xs={12} sm={6} md={4}>
+        <Grid item xs={12} sm={6} md={4}>
           <Card sx={{ borderRadius: 3, borderLeft: "4px solid #F59E0B" }}>
             <CardContent sx={{ p: 2.5 }}>
               <Typography variant="body2" color="text.secondary">
@@ -143,7 +143,7 @@ export default function CollectionReports() {
       {/* FILTER BAR */}
       <Paper sx={{ p: 2, mb: 3, borderRadius: 3 }}>
         <Grid container spacing={2}  sx={{ alignItems: "center" }}>
-          <Grid xs={12} sm={6}>
+          <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
               size="small"
@@ -154,7 +154,7 @@ export default function CollectionReports() {
               slotProps={{ inputLabel: { shrink: true } }}
             />
           </Grid>
-          <Grid xs={12} sm={6}>
+          <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
               size="small"

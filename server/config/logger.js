@@ -1,27 +1,42 @@
 import winston from "winston";
+import fs from "fs";
+import path from "path";
 import env from "./env.js";
 
-const logger = winston.createLogger({
-    level:env.LOG_LEVEL,
+const logDir = path.join(process.cwd(), "logs");
+if (!fs.existsSync(logDir)) {
+    try {
+        fs.mkdirSync(logDir, { recursive: true });
+    } catch {
+        // ignore
+    }
+}
 
-    format : winston.format.combine(
+const transports = [new winston.transports.Console()];
+if (fs.existsSync(logDir)) {
+    transports.push(
+        new winston.transports.File({
+            filename: path.join(logDir, "error.log"),
+            level: "error",
+        }),
+        new winston.transports.File({
+            filename: path.join(logDir, "combined.log"),
+        })
+    );
+}
+
+const logger = winston.createLogger({
+    level: env.LOG_LEVEL || "info",
+
+    format: winston.format.combine(
         winston.format.timestamp(),
-        winston.format.errors({stack: true}),
-        winston.format.printf(({timestamp,level,message})=>{
+        winston.format.errors({ stack: true }),
+        winston.format.printf(({ timestamp, level, message }) => {
             return `[${timestamp}] ${level.toUpperCase()} : ${message}`;
         })
     ),
 
-    transports : [
-        new winston.transports.Console(),
-        new winston.transports.File({
-            filename: "src/logs/error.log",
-            level: "error",
-        }),
-         new winston.transports.File({
-            filename: "src/logs/combined.log",
-         }),
-    ],
+    transports,
 });
 
 export default logger;

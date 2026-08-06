@@ -13,18 +13,19 @@ import BusinessIcon from "@mui/icons-material/Business";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 
-const ROLE_ACCESS = {
+export const ROLE_ACCESS = {
   SUPER_ADMIN: [
     "/dashboard",
+    "/branches",
+    "/customers",
+    "/groups",
+    "/customer-documents",
     "/users",
     "/roles",
     "/permissions",
     "/audit-logs",
-    "/branches",
-    "/groups",
-    "/customers",
-    "/customer-documents",
     "/loan-products",
+    "/loan-applications",
     "/loans",
     "/collections",
     "/cash-book",
@@ -36,17 +37,26 @@ const ROLE_ACCESS = {
     "/customer-reports",
     "/profile",
     "/settings",
+    "/tasks",
+    "/customer/dashboard",
+    "/customer/profile",
+    "/customer/applications",
+    "/customer/apply-loan",
+    "/customer/loans",
+    "/customer/ekyc",
+    "/customer/settings",
   ],
   ADMIN: [
     "/dashboard",
-    "/tasks",
-    "/users",
+    "/branches",
+    "/customers",
+    "/groups",
+    "/customer-documents",
     "/roles",
     "/permissions",
     "/audit-logs",
-    "/branches",
-    "/customer-documents",
     "/loan-products",
+    "/loan-applications",
     "/loans",
     "/collections",
     "/cash-book",
@@ -58,44 +68,47 @@ const ROLE_ACCESS = {
     "/customer-reports",
     "/profile",
     "/settings",
+    "/tasks",
+    "/customer/dashboard",
+    "/customer/profile",
+    "/customer/applications",
+    "/customer/apply-loan",
+    "/customer/loans",
+    "/customer/ekyc",
+    "/customer/settings",
   ],
   BRANCH_MANAGER: [
     "/dashboard",
-    "/tasks",
-    "/groups",
     "/customers",
+    "/groups",
+    "/users",
     "/customer-documents",
-    "/loan-products",
+    "/loan-applications",
     "/loans",
     "/collections",
-    "/cash-book",
-    "/cashbook",
-    "/expenses",
-    "/income",
     "/loan-reports",
     "/collection-reports",
     "/customer-reports",
     "/profile",
-    "/settings",
   ],
   FIELD_OFFICER: [
     "/dashboard",
     "/tasks",
     "/customers",
-    "/customer-documents",
     "/groups",
+    "/customer-documents",
     "/loan-applications",
+    "/loans",
     "/collections",
     "/profile",
-    "/settings",
   ],
   ACCOUNTANT: [
     "/dashboard",
-    "/tasks",
-    "/collections",
     "/cash-book",
+    "/cashbook",
     "/expenses",
     "/income",
+    "/collections",
     "/loan-reports",
     "/collection-reports",
     "/customer-reports",
@@ -114,25 +127,6 @@ const ROLE_ACCESS = {
 
 export function getFilteredMenu(rawRole) {
   const userRole = (rawRole || "").toUpperCase().replace(/\s+/g, "_");
-  const allowedPaths = ROLE_ACCESS[userRole] || ROLE_ACCESS.FIELD_OFFICER;
-
-  function filterItems(items) {
-    return items
-      .map((item) => {
-        if (!item.children) return item;
-
-        return {
-          ...item,
-          children: filterItems(item.children),
-        };
-      })
-      .filter((item) => {
-      if (item.children) {
-        return item.children.length > 0;
-      }
-      return item.path ? allowedPaths.includes(item.path) : true;
-      });
-  }
 
   if (userRole === "SUPER_ADMIN") {
     return [
@@ -157,37 +151,12 @@ export function getFilteredMenu(rawRole) {
         ],
       },
       {
-        section: "Finance",
-        items: [
-          {
-            title: "Cash Book",
-            icon: PaidIcon,
-            path: "/cash-book",
-          },
-          {
-            title: "Expenses",
-            icon: PaidIcon,
-            path: "/expenses",
-          },
-          {
-            title: "Income",
-            icon: PaidIcon,
-            path: "/income",
-          },
-        ],
-      },
-      {
         section: "My Account",
         items: [
           {
             title: "My Profile",
             icon: PersonIcon,
             path: "/profile",
-          },
-          {
-            title: "Settings",
-            icon: SettingsIcon,
-            path: "/settings",
           },
         ],
       },
@@ -203,26 +172,6 @@ export function getFilteredMenu(rawRole) {
             title: "Dashboard",
             icon: DashboardIcon,
             path: "/customer/dashboard",
-          },
-        ],
-      },
-      {
-        section: "My Account",
-        items: [
-          {
-            title: "Profile",
-            icon: PersonIcon,
-            path: "/customer/profile",
-          },
-          {
-            title: "e-KYC Status",
-            icon: VerifiedUserIcon,
-            path: "/customer/ekyc",
-          },
-          {
-            title: "Settings",
-            icon: SettingsIcon,
-            path: "/customer/settings",
           },
         ],
       },
@@ -246,10 +195,261 @@ export function getFilteredMenu(rawRole) {
           },
         ],
       },
+      {
+        section: "My Account",
+        items: [
+          {
+            title: "Profile",
+            icon: PersonIcon,
+            path: "/customer/profile",
+          },
+          {
+            title: "e-KYC Status",
+            icon: VerifiedUserIcon,
+            path: "/customer/ekyc",
+          },
+          {
+            title: "Settings",
+            icon: SettingsIcon,
+            path: "/customer/settings",
+          },
+        ],
+      },
     ];
   }
 
-  const menu = [
+  if (userRole === "ACCOUNTANT") {
+    return [
+      {
+        section: "Dashboard",
+        items: [
+          {
+            title: "Dashboard",
+            icon: DashboardIcon,
+            path: "/dashboard",
+          },
+        ],
+      },
+      {
+        section: "Finance & Accounts",
+        items: [
+          {
+            title: "Cash Book",
+            icon: PaidIcon,
+            path: "/cash-book",
+          },
+          {
+            title: "Expenses",
+            icon: PaidIcon,
+            path: "/expenses",
+          },
+          {
+            title: "Income",
+            icon: PaidIcon,
+            path: "/income",
+          },
+          {
+            title: "Collections",
+            icon: ReceiptLongIcon,
+            path: "/collections",
+          },
+        ],
+      },
+      {
+        section: "Reports",
+        items: [
+          {
+            title: "Loan Reports",
+            icon: AssessmentIcon,
+            path: "/loan-reports",
+          },
+          {
+            title: "Collection Reports",
+            icon: AssessmentIcon,
+            path: "/collection-reports",
+          },
+          {
+            title: "Customer Reports",
+            icon: AssessmentIcon,
+            path: "/customer-reports",
+          },
+        ],
+      },
+      {
+        section: "My Account",
+        items: [
+          {
+            title: "My Profile",
+            icon: PersonIcon,
+            path: "/profile",
+          },
+        ],
+      },
+    ];
+  }
+
+  if (userRole === "FIELD_OFFICER") {
+    return [
+      {
+        section: "Dashboard",
+        items: [
+          {
+            title: "Dashboard",
+            icon: DashboardIcon,
+            path: "/dashboard",
+          },
+          {
+            title: "Field Tasks",
+            icon: AssignmentIcon,
+            path: "/tasks",
+          },
+        ],
+      },
+      {
+        section: "Operations",
+        items: [
+          {
+            title: "Assigned Customers",
+            icon: PersonIcon,
+            path: "/customers",
+          },
+          {
+            title: "Assigned Groups",
+            icon: ApartmentIcon,
+            path: "/groups",
+          },
+          {
+            title: "Customer Documents",
+            icon: VerifiedUserIcon,
+            path: "/customer-documents",
+          },
+        ],
+      },
+      {
+        section: "Loans & Collections",
+        items: [
+          {
+            title: "Loan Applications",
+            icon: AssignmentIndIcon,
+            path: "/loan-applications",
+          },
+          {
+            title: "Active Loans",
+            icon: BusinessIcon,
+            path: "/loans",
+          },
+          {
+            title: "Collections",
+            icon: ReceiptLongIcon,
+            path: "/collections",
+          },
+        ],
+      },
+      {
+        section: "My Account",
+        items: [
+          {
+            title: "My Profile",
+            icon: PersonIcon,
+            path: "/profile",
+          },
+        ],
+      },
+    ];
+  }
+
+  if (userRole === "BRANCH_MANAGER") {
+    return [
+      {
+        section: "Dashboard",
+        items: [
+          {
+            title: "Dashboard",
+            icon: DashboardIcon,
+            path: "/dashboard",
+          },
+        ],
+      },
+      {
+        section: "Branch Operations",
+        items: [
+          {
+            title: "Branch Staff",
+            icon: PeopleIcon,
+            path: "/users",
+          },
+          {
+            title: "Customers",
+            icon: PersonIcon,
+            path: "/customers",
+          },
+          {
+            title: "Customer Groups",
+            icon: ApartmentIcon,
+            path: "/groups",
+          },
+          {
+            title: "eKYC Verification",
+            icon: VerifiedUserIcon,
+            path: "/customer-documents",
+          },
+        ],
+      },
+      {
+        section: "Loans & Collections",
+        items: [
+          {
+            title: "Loan Applications",
+            icon: AssignmentIndIcon,
+            path: "/loan-applications",
+          },
+          {
+            title: "Active Loans",
+            icon: BusinessIcon,
+            path: "/loans",
+          },
+          {
+            title: "Collections",
+            icon: ReceiptLongIcon,
+            path: "/collections",
+          },
+        ],
+      },
+      {
+        section: "Reports",
+        items: [
+          {
+            title: "Loan Reports",
+            icon: AssessmentIcon,
+            path: "/loan-reports",
+          },
+          {
+            title: "Collection Reports",
+            icon: AssessmentIcon,
+            path: "/collection-reports",
+          },
+          {
+            title: "Customer Reports",
+            icon: AssessmentIcon,
+            path: "/customer-reports",
+          },
+        ],
+      },
+      {
+        section: "My Account",
+        items: [
+          {
+            title: "My Profile",
+            icon: PersonIcon,
+            path: "/profile",
+          },
+        ],
+      },
+    ];
+  }
+
+  // DEFAULT FOR ADMIN
+  return [
     {
       section: "Dashboard",
       items: [
@@ -258,40 +458,38 @@ export function getFilteredMenu(rawRole) {
           icon: DashboardIcon,
           path: "/dashboard",
         },
-        {
-          title: "Field Tasks",
-          icon: AssignmentIcon,
-          path: "/tasks",
-        },
       ],
     },
     {
-      section: "Master",
+      section: "Master & Operations",
       items: [
+        {
+          title: "Branches",
+          icon: ApartmentIcon,
+          path: "/branches",
+        },
+        {
+          title: "Customers",
+          icon: PersonIcon,
+          path: "/customers",
+        },
+        {
+          title: "Customer Groups",
+          icon: ApartmentIcon,
+          path: "/groups",
+        },
+        {
+          title: "eKYC Verification",
+          icon: VerifiedUserIcon,
+          path: "/customer-documents",
+        },
         {
           title: "User Management",
           icon: PeopleIcon,
           children: [
-            { title: "Users", path: "/users" },
-            { title: "Roles", path: "/roles" },
-            { title: "Permissions", path: "/permissions" },
+            { title: "Roles (View)", path: "/roles" },
+            { title: "Permissions (View)", path: "/permissions" },
             { title: "Audit Trail", path: "/audit-logs" },
-          ],
-        },
-        {
-          title: "Groups & Branches",
-          icon: ApartmentIcon,
-          children: [
-            { title: "Branches", path: "/branches" },
-            { title: "Groups", path: "/groups" },
-          ],
-        },
-        {
-          title: "Customer",
-          icon: PersonIcon,
-          children: [
-            { title: "Customers", path: "/customers" },
-            { title: "eKYC Verification", path: "/customer-documents" },
           ],
         },
       ],
@@ -310,7 +508,7 @@ export function getFilteredMenu(rawRole) {
           path: "/loan-applications",
         },
         {
-          title: "Loans",
+          title: "Active Loans",
           icon: BusinessIcon,
           path: "/loans",
         },
@@ -377,13 +575,6 @@ export function getFilteredMenu(rawRole) {
       ],
     },
   ];
-
-  return menu
-    .map((section) => ({
-      ...section,
-      items: filterItems(section.items),
-    }))
-    .filter((section) => section.items.length > 0);
 }
 
 export default getFilteredMenu;

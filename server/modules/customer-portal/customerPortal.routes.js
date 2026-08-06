@@ -16,8 +16,9 @@ const router = express.Router();
 
 router.use(authenticate);
 router.use((req, res, next) => {
-  if (req.user.role_name !== "CUSTOMER") {
-    next(new ApiError(403, "Customer portal access is restricted to customers."));
+  const role = (req.user?.role_name || "").toUpperCase();
+  if (!["CUSTOMER", "SUPER_ADMIN", "ADMIN", "BRANCH_MANAGER", "FIELD_OFFICER"].includes(role)) {
+    next(new ApiError(403, "Customer portal access is restricted."));
     return;
   }
   next();

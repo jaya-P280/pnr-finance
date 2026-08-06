@@ -109,120 +109,123 @@ export default function Login() {
           boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
           border: "1px solid rgba(255, 255, 255, 0.1)",
           bgcolor: "#FFFFFF",
+          display: "flex",
+          flexDirection: { xs: "column", md: "row" },
         }}
       >
-        <Grid container sx={{ width: "100%" }}>
-          {/* Left Hero Side Banner */}
-          <Grid
-            size={{ xs: 12, md: 5 }}
+        {/* Left Hero Side Banner */}
+        <Box
+          sx={{
+            width: { xs: "100%", md: "44%" },
+            flexShrink: 0,
+            background: "linear-gradient(135deg, #0F766E 0%, #0D9488 60%, #115E59 100%)",
+            color: "#FFFFFF",
+            p: { xs: 4, md: 5 },
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          {/* Background Decorative Circles */}
+          <Box
             sx={{
-              background: "linear-gradient(135deg, #0F766E 0%, #0D9488 60%, #115E59 100%)",
-              color: "#FFFFFF",
-              p: { xs: 4, md: 5 },
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-              position: "relative",
-              overflow: "hidden",
+              position: "absolute",
+              top: -60,
+              right: -60,
+              width: 200,
+              height: 200,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.06)",
+              pointerEvents: "none",
             }}
-          >
-            {/* Background Decorative Circles */}
-            <Box
-              sx={{
-                position: "absolute",
-                top: -60,
-                right: -60,
-                width: 200,
-                height: 200,
-                borderRadius: "50%",
-                background: "rgba(255,255,255,0.06)",
-                pointerEvents: "none",
-              }}
-            />
-            <Box
-              sx={{
-                position: "absolute",
-                bottom: -80,
-                left: -80,
-                width: 260,
-                height: 260,
-                borderRadius: "50%",
-                background: "rgba(255,255,255,0.04)",
-                pointerEvents: "none",
-              }}
-            />
+          />
+          <Box
+            sx={{
+              position: "absolute",
+              bottom: -80,
+              left: -80,
+              width: 260,
+              height: 260,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.04)",
+              pointerEvents: "none",
+            }}
+          />
 
-            <Box sx={{ position: "relative", zIndex: 2 }}>
-              <Stack direction="row" spacing={1.5} sx={{ alignItems: "center",  mb: 4 }}>
-                <Box
-                  sx={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 2.5,
-                    bgcolor: "rgba(255,255,255,0.2)",
-                    backdropFilter: "blur(8px)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <BrandIcon sx={{ color: "#FFFFFF", fontSize: 26 }} />
-                </Box>
-                <Box>
-                  <Typography variant="h6" fontWeight={800} letterSpacing="-0.5px">
-                    PNRG Finance
-                  </Typography>
-                  <Typography variant="caption" sx={{ opacity: 0.85, fontWeight: 500 }}>
-                    Enterprise Microfinance ERP
-                  </Typography>
-                </Box>
-              </Stack>
-
-              <Typography variant="h4" fontWeight={800} sx={{ lineHeight: 1.25, mb: 2 }}>
-                Empowering Communities with Smart Finance
-              </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9, lineHeight: 1.6, mb: 4 }}>
-                Comprehensive loan management, automated collections, real-time ledger accounting, and complete field officer audit tracking in one unified platform.
-              </Typography>
-
-              <Stack spacing={2} sx={{ my: 2 }}>
-                {[
-                  "Automated EMI & Penalty Calculations",
-                  "Real-time Branch Cashbook & Expenses",
-                  "Digital e-KYC Verification & Auditing",
-                  "Multi-Role Permission Control Architecture",
-                ].map((feature, i) => (
-                  <Stack key={i} direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-                    <CheckCircleIcon sx={{ fontSize: 18, color: "#5EEAD4" }} />
-                    <Typography variant="caption" fontWeight={600} sx={{ color: "#E6FFFA" }}>
-                      {feature}
-                    </Typography>
-                  </Stack>
-                ))}
-              </Stack>
-            </Box>
-
-            <Box sx={{ pt: 4, borderTop: "1px solid rgba(255,255,255,0.15)", position: "relative", zIndex: 2 }}>
-              <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-                <SecurityIcon sx={{ fontSize: 18, color: "#5EEAD4" }} />
-                <Typography variant="caption" sx={{ opacity: 0.9, fontWeight: 500 }}>
-                  256-Bit Encrypted Banking Portal
+          <Box sx={{ position: "relative", zIndex: 2 }}>
+            <Stack direction="row" spacing={1.5} sx={{ alignItems: "center",  mb: 4 }}>
+              <Box
+                sx={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 2.5,
+                  bgcolor: "rgba(255,255,255,0.2)",
+                  backdropFilter: "blur(8px)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <BrandIcon sx={{ color: "#FFFFFF", fontSize: 26 }} />
+              </Box>
+              <Box>
+                <Typography variant="h6" fontWeight={800} letterSpacing="-0.5px">
+                  PNRG Finance
                 </Typography>
-              </Stack>
-            </Box>
-          </Grid>
+                <Typography variant="caption" sx={{ opacity: 0.85, fontWeight: 500 }}>
+                  Enterprise Microfinance ERP
+                </Typography>
+              </Box>
+            </Stack>
 
-          {/* Right Form Side */}
-          <Grid
-            size={{ xs: 12, md: 7 }}
-            sx={{
-              p: { xs: 4, sm: 5, md: 6 },
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              bgcolor: "#FFFFFF",
-            }}
-          >
+            <Typography variant="h4" fontWeight={800} sx={{ lineHeight: 1.25, mb: 2 }}>
+              Empowering Communities with Smart Finance
+            </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.9, lineHeight: 1.6, mb: 4 }}>
+              Comprehensive loan management, automated collections, real-time ledger accounting, and complete field officer audit tracking in one unified platform.
+            </Typography>
+
+            <Stack spacing={2} sx={{ my: 2 }}>
+              {[
+                "Automated EMI & Penalty Calculations",
+                "Real-time Branch Cashbook & Expenses",
+                "Digital e-KYC Verification & Auditing",
+                "Multi-Role Permission Control Architecture",
+              ].map((feature, i) => (
+                <Stack key={i} direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+                  <CheckCircleIcon sx={{ fontSize: 18, color: "#5EEAD4" }} />
+                  <Typography variant="caption" fontWeight={600} sx={{ color: "#E6FFFA" }}>
+                    {feature}
+                  </Typography>
+                </Stack>
+              ))}
+            </Stack>
+          </Box>
+
+          <Box sx={{ pt: 4, borderTop: "1px solid rgba(255,255,255,0.15)", position: "relative", zIndex: 2 }}>
+            <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+              <SecurityIcon sx={{ fontSize: 18, color: "#5EEAD4" }} />
+              <Typography variant="caption" sx={{ opacity: 0.9, fontWeight: 500 }}>
+                256-Bit Encrypted Banking Portal
+              </Typography>
+            </Stack>
+          </Box>
+        </Box>
+
+        {/* Right Form Side */}
+        <Box
+          sx={{
+            width: { xs: "100%", md: "56%" },
+            flexGrow: 1,
+            p: { xs: 4, sm: 5, md: 6 },
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            bgcolor: "#FFFFFF",
+          }}
+        >
             <Box sx={{ mb: 4, textAlign: "center" }}>
               <Typography variant="h5" fontWeight={800} sx={{ color: "#0F172A", mb: 0.5 }}>
                 Sign In to Your Account
@@ -454,9 +457,8 @@ export default function Login() {
                 </Typography>
               </Stack>
             </Box>
-          </Grid>
-        </Grid>
-      </Paper>
-    </Box>
+          </Box>
+        </Paper>
+      </Box>
   );
 }

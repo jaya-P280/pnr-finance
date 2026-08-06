@@ -2,40 +2,42 @@ import { Navigate, Route, Routes } from "react-router-dom";
 
 import DashboardLayout from "../layouts/DashboardLayout";
 import ProtectedRoute from "./ProtectedRoute";
+import PermissionGuard from "./PermissionGuard";
 import PublicRoute from "./PublicRoute";
 
-import Login from "../pages/auth/Login";
-import PasswordSetup from "../pages/auth/PasswordSetup";
-import Register from "../pages/auth/Register";
-import BranchList from "../pages/branches/BranchList";
-import Collections from "../pages/collections/Collections";
-import CustomerDocuments from "../pages/customer-documents/CustomerDocuments";
-import ApplyLoan from "../pages/customer-portal/ApplyLoan";
-import CustomerDashboard from "../pages/customer-portal/CustomerDashboard";
-import EKycVerification from "../pages/customer-portal/EKycVerification";
-import LoanApplicationDetail from "../pages/customer-portal/LoanApplicationDetail";
-import MyLoanApplications from "../pages/customer-portal/MyLoanApplications";
-import MyLoans from "../pages/customer-portal/MyLoans";
-import RepaymentSchedule from "../pages/customer-portal/RepaymentSchedule";
-import CustomerList from "../pages/customers/CustomersList";
-import Dashboard from "../pages/dashboard/Dashboard";
-import CashBook from "../pages/finance/CashBook";
-import Expenses from "../pages/finance/Expenses";
-import Income from "../pages/finance/Income";
-import Groups from "../pages/groups/Groups";
-import LoanApplications from "../pages/loan-applications/LoanApplications";
-import LoanProducts from "../pages/loan-products/LoanProducts";
-import Loans from "../pages/loans/Loans";
-import Permissions from "../pages/permissions/Permissions";
-import Profile from "../pages/profile/Profile";
-import CollectionReports from "../pages/reports/CollectionReports";
-import CustomerReports from "../pages/reports/CustomerReports";
-import LoanReports from "../pages/reports/LoanReports";
-import Roles from "../pages/roles/Roles";
-import UnifiedSettings from "../pages/settings/UnifiedSettings";
-import Tasks from "../pages/tasks/Tasks";
-import UsersList from "../pages/users/UsersList";
+import Login from "../lib/pages/auth/Login";
+import PasswordSetup from "../lib/pages/auth/PasswordSetup";
+import Register from "../lib/pages/auth/Register";
+import BranchList from "../lib/pages/branches/BranchList";
+import Collections from "../lib/pages/collections/Collections";
+import CustomerDocuments from "../lib/pages/customer-documents/CustomerDocuments";
+import ApplyLoan from "../lib/pages/customer-portal/ApplyLoan";
+import CustomerDashboard from "../lib/pages/customer-portal/CustomerDashboard";
+import EKycVerification from "../lib/pages/customer-portal/EKycVerification";
+import LoanApplicationDetail from "../lib/pages/customer-portal/LoanApplicationDetail";
+import MyLoanApplications from "../lib/pages/customer-portal/MyLoanApplications";
+import MyLoans from "../lib/pages/customer-portal/MyLoans";
+import RepaymentSchedule from "../lib/pages/customer-portal/RepaymentSchedule";
+import CustomerList from "../lib/pages/customers/CustomersList";
+import Dashboard from "../lib/pages/dashboard/Dashboard";
+import CashBook from "../lib/pages/finance/CashBook";
+import Expenses from "../lib/pages/finance/Expenses";
+import Income from "../lib/pages/finance/Income";
+import Groups from "../lib/pages/groups/Groups";
+import LoanApplications from "../lib/pages/loan-applications/LoanApplications";
+import LoanProducts from "../lib/pages/loan-products/LoanProducts";
+import Loans from "../lib/pages/loans/Loans";
+import Permissions from "../lib/pages/permissions/Permissions";
+import Profile from "../lib/pages/profile/Profile";
+import CollectionReports from "../lib/pages/reports/CollectionReports";
+import CustomerReports from "../lib/pages/reports/CustomerReports";
+import LoanReports from "../lib/pages/reports/LoanReports";
+import Roles from "../lib/pages/roles/Roles";
+import UnifiedSettings from "../lib/pages/settings/UnifiedSettings";
+import Tasks from "../lib/pages/tasks/Tasks";
+import UsersList from "../lib/pages/users/UsersList";
 import AuditLogs from "../pages/audit/AuditLogs";
+import Forbidden from "../pages/Forbidden";
 
 export default function AppRoutes() {
   return (
@@ -48,48 +50,115 @@ export default function AppRoutes() {
 
       <Route element={<ProtectedRoute />}>
         <Route element={<DashboardLayout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/users" element={<UsersList />} />
-          <Route path="/branches" element={<BranchList />} />
-          <Route path="/customers" element={<CustomerList />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/roles" element={<Roles />} />
-          <Route path="/permissions" element={<Permissions />} />
-          <Route path="/audit-logs" element={<AuditLogs />} />
-          <Route path="/groups" element={<Groups />} />
-          <Route path="/customer-documents" element={<CustomerDocuments />} />
-          <Route path="/loan-products" element={<LoanProducts />} />
-          <Route path="/loan-applications" element={<LoanApplications />} />
-          <Route path="/loans" element={<Loans />} />
-          <Route path="/collections" element={<Collections />} />
-          <Route path="/cash-book" element={<CashBook />} />
-          <Route path="/cashbook" element={<CashBook />} />
-          <Route path="/expenses" element={<Expenses />} />
-          <Route path="/income" element={<Income />} />
-          <Route path="/loan-reports" element={<LoanReports />} />
-          <Route path="/collection-reports" element={<CollectionReports />} />
-          <Route path="/customer-reports" element={<CustomerReports />} />
-          <Route path="/tasks" element={<Tasks />} />
-          <Route path="/settings" element={<UnifiedSettings />} />
+          <Route path="/403" element={<Forbidden />} />
 
-          <Route path="/customer/dashboard" element={<CustomerDashboard />} />
-          <Route path="/customer/profile" element={<Profile />} />
-          <Route path="/customer/settings" element={<UnifiedSettings />} />
-          <Route path="/customer/ekyc" element={<EKycVerification />} />
-          <Route
-            path="/customer/applications"
-            element={<MyLoanApplications />}
-          />
-          <Route
-            path="/customer/applications/:id"
-            element={<LoanApplicationDetail />}
-          />
-          <Route path="/customer/apply-loan" element={<ApplyLoan />} />
-          <Route path="/customer/loans" element={<MyLoans />} />
-          <Route
-            path="/customer/loans/:loanId/schedule"
-            element={<RepaymentSchedule />}
-          />
+          {/* Common / Profile */}
+          <Route path="/profile" element={<Profile />} />
+
+          {/* Dashboard */}
+          <Route element={<PermissionGuard requiredPermission={["DASHBOARD_VIEW"]} />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+          </Route>
+
+          {/* User / Administrator Management */}
+          <Route element={<PermissionGuard requiredPermission={["ADMINISTRATOR_VIEW", "USER_VIEW"]} />}>
+            <Route path="/users" element={<UsersList />} />
+          </Route>
+
+          {/* Branch Management */}
+          <Route element={<PermissionGuard requiredPermission={["BRANCH_VIEW"]} />}>
+            <Route path="/branches" element={<BranchList />} />
+          </Route>
+
+          {/* Customer Management */}
+          <Route element={<PermissionGuard requiredPermission={["CUSTOMER_VIEW"]} />}>
+            <Route path="/customers" element={<CustomerList />} />
+          </Route>
+
+          {/* Roles & Permissions */}
+          <Route element={<PermissionGuard requiredPermission={["ROLE_VIEW"]} />}>
+            <Route path="/roles" element={<Roles />} />
+          </Route>
+          <Route element={<PermissionGuard requiredPermission={["PERMISSION_VIEW"]} />}>
+            <Route path="/permissions" element={<Permissions />} />
+          </Route>
+
+          {/* Audit Logs */}
+          <Route element={<PermissionGuard requiredPermission={["AUDIT_VIEW"]} />}>
+            <Route path="/audit-logs" element={<AuditLogs />} />
+          </Route>
+
+          {/* Groups */}
+          <Route element={<PermissionGuard requiredPermission={["GROUP_VIEW"]} />}>
+            <Route path="/groups" element={<Groups />} />
+          </Route>
+
+          {/* Customer eKYC Documents */}
+          <Route element={<PermissionGuard requiredPermission={["CUSTOMER_KYC_VIEW"]} />}>
+            <Route path="/customer-documents" element={<CustomerDocuments />} />
+          </Route>
+
+          {/* Loan Products */}
+          <Route element={<PermissionGuard requiredPermission={["LOAN_PRODUCT_VIEW"]} />}>
+            <Route path="/loan-products" element={<LoanProducts />} />
+          </Route>
+
+          {/* Loan Applications */}
+          <Route element={<PermissionGuard requiredPermission={["LOAN_APPLICATION_VIEW"]} />}>
+            <Route path="/loan-applications" element={<LoanApplications />} />
+          </Route>
+
+          {/* Loans */}
+          <Route element={<PermissionGuard requiredPermission={["LOAN_VIEW"]} />}>
+            <Route path="/loans" element={<Loans />} />
+          </Route>
+
+          {/* Collections */}
+          <Route element={<PermissionGuard requiredPermission={["COLLECTION_VIEW"]} />}>
+            <Route path="/collections" element={<Collections />} />
+          </Route>
+
+          {/* Finance */}
+          <Route element={<PermissionGuard requiredPermission={["CASHBOOK_VIEW"]} />}>
+            <Route path="/cash-book" element={<CashBook />} />
+            <Route path="/cashbook" element={<CashBook />} />
+          </Route>
+          <Route element={<PermissionGuard requiredPermission={["EXPENSE_VIEW"]} />}>
+            <Route path="/expenses" element={<Expenses />} />
+          </Route>
+          <Route element={<PermissionGuard requiredPermission={["INCOME_VIEW"]} />}>
+            <Route path="/income" element={<Income />} />
+          </Route>
+
+          {/* Reports */}
+          <Route element={<PermissionGuard requiredPermission={["REPORT_VIEW"]} />}>
+            <Route path="/loan-reports" element={<LoanReports />} />
+            <Route path="/collection-reports" element={<CollectionReports />} />
+            <Route path="/customer-reports" element={<CustomerReports />} />
+          </Route>
+
+          {/* Field Tasks */}
+          <Route element={<PermissionGuard requiredPermission={["CUSTOMER_VIEW", "DASHBOARD_VIEW"]} />}>
+            <Route path="/tasks" element={<Tasks />} />
+          </Route>
+
+          {/* System Settings */}
+          <Route element={<PermissionGuard requiredPermission={["SETTINGS_VIEW"]} />}>
+            <Route path="/settings" element={<UnifiedSettings />} />
+          </Route>
+
+          {/* Customer Portal */}
+          <Route element={<PermissionGuard allowedRoles={["CUSTOMER"]} />}>
+            <Route path="/customer/dashboard" element={<CustomerDashboard />} />
+            <Route path="/customer/profile" element={<Profile />} />
+            <Route path="/customer/settings" element={<UnifiedSettings />} />
+            <Route path="/customer/ekyc" element={<EKycVerification />} />
+            <Route path="/customer/applications" element={<MyLoanApplications />} />
+            <Route path="/customer/applications/:id" element={<LoanApplicationDetail />} />
+            <Route path="/customer/apply-loan" element={<ApplyLoan />} />
+            <Route path="/customer/loans" element={<MyLoans />} />
+            <Route path="/customer/loans/:loanId/schedule" element={<RepaymentSchedule />} />
+          </Route>
         </Route>
       </Route>
 

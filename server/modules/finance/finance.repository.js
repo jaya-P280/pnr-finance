@@ -210,19 +210,27 @@ class FinanceRepository {
   // --- CASH BOOK UNIFIED LEDGER ---
   async getCashBookLedger(filters) {
     const branchClause = filters.branchId ? `AND branch_id = ${parseInt(filters.branchId, 10)}` : "";
-    const fromClause = filters.fromDate ? `'${filters.fromDate}'` : null;
-    const toClause = filters.toDate ? `'${filters.toDate}'` : null;
 
     let dateCondColl = "";
     let dateCondInc = "";
     let dateCondLoan = "";
     let dateCondExp = "";
 
-    if (fromClause && toClause) {
-      dateCondColl = `AND DATE(collection_date) BETWEEN ${fromClause} AND ${toClause}`;
-      dateCondInc = `AND DATE(income_date) BETWEEN ${fromClause} AND ${toClause}`;
-      dateCondLoan = `AND DATE(disbursement_date) BETWEEN ${fromClause} AND ${toClause}`;
-      dateCondExp = `AND DATE(expense_date) BETWEEN ${fromClause} AND ${toClause}`;
+    if (filters.fromDate && filters.toDate) {
+      dateCondColl = `AND DATE(collection_date) BETWEEN '${filters.fromDate}' AND '${filters.toDate}'`;
+      dateCondInc = `AND DATE(income_date) BETWEEN '${filters.fromDate}' AND '${filters.toDate}'`;
+      dateCondLoan = `AND DATE(disbursement_date) BETWEEN '${filters.fromDate}' AND '${filters.toDate}'`;
+      dateCondExp = `AND DATE(expense_date) BETWEEN '${filters.fromDate}' AND '${filters.toDate}'`;
+    } else if (filters.fromDate) {
+      dateCondColl = `AND DATE(collection_date) >= '${filters.fromDate}'`;
+      dateCondInc = `AND DATE(income_date) >= '${filters.fromDate}'`;
+      dateCondLoan = `AND DATE(disbursement_date) >= '${filters.fromDate}'`;
+      dateCondExp = `AND DATE(expense_date) >= '${filters.fromDate}'`;
+    } else if (filters.toDate) {
+      dateCondColl = `AND DATE(collection_date) <= '${filters.toDate}'`;
+      dateCondInc = `AND DATE(income_date) <= '${filters.toDate}'`;
+      dateCondLoan = `AND DATE(disbursement_date) <= '${filters.toDate}'`;
+      dateCondExp = `AND DATE(expense_date) <= '${filters.toDate}'`;
     }
 
     const unionSql = `
@@ -289,7 +297,15 @@ class FinanceRepository {
 
     rows.forEach((row) => {
       const amt = parseFloat(row.amount || 0);
-      const isToday = row.entry_date && String(row.entry_date).startsWith(todayStr);
+      let dateStr = "";
+      if (row.entry_date) {
+        if (row.entry_date instanceof Date) {
+          dateStr = row.entry_date.toISOString().split("T")[0];
+        } else {
+          dateStr = String(row.entry_date).split("T")[0].split(" ")[0];
+        }
+      }
+      const isToday = dateStr === todayStr;
 
       if (row.entry_type === "INFLOW") {
         totalInflow += amt;

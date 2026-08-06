@@ -229,7 +229,7 @@ export default function Collections() {
     >
       {/* SUMMARY CARDS */}
       <Grid container spacing={2.5} sx={{ mb: 3 }}>
-        <Grid xs={12} sm={6} md={4}>
+        <Grid item xs={12} sm={6} md={4}>
           <Card sx={{ borderRadius: 3, borderLeft: "4px solid #10B981", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
             <CardContent sx={{ p: 2.5 }}>
               <Typography variant="caption" color="text.secondary" fontWeight={600}>
@@ -242,7 +242,7 @@ export default function Collections() {
           </Card>
         </Grid>
 
-        <Grid xs={12} sm={6} md={4}>
+        <Grid item xs={12} sm={6} md={4}>
           <Card sx={{ borderRadius: 3, borderLeft: "4px solid #0F766E", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
             <CardContent sx={{ p: 2.5 }}>
               <Typography variant="caption" color="text.secondary" fontWeight={600}>
@@ -255,7 +255,7 @@ export default function Collections() {
           </Card>
         </Grid>
 
-        <Grid xs={12} sm={6} md={4}>
+        <Grid item xs={12} sm={6} md={4}>
           <Card sx={{ borderRadius: 3, borderLeft: "4px solid #EF4444", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
             <CardContent sx={{ p: 2.5 }}>
               <Typography variant="caption" color="text.secondary" fontWeight={600}>
@@ -383,7 +383,7 @@ export default function Collections() {
               )}
 
               <Grid container spacing={2}>
-                <Grid xs={12} sm={6}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
                     size="small"
@@ -395,7 +395,7 @@ export default function Collections() {
                   />
                 </Grid>
 
-                <Grid xs={12} sm={6}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
                     size="small"
@@ -406,7 +406,7 @@ export default function Collections() {
                   />
                 </Grid>
 
-                <Grid xs={12} sm={6}>
+                <Grid item xs={12} sm={6}>
                   <FormControl fullWidth size="small">
                     <InputLabel>Payment Method</InputLabel>
                     <Select
@@ -422,7 +422,7 @@ export default function Collections() {
                   </FormControl>
                 </Grid>
 
-                <Grid xs={12} sm={6}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
                     size="small"
@@ -433,7 +433,7 @@ export default function Collections() {
                   />
                 </Grid>
 
-                <Grid xs={12}>
+                <Grid item xs={12}>
                   <TextField
                     fullWidth
                     multiline
@@ -481,11 +481,11 @@ export default function Collections() {
             </Box>
 
             <Grid container spacing={2}>
-              <Grid xs={6}>
+              <Grid item xs={6}>
                 <Typography variant="caption" color="text.secondary">Receipt Number</Typography>
                 <Typography variant="body1" fontWeight={600}>{selectedCollection?.receipt_number || "-"}</Typography>
               </Grid>
-              <Grid xs={6}>
+              <Grid item xs={6}>
                 <Typography variant="caption" color="text.secondary">Collection Date</Typography>
                 <Typography variant="body1" fontWeight={600}>
                   {selectedCollection?.collection_date
@@ -493,19 +493,19 @@ export default function Collections() {
                     : new Date().toLocaleDateString("en-IN")}
                 </Typography>
               </Grid>
-              <Grid xs={6}>
+              <Grid item xs={6}>
                 <Typography variant="caption" color="text.secondary">Customer Name</Typography>
                 <Typography variant="body1" fontWeight={600}>{selectedCollection?.customer_name || selectedCollection?.customerName || "-"}</Typography>
               </Grid>
-              <Grid xs={6}>
+              <Grid item xs={6}>
                 <Typography variant="caption" color="text.secondary">Loan Number</Typography>
                 <Typography variant="body1" fontWeight={600}>{selectedCollection?.loan_number || selectedCollection?.loanId || "-"}</Typography>
               </Grid>
-              <Grid xs={6}>
+              <Grid item xs={6}>
                 <Typography variant="caption" color="text.secondary">Payment Mode</Typography>
                 <Typography variant="body1" fontWeight={600}>{selectedCollection?.payment_method || "CASH"}</Typography>
               </Grid>
-              <Grid xs={6}>
+              <Grid item xs={6}>
                 <Typography variant="caption" color="text.secondary">Amount Collected</Typography>
                 <Typography variant="h6" fontWeight={700} color="#059669">
                   {formatCurrency(selectedCollection?.total_amount || selectedCollection?.totalAmount || selectedCollection?.collectionAmount)}

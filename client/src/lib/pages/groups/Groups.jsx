@@ -56,6 +56,7 @@ import SectionPage from "../../components/layout/SectionPage";
 import groupService from "../../services/group.service";
 import branchService from "../../services/branch.service";
 import customerService from "../../services/customer.service";
+import useAuth from "../../hooks/useAuth";
 
 const DAYS_OF_WEEK = [
   "Monday",
@@ -93,6 +94,27 @@ function TabPanel(props) {
 
 export default function Groups() {
   const queryClient = useQueryClient();
+  const { user, hasPermission } = useAuth();
+  const userRole = (user?.role_name || user?.role || "").toUpperCase().replace(/\s+/g, "_");
+
+  const canCreate =
+    userRole === "SUPER_ADMIN" ||
+    userRole === "ADMIN" ||
+    userRole === "BRANCH_MANAGER" ||
+    hasPermission("GROUP_CREATE");
+
+  const canEdit =
+    userRole === "SUPER_ADMIN" ||
+    userRole === "ADMIN" ||
+    userRole === "BRANCH_MANAGER" ||
+    userRole === "FIELD_OFFICER" ||
+    hasPermission("GROUP_UPDATE");
+
+  const canDelete =
+    userRole === "SUPER_ADMIN" ||
+    userRole === "ADMIN" ||
+    userRole === "BRANCH_MANAGER" ||
+    hasPermission("GROUP_DELETE");
 
   // Filters & Pagination
   const [search, setSearch] = useState("");
@@ -389,24 +411,80 @@ export default function Groups() {
       title="Group Management"
       subtitle="Organize self-help groups (SHG/JLG), manage group members, and track meeting attendance."
       actions={
-        <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap" }}>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => handleOpenFormDialog()}
-            sx={{
-              bgcolor: "#0F766E",
-              "&:hover": { bgcolor: "#115E59" },
-              borderRadius: 2,
-              px: 3,
-              fontWeight: 600,
-            }}
-          >
-            Create New Group
-          </Button>
-        </Stack>
+        canCreate ? (
+          <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap" }}>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => handleOpenFormDialog()}
+              sx={{
+                bgcolor: "#0F766E",
+                "&:hover": { bgcolor: "#115E59" },
+                borderRadius: 2,
+                px: 3,
+                fontWeight: 600,
+              }}
+            >
+              Create New Group
+            </Button>
+          </Stack>
+        ) : null
       }
     >
+      {/* KPI STATS BAR */}
+      <Grid container spacing={2.5} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ borderRadius: 3, borderLeft: "4px solid #0F766E", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+            <CardContent sx={{ p: 2 }}>
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                TOTAL GROUPS
+              </Typography>
+              <Typography variant="h5" fontWeight={700} sx={{ color: "#0F766E", mt: 0.5 }}>
+                {pagination.totalRecords || groups.length}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ borderRadius: 3, borderLeft: "4px solid #10B981", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+            <CardContent sx={{ p: 2 }}>
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                ACTIVE SHGs
+              </Typography>
+              <Typography variant="h5" fontWeight={700} sx={{ color: "#10B981", mt: 0.5 }}>
+                {groups.filter((g) => g.status === "ACTIVE").length}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ borderRadius: 3, borderLeft: "4px solid #0284C7", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+            <CardContent sx={{ p: 2 }}>
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                TOTAL MEMBERS
+              </Typography>
+              <Typography variant="h5" fontWeight={700} sx={{ color: "#0284C7", mt: 0.5 }}>
+                {groups.reduce((sum, g) => sum + (parseInt(g.member_count, 10) || 0), 0)}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ borderRadius: 3, borderLeft: "4px solid #6366F1", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+            <CardContent sx={{ p: 2 }}>
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                GROUP COLLECTIONS
+              </Typography>
+              <Typography variant="h5" fontWeight={700} sx={{ color: "#6366F1", mt: 0.5 }}>
+                {formatCurrency(groups.reduce((sum, g) => sum + (parseFloat(g.total_collected) || 0), 0))}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
       {/* Search & Filter Bar */}
       <Paper
         elevation={0}
@@ -690,25 +768,29 @@ export default function Groups() {
                             </IconButton>
                           </Tooltip>
 
-                          <Tooltip title="Edit Group">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleOpenFormDialog(group)}
-                              sx={{ color: "#0284C7", bgcolor: "#E0F2FE" }}
-                            >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
+                          {canEdit && (
+                            <Tooltip title="Edit Group">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleOpenFormDialog(group)}
+                                sx={{ color: "#0284C7", bgcolor: "#E0F2FE" }}
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
 
-                          <Tooltip title="Delete Group">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleOpenDeleteDialog(group)}
-                              sx={{ color: "#DC2626", bgcolor: "#FEE2E2" }}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
+                          {canDelete && (
+                            <Tooltip title="Delete Group">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleOpenDeleteDialog(group)}
+                                sx={{ color: "#DC2626", bgcolor: "#FEE2E2" }}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
                         </Stack>
                       </TableCell>
                     </TableRow>

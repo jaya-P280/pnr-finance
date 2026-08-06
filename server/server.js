@@ -11,8 +11,9 @@ async function startServer() {
         await connectDatabase();
         await initializeDatabase()
 
-        app.listen(env.PORT, () => {
-            logger.info(`Server is Running on http://localhost:${env.PORT}`);
+        const port = Number(process.env.PORT) || env.PORT || 3000;
+        app.listen(port, "0.0.0.0", () => {
+            logger.info(`Server is Running on http://0.0.0.0:${port}`);
         });
     }
      catch (error) {
