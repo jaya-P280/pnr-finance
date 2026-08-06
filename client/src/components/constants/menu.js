@@ -14,19 +14,39 @@ import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 
 const ROLE_ACCESS = {
-  SUPER_ADMIN: ["/users", "/profile"],
+  SUPER_ADMIN: [
+    "/dashboard",
+    "/users",
+    "/roles",
+    "/permissions",
+    "/audit-logs",
+    "/branches",
+    "/groups",
+    "/customers",
+    "/customer-documents",
+    "/loan-products",
+    "/loans",
+    "/collections",
+    "/cash-book",
+    "/cashbook",
+    "/expenses",
+    "/income",
+    "/loan-reports",
+    "/collection-reports",
+    "/customer-reports",
+    "/profile",
+    "/settings",
+  ],
   ADMIN: [
     "/dashboard",
     "/tasks",
     "/users",
     "/roles",
     "/permissions",
+    "/audit-logs",
     "/branches",
     "/customer-documents",
-    "/customers",
-    "/groups",
     "/loan-products",
-    "/loan-applications",
     "/loans",
     "/collections",
     "/cash-book",
@@ -46,7 +66,6 @@ const ROLE_ACCESS = {
     "/customers",
     "/customer-documents",
     "/loan-products",
-    "/loan-applications",
     "/loans",
     "/collections",
     "/cash-book",
@@ -57,6 +76,7 @@ const ROLE_ACCESS = {
     "/collection-reports",
     "/customer-reports",
     "/profile",
+    "/settings",
   ],
   FIELD_OFFICER: [
     "/dashboard",
@@ -67,6 +87,7 @@ const ROLE_ACCESS = {
     "/loan-applications",
     "/collections",
     "/profile",
+    "/settings",
   ],
   ACCOUNTANT: [
     "/dashboard",
@@ -87,6 +108,7 @@ const ROLE_ACCESS = {
     "/customer/apply-loan",
     "/customer/loans",
     "/customer/ekyc",
+    "/customer/settings",
   ],
 };
 
@@ -115,18 +137,59 @@ export function getFilteredMenu(rawRole) {
   if (userRole === "SUPER_ADMIN") {
     return [
       {
+        section: "Dashboard",
+        items: [
+          {
+            title: "Dashboard",
+            icon: DashboardIcon,
+            path: "/dashboard",
+          },
+        ],
+      },
+      {
         section: "Administration",
         items: [
           {
-            title: "Users",
+            title: "Administrator Management",
             icon: PeopleIcon,
             path: "/users",
           },
         ],
       },
       {
+        section: "Finance",
+        items: [
+          {
+            title: "Cash Book",
+            icon: PaidIcon,
+            path: "/cash-book",
+          },
+          {
+            title: "Expenses",
+            icon: PaidIcon,
+            path: "/expenses",
+          },
+          {
+            title: "Income",
+            icon: PaidIcon,
+            path: "/income",
+          },
+        ],
+      },
+      {
         section: "My Account",
-        items: [{ title: "My Profile", icon: PersonIcon, path: "/profile" }],
+        items: [
+          {
+            title: "My Profile",
+            icon: PersonIcon,
+            path: "/profile",
+          },
+          {
+            title: "Settings",
+            icon: SettingsIcon,
+            path: "/settings",
+          },
+        ],
       },
     ];
   }
@@ -155,6 +218,11 @@ export function getFilteredMenu(rawRole) {
             title: "e-KYC Status",
             icon: VerifiedUserIcon,
             path: "/customer/ekyc",
+          },
+          {
+            title: "Settings",
+            icon: SettingsIcon,
+            path: "/customer/settings",
           },
         ],
       },
@@ -207,6 +275,7 @@ export function getFilteredMenu(rawRole) {
             { title: "Users", path: "/users" },
             { title: "Roles", path: "/roles" },
             { title: "Permissions", path: "/permissions" },
+            { title: "Audit Trail", path: "/audit-logs" },
           ],
         },
         {

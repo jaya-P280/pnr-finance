@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { customerPortalApi } from "../../api/customer.api";
 import toast from "react-hot-toast";
@@ -24,7 +24,11 @@ export default function RepaymentSchedule() {
   const [loading, setLoading] = useState(true);
   const [payingEmiId, setPayingEmiId] = useState(null);
 
-  const fetchSchedule = useCallback(async () => {
+  useEffect(() => {
+    fetchSchedule();
+  }, [loanId]);
+
+  const fetchSchedule = async () => {
     try {
       setLoading(true);
       const [loanRes, scheduleRes] = await Promise.allSettled([
@@ -51,11 +55,7 @@ export default function RepaymentSchedule() {
     } finally {
       setLoading(false);
     }
-  }, [loanId]);
-
-  useEffect(() => {
-    fetchSchedule();
-  }, [fetchSchedule]);
+  };
 
   const handlePayEmi = async (emiItem) => {
     setPayingEmiId(emiItem.id || emiItem.installmentNumber);

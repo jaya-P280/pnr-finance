@@ -39,6 +39,7 @@ const ENDPOINTS = {
   SETTINGS: "/settings",
   DASHBOARD: "/dashboard",
   EMI: "/emi",
+  AUDIT: "/audit-logs",
 };
 
 export default ENDPOINTS;

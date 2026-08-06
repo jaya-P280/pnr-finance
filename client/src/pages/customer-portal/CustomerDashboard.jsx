@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { customerPortalApi } from "../../api/customer.api";
 import useAuth from "../../hooks/useAuth";
@@ -34,7 +34,11 @@ export default function CustomerDashboard() {
   const [kycStatus, setKycStatus] = useState({ aadhaarVerified: false, panVerified: false });
   const [recentApplications, setRecentApplications] = useState([]);
 
-  const extractArray = useCallback((res, field) => {
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const extractArray = (res, field) => {
     if (!res) return [];
     const body = res.data;
     if (Array.isArray(body)) return body;
@@ -44,9 +48,9 @@ export default function CustomerDashboard() {
     if (Array.isArray(body?.data?.applications)) return body.data.applications;
     if (Array.isArray(body?.data?.loans)) return body.data.loans;
     return [];
-  }, []);
+  };
 
-  const loadDashboardData = useCallback(async () => {
+  const loadDashboardData = async () => {
     try {
       setLoading(true);
       const [appsRes, loansRes, kycRes] = await Promise.allSettled([
@@ -79,11 +83,7 @@ export default function CustomerDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [extractArray]);
-
-  useEffect(() => {
-    loadDashboardData();
-  }, [loadDashboardData]);
+  };
 
   const isKycComplete = kycStatus?.aadhaarVerified && kycStatus?.panVerified;
 

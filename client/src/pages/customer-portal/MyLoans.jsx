@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { customerPortalApi } from "../../api/customer.api";
 import toast from "react-hot-toast";
@@ -20,7 +20,11 @@ export default function MyLoans() {
   const [loans, setLoans] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchLoans = useCallback(async () => {
+  useEffect(() => {
+    fetchLoans();
+  }, []);
+
+  const fetchLoans = async () => {
     try {
       setLoading(true);
       const response = await customerPortalApi.getMyActiveLoans();
@@ -40,11 +44,7 @@ export default function MyLoans() {
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    fetchLoans();
-  }, [fetchLoans]);
+  };
 
   const getLoanStatusColor = (status) => {
     switch (status?.toLowerCase()) {

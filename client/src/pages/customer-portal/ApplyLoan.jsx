@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { customerPortalApi } from "../../api/customer.api";
 import toast from "react-hot-toast";
@@ -40,7 +40,11 @@ export default function ApplyLoan() {
     documents: null,
   });
 
-  const fetchProducts = useCallback(async () => {
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
     try {
       const response = await customerPortalApi.getLoanProducts();
       const body = response.data;
@@ -76,26 +80,7 @@ export default function ApplyLoan() {
       console.error("Failed to fetch products", error);
       toast.error("Could not load loan products");
     }
-  }, []);
-
-  const verifyKycAndLoadProducts = useCallback(async () => {
-    try {
-      const response = await customerPortalApi.getKycStatus();
-      const kycStatus = response.data?.data || response.data || {};
-      if (!kycStatus.aadhaarVerified || !kycStatus.panVerified) {
-        toast.error("Complete your Aadhaar and PAN e-KYC before applying for a loan.");
-        navigate("/customer/ekyc", { replace: true, state: { requiredForLoan: true } });
-        return;
-      }
-      await fetchProducts();
-    } catch (error) {
-      toast.error("Unable to verify your e-KYC status. Please try again.");
-    }
-  }, [fetchProducts, navigate]);
-
-  useEffect(() => {
-    verifyKycAndLoadProducts();
-  }, [verifyKycAndLoadProducts]);
+  };
 
   const emiDetails = useMemo(() => {
     const principal = Number(formData.amount || 0);
@@ -148,7 +133,7 @@ export default function ApplyLoan() {
       const payload = {
         loanProductId: formData.loanProductId,
         requestedAmount: Number(formData.amount),
-        tenure: Number(formData.tenureMonths),
+        tenureMonths: Number(formData.tenureMonths),
         purpose: formData.purpose,
         employmentType: formData.employmentType,
         monthlyIncome: Number(formData.monthlyIncome || 0),

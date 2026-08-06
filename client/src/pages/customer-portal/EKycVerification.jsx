@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { customerPortalApi } from "../../api/customer.api";
 import toast from "react-hot-toast";
 import {
@@ -45,7 +45,11 @@ export default function EKycVerification() {
   const [panInput, setPanInput] = useState("");
   const [verifyingPan, setVerifyingPan] = useState(false);
 
-  const fetchKycStatus = useCallback(async () => {
+  useEffect(() => {
+    fetchKycStatus();
+  }, []);
+
+  const fetchKycStatus = async () => {
     try {
       setLoading(true);
       const response = await customerPortalApi.getKycStatus();
@@ -59,11 +63,7 @@ export default function EKycVerification() {
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    fetchKycStatus();
-  }, [fetchKycStatus]);
+  };
 
   const handleStartDigiLocker = () => {
     setDigiStep(1);

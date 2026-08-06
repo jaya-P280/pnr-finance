@@ -56,6 +56,7 @@ import SectionPage from "../../components/layout/SectionPage";
 import groupService from "../../services/group.service";
 import branchService from "../../services/branch.service";
 import customerService from "../../services/customer.service";
+import useAuth from "../../hooks/useAuth";
 
 const DAYS_OF_WEEK = [
   "Monday",
@@ -93,6 +94,9 @@ function TabPanel(props) {
 
 export default function Groups() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const roleName = user?.role_name?.toUpperCase() || "";
+  const canCreateGroup = ["SUPER_ADMIN", "ADMIN"].includes(roleName);
 
   // Filters & Pagination
   const [search, setSearch] = useState("");
@@ -389,22 +393,24 @@ export default function Groups() {
       title="Group Management"
       subtitle="Organize self-help groups (SHG/JLG), manage group members, and track meeting attendance."
       actions={
-        <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap" }}>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => handleOpenFormDialog()}
-            sx={{
-              bgcolor: "#0F766E",
-              "&:hover": { bgcolor: "#115E59" },
-              borderRadius: 2,
-              px: 3,
-              fontWeight: 600,
-            }}
-          >
-            Create New Group
-          </Button>
-        </Stack>
+        canCreateGroup ? (
+          <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap" }}>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => handleOpenFormDialog()}
+              sx={{
+                bgcolor: "#0F766E",
+                "&:hover": { bgcolor: "#115E59" },
+                borderRadius: 2,
+                px: 3,
+                fontWeight: 600,
+              }}
+            >
+              Create New Group
+            </Button>
+          </Stack>
+        ) : null
       }
     >
       {/* Search & Filter Bar */}
@@ -418,7 +424,7 @@ export default function Groups() {
           bgcolor: "#FFFFFF",
         }}
       >
-        <Grid container spacing={2} alignItems="center">
+        <Grid container spacing={2} sx={{ alignItems: "center" }}>
           <Grid size={{ xs: 12, sm: 4, md: 4 }}>
             <TextField
               fullWidth
@@ -557,6 +563,9 @@ export default function Groups() {
                       Branch
                     </TableCell>
                     <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>
+                      Field Officer
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>
                       Meeting Day
                     </TableCell>
                     <TableCell sx={{ fontWeight: 700, color: "#0F172A" }}>
@@ -607,6 +616,10 @@ export default function Groups() {
 
                       <TableCell sx={{ color: "#334155", fontWeight: 500 }}>
                         {group.branch_name || "-"}
+                      </TableCell>
+
+                      <TableCell sx={{ color: "#334155", fontWeight: 500 }}>
+                        {group.field_officer_name || "-"}
                       </TableCell>
 
                       <TableCell sx={{ color: "#475569" }}>
@@ -690,25 +703,29 @@ export default function Groups() {
                             </IconButton>
                           </Tooltip>
 
-                          <Tooltip title="Edit Group">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleOpenFormDialog(group)}
-                              sx={{ color: "#0284C7", bgcolor: "#E0F2FE" }}
-                            >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
+                          {canCreateGroup && (
+                            <>
+                              <Tooltip title="Edit Group">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleOpenFormDialog(group)}
+                                  sx={{ color: "#0284C7", bgcolor: "#E0F2FE" }}
+                                >
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
 
-                          <Tooltip title="Delete Group">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleOpenDeleteDialog(group)}
-                              sx={{ color: "#DC2626", bgcolor: "#FEE2E2" }}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
+                              <Tooltip title="Delete Group">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleOpenDeleteDialog(group)}
+                                  sx={{ color: "#DC2626", bgcolor: "#FEE2E2" }}
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </>
+                          )}
                         </Stack>
                       </TableCell>
                     </TableRow>
@@ -739,7 +756,7 @@ export default function Groups() {
         onClose={handleCloseFormDialog}
         maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: { borderRadius: 3 } }}
+        slotProps={{ paper: { sx: { borderRadius: 3 } } }}
       >
         <DialogTitle
           sx={{
@@ -899,7 +916,7 @@ export default function Groups() {
         onClose={handleCloseDetailDialog}
         maxWidth="md"
         fullWidth
-        PaperProps={{ sx: { borderRadius: 3, minHeight: "600px" } }}
+        slotProps={{ paper: { sx: { borderRadius: 3, minHeight: "600px" } } }}
       >
         <DialogTitle
           sx={{
@@ -1058,7 +1075,7 @@ export default function Groups() {
                   <Typography variant="subtitle2" fontWeight={700} color="#0F766E" sx={{ mb: 1.5 }}>
                     Add Customer to Group
                   </Typography>
-                  <Grid container spacing={2} alignItems="center">
+                  <Grid container spacing={2} sx={{ alignItems: "center" }}>
                     <Grid size={{ xs: 12, sm: 6 }}>
                       <TextField
                         select
@@ -1246,7 +1263,7 @@ export default function Groups() {
                   <Typography variant="subtitle2" fontWeight={700} color="#0F172A" sx={{ mb: 1 }}>
                     Record Group Meeting Attendance
                   </Typography>
-                  <Grid container spacing={2} alignItems="center">
+                  <Grid container spacing={2} sx={{ alignItems: "center" }}>
                     <Grid size={{ xs: 12, sm: 4 }}>
                       <TextField
                         type="date"
@@ -1495,7 +1512,7 @@ export default function Groups() {
         onClose={handleCloseDeleteDialog}
         maxWidth="xs"
         fullWidth
-        PaperProps={{ sx: { borderRadius: 3 } }}
+        slotProps={{ paper: { sx: { borderRadius: 3 } } }}
       >
         <DialogTitle sx={{ fontWeight: 700, color: "#991B1B" }}>
           Confirm Delete Group

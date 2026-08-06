@@ -56,7 +56,12 @@ const getErrorMessage = (error, fallback) =>
 
 export default function Loans() {
   const { user } = useAuth();
-  const canManageLoans = (user?.role_name || user?.role) === "ADMIN";
+  const roleName = user?.role_name || user?.role;
+  const isFieldOfficer = roleName === "FIELD_OFFICER";
+  const isBranchManager = roleName === "BRANCH_MANAGER";
+  const isCustomer = roleName === "CUSTOMER";
+  const canManageLoans = !isCustomer && ["SUPER_ADMIN", "ADMIN", "BRANCH_MANAGER", "FIELD_OFFICER"].includes(roleName);
+
   const [search, setSearch] = useState("");
   const [dialog, setDialog] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -69,8 +74,16 @@ export default function Loans() {
   });
 
   const applicationsQuery = useQuery({
-    queryKey: ["loanApplications", "approved"],
-    queryFn: () => loanApplicationService.getAll({ status: "APPROVED" }),
+    queryKey: ["loanApplications", "approved", user?.branch_id, form.branchId, roleName],
+    queryFn: () => {
+      const params = { status: "APPROVED" };
+      if (isFieldOfficer || isBranchManager) {
+        if (user?.branch_id) params.branchId = user.branch_id;
+      } else if (form.branchId) {
+        params.branchId = form.branchId;
+      }
+      return loanApplicationService.getAll(params);
+    },
     enabled: dialog?.mode === "create",
   });
 
@@ -166,7 +179,10 @@ export default function Loans() {
   const formLoading = applicationsQuery.isLoading || branchesQuery.isLoading;
 
   const openCreate = () => {
-    setForm(emptyForm);
+    setForm({
+      ...emptyForm,
+      branchId: user?.branch_id ? String(user.branch_id) : "",
+    });
     setAppDetails(null);
     setDialog({ mode: "create" });
   };
@@ -211,6 +227,11 @@ export default function Loans() {
       setAppDetails(details);
       setForm((current) => ({
         ...current,
+        branchId: details.branch_id
+          ? String(details.branch_id)
+          : user?.branch_id
+          ? String(user.branch_id)
+          : current.branchId,
         principalAmount: String(
           details.approved_amount ?? details.requested_amount ?? "",
         ),
@@ -424,7 +445,7 @@ export default function Loans() {
                   label="Branch"
                   value={form.branchId}
                   onChange={setField("branchId")}
-                  disabled={formLoading}
+                  disabled={formLoading || isFieldOfficer || isBranchManager}
                 >
                   <MenuItem value="">Select a branch</MenuItem>
                   {branches.map((b) => (

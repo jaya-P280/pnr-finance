@@ -10,6 +10,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Grid,
   MenuItem,
   Paper,
   Stack,
@@ -28,9 +29,11 @@ import SectionPage from "../../components/layout/SectionPage";
 import customerService from "../../services/customer.service";
 import loanProductService from "../../services/loanProduct.service";
 import loanApplicationService from "../../services/loanApplication.service";
+import groupService from "../../services/group.service";
 import useAuth from "../../hooks/useAuth";
 
 const emptyForm = {
+  groupId: "",
   customerId: "",
   loanProductId: "",
   requestedAmount: "",
@@ -59,6 +62,7 @@ const toPayload = (form) => {
     requestedAmount: Number(form.requestedAmount),
     tenure: Number(form.tenure),
   };
+  if (form.groupId) payload.groupId = Number(form.groupId);
   if (form.purpose) payload.purpose = form.purpose;
   if (form.remarks) payload.remarks = form.remarks;
   return payload;
@@ -67,10 +71,10 @@ const toPayload = (form) => {
 export default function LoanApplications() {
   const { user } = useAuth();
   const roleName = user?.role_name || user?.role;
-  const canCreate = roleName === "ADMIN";
-  const canVerify = ["ADMIN", "BRANCH_MANAGER"].includes(roleName);
-  const canApprove = ["ADMIN", "BRANCH_MANAGER"].includes(roleName);
-  const canDisburse = ["ADMIN", "FIELD_OFFICER"].includes(roleName);
+  const canCreate = ["SUPER_ADMIN", "ADMIN", "BRANCH_MANAGER", "FIELD_OFFICER", "CUSTOMER"].includes(roleName);
+  const canVerify = ["SUPER_ADMIN", "ADMIN", "BRANCH_MANAGER"].includes(roleName);
+  const canApprove = ["SUPER_ADMIN", "ADMIN", "BRANCH_MANAGER"].includes(roleName);
+  const canDisburse = ["SUPER_ADMIN", "ADMIN", "FIELD_OFFICER"].includes(roleName);
   const [search, setSearch] = useState("");
   const [dialog, setDialog] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -87,6 +91,18 @@ export default function LoanApplications() {
     queryKey: ["customers", "form"],
     queryFn: () => customerService.getAll({ limit: 100, status: "ACTIVE" }),
     enabled: dialog?.mode === "create" || dialog?.mode === "edit",
+  });
+
+  const groupsQuery = useQuery({
+    queryKey: ["groups", "form"],
+    queryFn: () => groupService.getAll({ limit: 100, status: "ACTIVE" }),
+    enabled: dialog?.mode === "create" || dialog?.mode === "edit",
+  });
+
+  const selectedGroupQuery = useQuery({
+    queryKey: ["group-detail", form.groupId],
+    queryFn: () => groupService.getById(form.groupId),
+    enabled: Boolean(form.groupId) && (dialog?.mode === "create" || dialog?.mode === "edit"),
   });
 
   const loanProductsQuery = useQuery({
@@ -189,8 +205,24 @@ export default function LoanApplications() {
 
   const applications = applicationsQuery.data?.loanApplications || [];
   const customers = customersQuery.data?.customers || [];
+  const groups = groupsQuery.data?.groups || [];
   const loanProducts = loanProductsQuery.data?.loanProducts || [];
-  const formLoading = customersQuery.isLoading || loanProductsQuery.isLoading;
+  const selectedGroup = selectedGroupQuery.data;
+  const formLoading = customersQuery.isLoading || loanProductsQuery.isLoading || groupsQuery.isLoading;
+
+  const groupMembers = selectedGroup?.members || [];
+  const availableCustomers = form.groupId
+    ? (groupMembers.length > 0
+        ? groupMembers
+        : customers.filter((c) => String(c.group_id) === String(form.groupId)))
+    : customers;
+
+  const isGroupInvalid = Boolean(
+    form.groupId &&
+      selectedGroup &&
+      (selectedGroup.status !== "ACTIVE" ||
+        (selectedGroup.members && selectedGroup.members.length === 0))
+  );
 
   const openCreate = () => {
     setForm(emptyForm);
@@ -203,6 +235,7 @@ export default function LoanApplications() {
         application.application_id,
       );
       setForm({
+        groupId: String(details.group_id || ""),
         customerId: String(details.customer_id || ""),
         loanProductId: String(details.loan_product_id || ""),
         requestedAmount: String(details.requested_amount ?? ""),
@@ -534,19 +567,142 @@ export default function LoanApplications() {
               </Alert>
             )}
             <TextField
+              select
+              fullWidth
+              label="Group (Optional / For Group Loans)"
+              value={form.groupId}
+              onChange={(e) => {
+                const val = e.target.value;
+                setForm((current) => ({
+                  ...current,
+                  groupId: val,
+                  customerId: "",
+                }));
+              }}
+              disabled={formLoading}
+              helperText={
+                roleName === "FIELD_OFFICER"
+                  ? "Displaying active groups assigned to you"
+                  : "Select a group to auto-load members & group summary"
+              }
+            >
+              <MenuItem value="">-- Individual Loan (No Group) --</MenuItem>
+              {groups.map((g) => (
+                <MenuItem key={g.group_id} value={String(g.group_id)}>
+                  {g.group_name} ({g.group_code}) - {g.branch_name || "Branch"}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            {form.groupId && selectedGroupQuery.isLoading && (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, py: 1 }}>
+                <CircularProgress size={20} sx={{ color: "#0F766E" }} />
+                <Typography variant="body2" color="#64748B">
+                  Loading group details & members...
+                </Typography>
+              </Box>
+            )}
+
+            {form.groupId && selectedGroup && !selectedGroupQuery.isLoading && (
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 2,
+                  bgcolor: "#F8FAFC",
+                  borderColor: isGroupInvalid ? "#FCA5A5" : "#CBD5E1",
+                  borderRadius: 2,
+                }}
+              >
+                <Typography
+                  variant="subtitle2"
+                  fontWeight={700}
+                  color="#0F766E"
+                  sx={{ mb: 1 }}
+                >
+                  Group Details
+                </Typography>
+                <Grid container spacing={1.5}>
+                  <Grid item xs={6} sm={4}>
+                    <Typography variant="caption" color="#64748B" display="block">
+                      Branch
+                    </Typography>
+                    <Typography variant="body2" fontWeight={600}>
+                      {selectedGroup.branch_name || "N/A"}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6} sm={4}>
+                    <Typography variant="caption" color="#64748B" display="block">
+                      Center
+                    </Typography>
+                    <Typography variant="body2" fontWeight={600}>
+                      {selectedGroup.center_name || "N/A"}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6} sm={4}>
+                    <Typography variant="caption" color="#64748B" display="block">
+                      Field Officer
+                    </Typography>
+                    <Typography variant="body2" fontWeight={600}>
+                      {selectedGroup.field_officer_name || "Unassigned"}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6} sm={4}>
+                    <Typography variant="caption" color="#64748B" display="block">
+                      Member Count
+                    </Typography>
+                    <Typography variant="body2" fontWeight={600}>
+                      {selectedGroup.members?.length || 0}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6} sm={4}>
+                    <Typography variant="caption" color="#64748B" display="block">
+                      Group Leader
+                    </Typography>
+                    <Typography variant="body2" fontWeight={600}>
+                      {selectedGroup.leader_name || "Not Set"}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6} sm={4}>
+                    <Typography variant="caption" color="#64748B" display="block">
+                      Meeting Day
+                    </Typography>
+                    <Typography variant="body2" fontWeight={600}>
+                      {selectedGroup.meeting_day || "N/A"}
+                    </Typography>
+                  </Grid>
+                </Grid>
+
+                {(!selectedGroup.members || selectedGroup.members.length === 0) && (
+                  <Alert severity="error" sx={{ mt: 1.5 }}>
+                    This group has no active members. You cannot create a loan for an empty group.
+                  </Alert>
+                )}
+                {selectedGroup.status !== "ACTIVE" && (
+                  <Alert severity="warning" sx={{ mt: 1.5 }}>
+                    Group is currently {selectedGroup.status}. Loans can only be created for ACTIVE groups.
+                  </Alert>
+                )}
+              </Paper>
+            )}
+
+            <TextField
               required
               select
               fullWidth
-              label="Customer"
+              label="Customer / Borrower"
               value={form.customerId}
               onChange={setField("customerId")}
-              disabled={formLoading}
+              disabled={formLoading || isGroupInvalid}
+              helperText={
+                form.groupId
+                  ? `Showing members of selected group (${availableCustomers.length} available)`
+                  : "Select borrower"
+              }
             >
               <MenuItem value="">Select a customer</MenuItem>
-              {customers.map((c) => (
+              {availableCustomers.map((c) => (
                 <MenuItem key={c.customer_id} value={String(c.customer_id)}>
-                  {`${c.first_name} ${c.last_name || ""}`.trim()} (
-                  {c.customer_code})
+                  {`${c.first_name} ${c.last_name || ""}`.trim()} ({c.customer_code})
                 </MenuItem>
               ))}
             </TextField>
@@ -608,7 +764,7 @@ export default function LoanApplications() {
           <Button
             variant="contained"
             disabled={
-              saveApplication.isPending || formLoading || !requiredFilled
+              saveApplication.isPending || formLoading || !requiredFilled || isGroupInvalid
             }
             onClick={() => saveApplication.mutate()}
           >

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { customerPortalApi } from "../../api/customer.api";
 import toast from "react-hot-toast";
@@ -25,7 +25,11 @@ export default function MyLoanApplications() {
   const [filter, setFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
 
-  const fetchApplications = useCallback(async () => {
+  useEffect(() => {
+    fetchApplications();
+  }, []);
+
+  const fetchApplications = async () => {
     try {
       setLoading(true);
       const response = await customerPortalApi.getMyApplications();
@@ -45,11 +49,7 @@ export default function MyLoanApplications() {
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    fetchApplications();
-  }, [fetchApplications]);
+  };
 
   const getStatusBadge = (status) => {
     const s = status?.toLowerCase();

@@ -34,18 +34,60 @@ api.interceptors.request.use(
 );
 
 // Response interceptor for handling token refresh
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
+    if (!originalRequest) {
+      return Promise.reject(error);
+    }
+
     const isRefreshRequest = originalRequest?.url?.includes("/auth/refresh");
+    const isLoginRequest = originalRequest?.url?.includes("/auth/login");
+
     const hasRefreshSession =
       Boolean(getRefreshTokenCallback?.()) ||
       Boolean(window.localStorage.getItem("pnrg.refresh_token")) ||
       window.sessionStorage.getItem("pnrg.auth.session") === "1";
-    if (error.response?.status === 401 && hasRefreshSession && !isRefreshRequest && !originalRequest._retry) {
+
+    if (
+      error.response?.status === 401 &&
+      hasRefreshSession &&
+      !isRefreshRequest &&
+      !isLoginRequest
+    ) {
+      if (originalRequest._retry) {
+        return Promise.reject(error);
+      }
+
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return api(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
+      }
+
       originalRequest._retry = true;
+      isRefreshing = true;
 
       try {
         const refreshToken =
@@ -55,24 +97,30 @@ api.interceptors.response.use(
         const apiBase = import.meta.env.VITE_API_BASE_URL || "/api/v1";
         const response = await axios.post(
           `${apiBase}/auth/refresh`,
-          // The refresh token is normally in an HttpOnly cookie. Sending the
-          // in-memory token as a fallback preserves compatibility with older
-          // sessions without exposing the cookie to JavaScript.
           refreshToken ? { refreshToken } : {},
           { withCredentials: true }
         );
 
-        const { accessToken, refreshToken: newRefreshToken } = response.data.data;
-        
+        const { accessToken, refreshToken: newRefreshToken } =
+          response.data.data;
+
         // Update tokens via callback
         if (onTokenRefreshCallback) {
           onTokenRefreshCallback(accessToken, newRefreshToken);
         }
 
+        processQueue(null, accessToken);
+        isRefreshing = false;
+
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
+        processQueue(refreshError, null);
+        isRefreshing = false;
+
         window.sessionStorage.removeItem("pnrg.auth.session");
+        window.localStorage.removeItem("pnrg.refresh_token");
+
         // Clear tokens via callback
         if (onTokenRefreshCallback) {
           onTokenRefreshCallback(null, null);

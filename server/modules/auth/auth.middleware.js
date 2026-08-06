@@ -1,0 +1,46 @@
+import jwt from "jsonwebtoken";
+import env from "../../config/env.js";
+import ApiError from "../../shared/ApiError.js";
+import authRepository from "./auth.repository.js";
+import { getFullImageUrl } from "../../shared/imageUrl.helper.js";
+
+const authenticate = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      throw new ApiError(401, "Authorization header missing");
+    }
+    if (!authHeader.startsWith("Bearer ")) {
+      throw new ApiError(401, "Invalid authorization format");
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    let decode;
+    try {
+      decode = jwt.verify(token, env.JWT.ACCESS_SECRET);
+    } catch (jwtError) {
+      if (jwtError.name === "TokenExpiredError") {
+        throw new ApiError(401, "Token expired");
+      }
+      throw new ApiError(401, "Invalid token");
+    }
+    const user = await authRepository.findUserById(decode.sub);
+    if (!user) {
+      throw new ApiError(401, "User not found");
+    }
+    if (user.status !== "ACTIVE") {
+      throw new ApiError(403, "User account is suspended or inactive");
+    }
+    user.profile_image = getFullImageUrl(req, user.profile_image, "users");
+    req.user = {
+      ...user,
+      permissions: decode.permissions,
+    };
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+export default authenticate;

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { customerPortalApi } from "../../api/customer.api";
 import toast from "react-hot-toast";
@@ -23,7 +23,11 @@ export default function LoanApplicationDetail() {
   const [application, setApplication] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchApplicationDetails = useCallback(async () => {
+  useEffect(() => {
+    fetchApplicationDetails();
+  }, [id]);
+
+  const fetchApplicationDetails = async () => {
     try {
       setLoading(true);
       const response = await customerPortalApi.getApplicationDetails(id);
@@ -33,11 +37,7 @@ export default function LoanApplicationDetail() {
     } finally {
       setLoading(false);
     }
-  }, [id]);
-
-  useEffect(() => {
-    fetchApplicationDetails();
-  }, [fetchApplicationDetails]);
+  };
 
   if (loading) {
     return (

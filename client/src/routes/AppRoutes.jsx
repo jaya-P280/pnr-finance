@@ -35,6 +35,7 @@ import Roles from "../pages/roles/Roles";
 import UnifiedSettings from "../pages/settings/UnifiedSettings";
 import Tasks from "../pages/tasks/Tasks";
 import UsersList from "../pages/users/UsersList";
+import AuditLogs from "../pages/audit/AuditLogs";
 
 export default function AppRoutes() {
   return (
@@ -54,6 +55,7 @@ export default function AppRoutes() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/roles" element={<Roles />} />
           <Route path="/permissions" element={<Permissions />} />
+          <Route path="/audit-logs" element={<AuditLogs />} />
           <Route path="/groups" element={<Groups />} />
           <Route path="/customer-documents" element={<CustomerDocuments />} />
           <Route path="/loan-products" element={<LoanProducts />} />

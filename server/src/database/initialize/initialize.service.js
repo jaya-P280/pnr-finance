@@ -14,13 +14,27 @@ import {
 
 class InitializeService {
   async initialize() {
+    // ===== 1. AUTO-CREATE ALL TABLES =====
+    const schemaConnection = await repository.beginTransaction();
+    try {
+      logger.info("Starting database schema creation/verification...");
+      await repository.createSchema(schemaConnection);
+      try {
+        await schemaConnection.execute(`ALTER TABLE customer_groups ADD COLUMN field_officer_id INT NULL`);
+      } catch {
+        // Ignored if column already exists
+      }
+      await repository.commit(schemaConnection);
+      logger.info("Schema created/verified and committed");
+    } catch (schemaErr) {
+      await repository.rollback(schemaConnection);
+      logger.error("Schema creation failed: " + (schemaErr?.stack || schemaErr));
+      throw schemaErr;
+    }
+
     const connection = await repository.beginTransaction();
     try {
-      logger.info("Starting database initialization...");
-
-      // ===== 1. AUTO-CREATE ALL TABLES =====
-      await repository.createSchema(connection);
-      logger.info("Schema created/verified");
+      logger.info("Starting database default data seeding...");
 
       // ===== 2. Create Roles =====
       logger.info("Checking default roles...");
@@ -138,7 +152,13 @@ class InitializeService {
 
         logger.info("Default Super Admin created (superadmin@pnrgfinance.com)");
       } else {
-        logger.info("Default Super Admin already exists");
+        const superAdminRoleId = roleMap["SUPER_ADMIN"];
+        const passwordHash = await bcrypt.hash(DEFAULT_SUPER_ADMIN.password, 12);
+        await connection.execute(
+          `UPDATE users SET role_id = ?, password_hash = ? WHERE user_id = ?`,
+          [superAdminRoleId, passwordHash, existingSuperAdmin.user_id]
+        );
+        logger.info("Default Super Admin existing record verified and updated");
       }
 
       // --- Create Default Admin ---
@@ -168,29 +188,39 @@ class InitializeService {
           "Default Admin created (admin@pnrgfinance.com / Admin@123)",
         );
       } else {
-        logger.info("Default Admin already exists");
+        const adminRoleId = roleMap["ADMIN"];
+        const passwordHash = await bcrypt.hash(DEFAULT_ADMIN.password, 12);
+        await connection.execute(
+          `UPDATE users SET role_id = ?, password_hash = ? WHERE user_id = ?`,
+          [adminRoleId, passwordHash, existingAdmin.user_id]
+        );
+        logger.info("Default Admin existing record verified and updated");
       }
 
       // --- Create demo staff users for the remaining system roles ---
       for (const demoUser of DEFAULT_DEMO_USERS) {
         const existing = await repository.findAdmin(connection, demoUser.email);
-        if (existing) {
-          logger.info(`Demo user already exists: ${demoUser.role_name}`);
-          continue;
-        }
-
+        const demoRoleId = roleMap[demoUser.role_name];
         const passwordHash = await bcrypt.hash(demoUser.password, 12);
-        await repository.createAdmin(connection, {
-          branch_id: branchId,
-          role_id: roleMap[demoUser.role_name],
-          employee_code: demoUser.employee_code,
-          first_name: demoUser.first_name,
-          last_name: demoUser.last_name,
-          email: demoUser.email,
-          phone: demoUser.phone,
-          password_hash: passwordHash,
-        });
-        logger.info(`Demo user created: ${demoUser.role_name}`);
+        if (!existing) {
+          await repository.createAdmin(connection, {
+            branch_id: branchId,
+            role_id: demoRoleId,
+            employee_code: demoUser.employee_code,
+            first_name: demoUser.first_name,
+            last_name: demoUser.last_name,
+            email: demoUser.email,
+            phone: demoUser.phone,
+            password_hash: passwordHash,
+          });
+          logger.info(`Demo user created: ${demoUser.role_name}`);
+        } else {
+          await connection.execute(
+            `UPDATE users SET role_id = ?, password_hash = ? WHERE user_id = ?`,
+            [demoRoleId, passwordHash, existing.user_id]
+          );
+          logger.info(`Demo user existing record verified and updated: ${demoUser.role_name}`);
+        }
       }
 
       // --- Seed Initial Financial Records (Expenses & Income) ---
@@ -288,6 +318,11 @@ class InitializeService {
       }
 
       // --- Seed Sample Customer Groups & Group Members if empty ---
+      const [foUsers] = await connection.execute(
+        `SELECT u.user_id FROM users u INNER JOIN roles r ON r.role_id = u.role_id WHERE r.role_name = 'FIELD_OFFICER' LIMIT 1`
+      );
+      const defaultFoId = foUsers[0]?.user_id || null;
+
       const [groupCount] = await connection.execute(`SELECT COUNT(*) AS total FROM customer_groups`);
       if (groupCount[0]?.total === 0) {
         const [allCusts] = await connection.execute(`SELECT customer_id FROM customers ORDER BY customer_id ASC`);
@@ -295,9 +330,9 @@ class InitializeService {
 
         if (cIds.length >= 2) {
           const [g1] = await connection.execute(
-            `INSERT INTO customer_groups (group_code, group_name, branch_id, description, meeting_day, status, created_by)
-             VALUES ('GRP0001', 'Maha Lakshmi Self Help Group', ?, 'Community self-help group for women entrepreneurs', 'MONDAY', 'ACTIVE', 1)`,
-            [branchId]
+            `INSERT INTO customer_groups (group_code, group_name, branch_id, field_officer_id, description, meeting_day, status, created_by)
+             VALUES ('GRP0001', 'Maha Lakshmi Self Help Group', ?, ?, 'Community self-help group for women entrepreneurs', 'MONDAY', 'ACTIVE', 1)`,
+            [branchId, defaultFoId]
           );
           const g1Id = g1.insertId;
 
@@ -308,9 +343,9 @@ class InitializeService {
 
         if (cIds.length >= 4) {
           const [g2] = await connection.execute(
-            `INSERT INTO customer_groups (group_code, group_name, branch_id, description, meeting_day, status, created_by)
-             VALUES ('GRP0002', 'Sai Ram Micro Enterprise Group', ?, 'Local micro business group for traders and farmers', 'WEDNESDAY', 'ACTIVE', 1)`,
-            [branchId]
+            `INSERT INTO customer_groups (group_code, group_name, branch_id, field_officer_id, description, meeting_day, status, created_by)
+             VALUES ('GRP0002', 'Sai Ram Micro Enterprise Group', ?, ?, 'Local micro business group for traders and farmers', 'WEDNESDAY', 'ACTIVE', 1)`,
+            [branchId, defaultFoId]
           );
           const g2Id = g2.insertId;
 
@@ -319,6 +354,12 @@ class InitializeService {
         }
 
         logger.info("Sample Customer Groups & Members seeded");
+      } else if (defaultFoId) {
+        // Backfill existing groups without field officer assigned
+        await connection.execute(
+          `UPDATE customer_groups SET field_officer_id = ? WHERE field_officer_id IS NULL`,
+          [defaultFoId]
+        );
       }
 
       await repository.commit(connection);
