@@ -71,18 +71,30 @@ export default function Header({ open, mobile, onToggleSidebar }) {
   const getRoleConfig = () => {
     switch (roleName) {
       case "SUPER_ADMIN":
+        return {
+          label: "Super Admin",
+          icon: <ShieldIcon sx={{ fontSize: 16 }} />,
+          bg: "#CCFBF1",
+          color: "#0F766E",
+          border: "#99F6E4",
+          branchText: "HQ System Admin",
+          shortcuts: [
+            { label: "Admin Management", path: "/users", icon: <ShieldIcon sx={{ fontSize: 16 }} />, color: "#0F766E", bg: "#F0FDF4" },
+          ],
+        };
+
       case "ADMIN":
         return {
-          label: roleName === "SUPER_ADMIN" ? "Super Admin" : "System Admin",
+          label: "System Admin",
           icon: <ShieldIcon sx={{ fontSize: 16 }} />,
           bg: "#FEF3C7",
           color: "#B45309",
           border: "#FDE68A",
-          branchText: "HQ Central Admin",
+          branchText: "HQ Central Operations",
           shortcuts: [
+            { label: "User Management", path: "/users", icon: <ShieldIcon sx={{ fontSize: 16 }} />, color: "#B45309", bg: "#FEF3C7" },
             { label: "Cash Book", path: "/cashbook", icon: <AccountBalanceWalletIcon sx={{ fontSize: 16 }} />, color: "#0F766E", bg: "#F0FDF4" },
             { label: "Loan Apps", path: "/loan-applications", icon: <RequestQuoteIcon sx={{ fontSize: 16 }} />, color: "#0284C7", bg: "#E0F2FE" },
-            { label: "Audit Trail", path: "/audit-logs", icon: <HistoryIcon sx={{ fontSize: 16 }} />, color: "#7C3AED", bg: "#F3E8FF" },
             { label: "System Config", path: "/settings", icon: <SettingsIcon sx={{ fontSize: 16 }} />, color: "#334155", bg: "#F1F5F9" },
           ],
         };

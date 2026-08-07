@@ -1,48 +1,42 @@
 import React from "react";
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
-import Forbidden from "../pages/Forbidden";
 import { ROLE_ACCESS } from "../components/constants/menu";
 
 export default function PermissionGuard({ requiredPermission, allowedRoles, path }) {
   const { user } = useAuth();
+  const location = useLocation();
 
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
   const role = (user.role_name || user.role || "").toUpperCase().trim().replace(/\s+/g, "_");
+  const targetPath = path || location.pathname;
 
-  // SUPER_ADMIN and ADMIN have full access to all routes
-  if (role === "SUPER_ADMIN" || role === "ADMIN") {
-    return <Outlet />;
-  }
-
-  // If path is specified, check if the user's role has access to this path
-  if (path) {
-    const allowedPaths = ROLE_ACCESS[role] || [];
-    if (allowedPaths.length > 0) {
-      const isAllowed = allowedPaths.some(
-        (p) => path === p || path.startsWith(p + "/")
-      );
-      if (!isAllowed) {
-        return <Forbidden />;
-      }
+  // 1. Role Access Path Protection (Checks if current route is allowed in role's menu specification)
+  const allowedPaths = ROLE_ACCESS[role];
+  if (allowedPaths && Array.isArray(allowedPaths) && targetPath !== "/dashboard" && targetPath !== "/profile" && targetPath !== "/403") {
+    const isAllowed = allowedPaths.some(
+      (p) => targetPath === p || targetPath.startsWith(p + "/")
+    );
+    if (!isAllowed) {
+      return <Navigate to="/dashboard" replace />;
     }
   }
 
-  // Check role restriction if provided
+  // 2. Check Explicit Allowed Roles list if provided
   if (allowedRoles && allowedRoles.length > 0) {
     const normAllowedRoles = allowedRoles.map((r) =>
       r.toUpperCase().trim().replace(/\s+/g, "_")
     );
     if (!normAllowedRoles.includes(role)) {
-      return <Forbidden />;
+      return <Navigate to="/dashboard" replace />;
     }
   }
 
-  // Check permission requirement if provided
-  if (requiredPermission && role !== "CUSTOMER") {
+  // 3. Check Specific Permission Requirement if provided (ADMIN role bypasses permission list checks)
+  if (requiredPermission && role !== "ADMIN" && role !== "CUSTOMER") {
     const userPerms = (user.permissions || []).map((p) =>
       String(p).toUpperCase().replace(/\./g, "_")
     );
@@ -56,7 +50,7 @@ export default function PermissionGuard({ requiredPermission, allowedRoles, path
 
     const hasPerm = normRequired.some((p) => userPerms.includes(p));
     if (!hasPerm) {
-      return <Forbidden />;
+      return <Navigate to="/dashboard" replace />;
     }
   }
 

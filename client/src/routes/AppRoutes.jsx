@@ -19,7 +19,7 @@ import MyLoanApplications from "../lib/pages/customer-portal/MyLoanApplications"
 import MyLoans from "../lib/pages/customer-portal/MyLoans";
 import RepaymentSchedule from "../lib/pages/customer-portal/RepaymentSchedule";
 import CustomerList from "../lib/pages/customers/CustomersList";
-import Dashboard from "../lib/pages/dashboard/Dashboard";
+import Dashboard from "../pages/dashboard/Dashboard";
 import CashBook from "../lib/pages/finance/CashBook";
 import Expenses from "../lib/pages/finance/Expenses";
 import Income from "../lib/pages/finance/Income";
@@ -38,6 +38,9 @@ import Tasks from "../lib/pages/tasks/Tasks";
 import UsersList from "../lib/pages/users/UsersList";
 import AuditLogs from "../pages/audit/AuditLogs";
 import Forbidden from "../pages/Forbidden";
+import Attendance from "../pages/attendance/Attendance";
+import Letters from "../pages/letters/Letters";
+import SalaryManagement from "../pages/salary/SalaryManagement";
 
 export default function AppRoutes() {
   return (
@@ -56,95 +59,110 @@ export default function AppRoutes() {
           <Route path="/profile" element={<Profile />} />
 
           {/* Dashboard */}
-          <Route element={<PermissionGuard requiredPermission={["DASHBOARD_VIEW"]} />}>
+          <Route element={<PermissionGuard path="/dashboard" requiredPermission={["DASHBOARD_VIEW"]} />}>
             <Route path="/dashboard" element={<Dashboard />} />
           </Route>
 
           {/* User / Administrator Management */}
-          <Route element={<PermissionGuard requiredPermission={["ADMINISTRATOR_VIEW", "USER_VIEW"]} />}>
+          <Route element={<PermissionGuard path="/users" requiredPermission={["ADMINISTRATOR_VIEW", "USER_VIEW"]} />}>
             <Route path="/users" element={<UsersList />} />
           </Route>
 
+          {/* Salary Management */}
+          <Route element={<PermissionGuard path="/salary" requiredPermission={["USER_VIEW"]} />}>
+            <Route path="/salary" element={<SalaryManagement />} />
+          </Route>
+
           {/* Branch Management */}
-          <Route element={<PermissionGuard requiredPermission={["BRANCH_VIEW"]} />}>
+          <Route element={<PermissionGuard path="/branches" requiredPermission={["BRANCH_VIEW"]} />}>
             <Route path="/branches" element={<BranchList />} />
           </Route>
 
           {/* Customer Management */}
-          <Route element={<PermissionGuard requiredPermission={["CUSTOMER_VIEW"]} />}>
+          <Route element={<PermissionGuard path="/customers" requiredPermission={["CUSTOMER_VIEW"]} />}>
             <Route path="/customers" element={<CustomerList />} />
           </Route>
 
           {/* Roles & Permissions */}
-          <Route element={<PermissionGuard requiredPermission={["ROLE_VIEW"]} />}>
+          <Route element={<PermissionGuard path="/roles" requiredPermission={["ROLE_VIEW"]} />}>
             <Route path="/roles" element={<Roles />} />
           </Route>
-          <Route element={<PermissionGuard requiredPermission={["PERMISSION_VIEW"]} />}>
+          <Route element={<PermissionGuard path="/permissions" requiredPermission={["PERMISSION_VIEW"]} />}>
             <Route path="/permissions" element={<Permissions />} />
           </Route>
 
           {/* Audit Logs */}
-          <Route element={<PermissionGuard requiredPermission={["AUDIT_VIEW"]} />}>
+          <Route element={<PermissionGuard path="/audit-logs" requiredPermission={["AUDIT_VIEW"]} />}>
             <Route path="/audit-logs" element={<AuditLogs />} />
           </Route>
 
           {/* Groups */}
-          <Route element={<PermissionGuard requiredPermission={["GROUP_VIEW"]} />}>
+          <Route element={<PermissionGuard path="/groups" requiredPermission={["GROUP_VIEW"]} />}>
             <Route path="/groups" element={<Groups />} />
           </Route>
 
           {/* Customer eKYC Documents */}
-          <Route element={<PermissionGuard requiredPermission={["CUSTOMER_KYC_VIEW"]} />}>
+          <Route element={<PermissionGuard path="/customer-documents" requiredPermission={["CUSTOMER_KYC_VIEW"]} />}>
             <Route path="/customer-documents" element={<CustomerDocuments />} />
           </Route>
 
           {/* Loan Products */}
-          <Route element={<PermissionGuard requiredPermission={["LOAN_PRODUCT_VIEW"]} />}>
+          <Route element={<PermissionGuard path="/loan-products" requiredPermission={["LOAN_PRODUCT_VIEW"]} />}>
             <Route path="/loan-products" element={<LoanProducts />} />
           </Route>
 
           {/* Loan Applications */}
-          <Route element={<PermissionGuard requiredPermission={["LOAN_APPLICATION_VIEW"]} />}>
+          <Route element={<PermissionGuard path="/loan-applications" requiredPermission={["LOAN_APPLICATION_VIEW"]} />}>
             <Route path="/loan-applications" element={<LoanApplications />} />
           </Route>
 
           {/* Loans */}
-          <Route element={<PermissionGuard requiredPermission={["LOAN_VIEW"]} />}>
+          <Route element={<PermissionGuard path="/loans" requiredPermission={["LOAN_VIEW"]} />}>
             <Route path="/loans" element={<Loans />} />
           </Route>
 
           {/* Collections */}
-          <Route element={<PermissionGuard requiredPermission={["COLLECTION_VIEW"]} />}>
+          <Route element={<PermissionGuard path="/collections" requiredPermission={["COLLECTION_VIEW"]} />}>
             <Route path="/collections" element={<Collections />} />
           </Route>
 
           {/* Finance */}
-          <Route element={<PermissionGuard requiredPermission={["CASHBOOK_VIEW"]} />}>
+          <Route element={<PermissionGuard path="/cashbook" requiredPermission={["CASHBOOK_VIEW"]} />}>
             <Route path="/cash-book" element={<CashBook />} />
             <Route path="/cashbook" element={<CashBook />} />
           </Route>
-          <Route element={<PermissionGuard requiredPermission={["EXPENSE_VIEW"]} />}>
+          <Route element={<PermissionGuard path="/expenses" requiredPermission={["EXPENSE_VIEW"]} />}>
             <Route path="/expenses" element={<Expenses />} />
           </Route>
-          <Route element={<PermissionGuard requiredPermission={["INCOME_VIEW"]} />}>
+          <Route element={<PermissionGuard path="/income" requiredPermission={["INCOME_VIEW"]} />}>
             <Route path="/income" element={<Income />} />
           </Route>
 
           {/* Reports */}
-          <Route element={<PermissionGuard requiredPermission={["REPORT_VIEW"]} />}>
+          <Route element={<PermissionGuard path="/loan-reports" requiredPermission={["REPORT_VIEW"]} />}>
             <Route path="/loan-reports" element={<LoanReports />} />
             <Route path="/collection-reports" element={<CollectionReports />} />
             <Route path="/customer-reports" element={<CustomerReports />} />
           </Route>
 
           {/* Field Tasks */}
-          <Route element={<PermissionGuard requiredPermission={["CUSTOMER_VIEW", "DASHBOARD_VIEW"]} />}>
+          <Route element={<PermissionGuard path="/tasks" requiredPermission={["CUSTOMER_VIEW", "DASHBOARD_VIEW"]} />}>
             <Route path="/tasks" element={<Tasks />} />
           </Route>
 
           {/* System Settings */}
-          <Route element={<PermissionGuard requiredPermission={["SETTINGS_VIEW"]} />}>
+          <Route element={<PermissionGuard path="/settings" requiredPermission={["SETTINGS_VIEW"]} />}>
             <Route path="/settings" element={<UnifiedSettings />} />
+          </Route>
+
+          {/* Attendance Tracking & Biometric/Facial Recognition */}
+          <Route element={<PermissionGuard path="/attendance" />}>
+            <Route path="/attendance" element={<Attendance />} />
+          </Route>
+
+          {/* Employee Letters & Document Generator */}
+          <Route element={<PermissionGuard path="/letters" />}>
+            <Route path="/letters" element={<Letters />} />
           </Route>
 
           {/* Customer Portal */}

@@ -18,6 +18,7 @@ import emiRoutes from "../modules/emi/emi.routes.js";
 import customerPortalRoutes from "../modules/customer-portal/customerPortal.routes.js";
 import taskRoutes from "../modules/tasks/tasks.routes.js";
 import financeRoutes from "../modules/finance/finance.routes.js";
+import salaryRoutes from "../modules/salaries/salaries.routes.js";
 
 const router = express.Router();
 
@@ -40,5 +41,6 @@ router.use("/reports", reportRoutes);
 router.use("/emi", emiRoutes);
 router.use("/customer", customerPortalRoutes);
 router.use("/tasks", taskRoutes);
+router.use("/salaries", salaryRoutes);
 
 export default router;

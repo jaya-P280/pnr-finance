@@ -4,6 +4,8 @@ import tokenService from "./token.service.js";
 import CodeGenerator from "../../shared/codeGenerator.helper.js";
 import ApiError from "../../shared/ApiError.js";
 import auditService from "../audit/audit.service.js";
+import attendanceRepository from "../attendance/attendance.repository.js";
+import logger from "../../config/logger.js";
 
 class AuthService {
   async login(email, password, metadata = {}) {
@@ -28,6 +30,29 @@ class AuthService {
 
     delete user.password_hash;
     user.permissions = permissions;
+
+    // Auto-mark attendance on login for staff/employees at their admin-selected location
+    if (user.role_name && user.role_name.toUpperCase() !== "CUSTOMER") {
+      try {
+        const todayStr = new Date().toISOString().split("T")[0];
+        const existingAtt = await attendanceRepository.findRecord(user.user_id, todayStr);
+        if (!existingAtt) {
+          const nowTimeStr = new Date().toTimeString().split(" ")[0];
+          const locationName = user.branch_name ? `${user.branch_name} (${user.branch_code || "Branch"})` : "Assigned Branch Location";
+          await attendanceRepository.markAttendance({
+            userId: user.user_id,
+            branchId: user.branch_id,
+            attendanceDate: todayStr,
+            clockIn: nowTimeStr,
+            status: "PRESENT",
+            remarks: `Auto-marked PRESENT on login at ${locationName}`,
+            recordedBy: user.user_id,
+          });
+        }
+      } catch (attErr) {
+        logger.error("Auto attendance on login failed:", attErr);
+      }
+    }
 
     await auditService.log({
       userId: user.user_id,

@@ -524,6 +524,45 @@ class InitializeRepository {
         FOREIGN KEY (branch_id) REFERENCES branches(branch_id),
         FOREIGN KEY (created_by) REFERENCES users(user_id)
       )`,
+
+      // --- EMPLOYEE ATTENDANCE ---
+      `CREATE TABLE IF NOT EXISTS employee_attendance (
+        attendance_id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        branch_id INT NULL,
+        attendance_date DATE NOT NULL,
+        clock_in TIME NULL,
+        clock_out TIME NULL,
+        status ENUM('PRESENT','ABSENT','LATE','HALF_DAY','ON_LEAVE') DEFAULT 'PRESENT',
+        remarks TEXT NULL,
+        recorded_by INT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+        FOREIGN KEY (branch_id) REFERENCES branches(branch_id) ON DELETE SET NULL,
+        FOREIGN KEY (recorded_by) REFERENCES users(user_id) ON DELETE SET NULL,
+        UNIQUE KEY unique_user_date (user_id, attendance_date)
+      )`,
+
+      // --- LETTERS ---
+      `CREATE TABLE IF NOT EXISTS letters (
+        letter_id INT AUTO_INCREMENT PRIMARY KEY,
+        letter_number VARCHAR(50) NOT NULL UNIQUE,
+        letter_type VARCHAR(50) NOT NULL DEFAULT 'OFFICIAL',
+        recipient_name VARCHAR(200) NOT NULL,
+        recipient_designation VARCHAR(100) NULL,
+        organization VARCHAR(200) NULL,
+        subject VARCHAR(255) NOT NULL,
+        body TEXT NULL,
+        issued_date DATE NULL,
+        signatory_name VARCHAR(200) NULL,
+        signatory_title VARCHAR(100) NULL,
+        created_by INT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        deleted_at TIMESTAMP NULL,
+        FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE SET NULL
+      )`,
     ];
 
     let qIdx = 0;

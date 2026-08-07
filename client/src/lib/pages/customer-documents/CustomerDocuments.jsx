@@ -88,19 +88,12 @@ const ADDITIONAL_DOCS = [
 ];
 
 export default function CustomerDocuments() {
-  const [mainTab, setMainTab] = useState("kyc");
-
   return (
-    <SectionPage title="Customer Documents">
-      <Tabs value={mainTab} onChange={(e, v) => setMainTab(v)} sx={{ mb: 3 }}>
-        <Tab value="kyc" label="KYC Verification" />
-        <Tab value="family" label="Family & Nominees" />
-      </Tabs>
-      {mainTab === "kyc" ? (
-        <KycVerificationSection />
-      ) : (
-        <FamilyNomineesSection />
-      )}
+    <SectionPage
+      title="Customer eKYC Verification & Documents"
+      subtitle="Manage, review, verify, and approve customer eKYC documents and identity proofs."
+    >
+      <KycVerificationSection />
     </SectionPage>
   );
 }
@@ -110,7 +103,7 @@ export default function CustomerDocuments() {
 // ---------------------------------------------------------------------------
 
 function KycVerificationSection() {
-  const [tab, setTab] = useState("pending");
+  const [selectedStatus, setSelectedStatus] = useState("ALL");
   const [search, setSearch] = useState("");
   const [branchId, setBranchId] = useState("");
   const [viewCustomerId, setViewCustomerId] = useState(null);
@@ -120,7 +113,7 @@ function KycVerificationSection() {
   const [uploadingKey, setUploadingKey] = useState(null);
   const queryClient = useQueryClient();
 
-  const status = TAB_STATUS[tab];
+  const status = selectedStatus === "ALL" ? undefined : selectedStatus;
 
   const queueQuery = useQuery({
     queryKey: ["kycQueue", status, search, branchId],
@@ -175,11 +168,6 @@ function KycVerificationSection() {
   });
 
   const rows = queueQuery.data?.rows || [];
-  const counts = queueQuery.data?.counts || {
-    PENDING: 0,
-    VERIFIED: 0,
-    REJECTED: 0,
-  };
   const branches = branchesQuery.data?.branches || [];
   const viewItem =
     rows.find((row) => row.customer_id === viewCustomerId) || null;
@@ -196,7 +184,6 @@ function KycVerificationSection() {
     const formData = new FormData();
     formData.append(doc.field, file);
     uploadKyc.mutate({ customerId: viewItem.customer_id, formData });
-    // allow re-selecting the same file later (e.g. re-upload after a mistake)
     if (event?.target) event.target.value = "";
   };
 
@@ -207,12 +194,7 @@ function KycVerificationSection() {
 
   return (
     <Box>
-      <Tabs value={tab} onChange={(e, v) => setTab(v)} sx={{ mb: 2 }}>
-        <Tab value="pending" label={`Pending KYC (${counts.PENDING})`} />
-        <Tab value="verified" label={`Verified (${counts.VERIFIED})`} />
-        <Tab value="rejected" label={`Rejected (${counts.REJECTED})`} />
-      </Tabs>
-
+      {/* Filter Bar with Status Dropdown */}
       <Paper
         elevation={0}
         sx={{ border: "1px solid #E2E8F0", borderRadius: 3, p: 2, mb: 3 }}
@@ -230,6 +212,19 @@ function KycVerificationSection() {
               },
             }}
           />
+          <TextField
+            select
+            size="small"
+            sx={{ minWidth: 200 }}
+            label="Verification Status"
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+          >
+            <MenuItem value="ALL">All Statuses</MenuItem>
+            <MenuItem value="PENDING">PENDING APPROVAL</MenuItem>
+            <MenuItem value="VERIFIED">VERIFIED / APPROVED</MenuItem>
+            <MenuItem value="REJECTED">REJECTED</MenuItem>
+          </TextField>
           <TextField
             select
             size="small"
@@ -273,6 +268,7 @@ function KycVerificationSection() {
             <Table>
               <TableHead>
                 <TableRow sx={{ bgcolor: "#F8FAFC" }}>
+                  <TableCell fontWeight="bold">eKYC Verification Status</TableCell>
                   <TableCell>Customer</TableCell>
                   <TableCell>Aadhaar</TableCell>
                   <TableCell>PAN</TableCell>
@@ -290,8 +286,18 @@ function KycVerificationSection() {
                   const uploaded = MANDATORY_DOCS.filter(
                     (d) => item[d.key],
                   ).length;
+                  const kycStatusLabel = item.kyc_status || (tab === "verified" ? "VERIFIED" : tab === "rejected" ? "REJECTED" : "PENDING");
+                  const chipColor = kycStatusLabel === "VERIFIED" ? "success" : kycStatusLabel === "REJECTED" ? "error" : "warning";
                   return (
                     <TableRow key={item.customer_id}>
+                      <TableCell>
+                        <Chip
+                          size="small"
+                          label={kycStatusLabel}
+                          color={chipColor}
+                          sx={{ fontWeight: 700 }}
+                        />
+                      </TableCell>
                       <TableCell>
                         {item.customer_code} -{" "}
                         {`${item.first_name} ${item.last_name || ""}`.trim()}

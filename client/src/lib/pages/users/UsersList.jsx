@@ -2,14 +2,21 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Alert,
+  Avatar,
   Box,
   Button,
+  Card,
+  CardContent,
   Chip,
   CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
+  Grid,
+  IconButton,
+  InputAdornment,
   MenuItem,
   Paper,
   Stack,
@@ -18,11 +25,28 @@ import {
   TableCell,
   TableContainer,
   TableHead,
+  TablePagination,
   TableRow,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
-import { Add as AddIcon, Search as SearchIcon } from "@mui/icons-material";
+import {
+  Add as AddIcon,
+  Search as SearchIcon,
+  Visibility as ViewIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Person as PersonIcon,
+  Refresh as RefreshIcon,
+  People as PeopleIcon,
+  CheckCircle as ActiveIcon,
+  Badge as BadgeIcon,
+  Business as BranchIcon,
+  Phone as PhoneIcon,
+  Email as EmailIcon,
+  CalendarToday as DateIcon,
+} from "@mui/icons-material";
 import toast from "react-hot-toast";
 import SectionPage from "../../components/layout/SectionPage";
 import branchService from "../../services/branch.service";
@@ -37,11 +61,27 @@ const emptyForm = {
   mobileNumber: "",
   roleId: "",
   branchId: "",
-  profileImage:null,
+  profileImage: null,
 };
 
 const getErrorMessage = (error, fallback) =>
   error?.response?.data?.message || error?.message || fallback;
+
+const getInitials = (firstName, lastName) => {
+  const f = firstName?.[0] || "";
+  const l = lastName?.[0] || "";
+  return (f + l).toUpperCase() || "U";
+};
+
+const getRoleColor = (role) => {
+  const r = (role || "").toLowerCase();
+  if (r.includes("super_admin")) return "#0F766E";
+  if (r.includes("admin")) return "#1E40AF";
+  if (r.includes("branch_manager")) return "#2563EB";
+  if (r.includes("field_officer")) return "#7C3AED";
+  if (r.includes("accountant")) return "#D97706";
+  return "#64748B";
+};
 
 export default function UsersList() {
   const { user } = useAuth();
@@ -50,19 +90,36 @@ export default function UsersList() {
   const isAdmin = userRole === "ADMIN";
 
   const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
+  const [branchFilter, setBranchFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
   const [dialog, setDialog] = useState(null);
   const [form, setForm] = useState(emptyForm);
+
   const queryClient = useQueryClient();
 
   const usersQuery = useQuery({
-    queryKey: ["users", search],
-    queryFn: () => userService.getAll({ search }),
+    queryKey: ["users", search, roleFilter, branchFilter, statusFilter, page, rowsPerPage, userRole],
+    queryFn: () =>
+      userService.getAll({
+        search: search.trim() || undefined,
+        roleId: roleFilter || undefined,
+        roleName: isSuperAdmin && !roleFilter ? "ADMIN" : undefined,
+        branchId: branchFilter || undefined,
+        status: statusFilter || undefined,
+        page: page + 1,
+        limit: rowsPerPage,
+      }),
   });
 
   const rolesQuery = useQuery({
     queryKey: ["roles"],
     queryFn: () => roleService.getAll(),
   });
+
   const branchesQuery = useQuery({
     queryKey: ["branches", "form"],
     queryFn: () => branchService.getAll({ limit: 100, status: "ACTIVE" }),
@@ -86,42 +143,41 @@ export default function UsersList() {
     onSuccess: () => {
       toast.success(
         dialog.mode === "create"
-          ? "User created. A password setup email was sent."
-          : "User updated.",
+          ? "Employee created. Password setup email sent."
+          : "Employee updated successfully.",
       );
       setDialog(null);
       invalidateUsers();
     },
     onError: (error) =>
-      toast.error(getErrorMessage(error, "Unable to save the user.")),
+      toast.error(getErrorMessage(error, "Unable to save employee.")),
   });
 
   const changeStatus = useMutation({
     mutationFn: ({ id, status }) => userService.updateStatus(id, { status }),
     onSuccess: () => {
-      toast.success("User status updated.");
+      toast.success("Employee status updated.");
       invalidateUsers();
     },
     onError: (error) =>
-      toast.error(getErrorMessage(error, "Unable to update user status.")),
+      toast.error(getErrorMessage(error, "Unable to update status.")),
   });
 
   const removeUser = useMutation({
     mutationFn: (id) => userService.delete(id),
     onSuccess: () => {
-      toast.success("User deleted.");
+      toast.success("Employee deleted.");
       setDialog(null);
       invalidateUsers();
     },
     onError: (error) =>
-      toast.error(getErrorMessage(error, "Unable to delete the user.")),
+      toast.error(getErrorMessage(error, "Unable to delete employee.")),
   });
 
   const users = usersQuery.data?.users || [];
+  const pagination = usersQuery.data?.pagination || { totalRecords: users.length };
   const branches = branchesQuery.data?.branches || [];
-  const roles = Array.isArray(rolesQuery.data?.roles)
-    ? rolesQuery.data.roles
-    : [];
+  const roles = Array.isArray(rolesQuery.data?.roles) ? rolesQuery.data.roles : [];
 
   const selectableRoles = isSuperAdmin
     ? roles.filter((role) => (role.role_name || role.roleName) === "ADMIN")
@@ -136,6 +192,7 @@ export default function UsersList() {
           role.role_name || role.roleName,
         ),
       );
+
   const formLoading = rolesQuery.isLoading || branchesQuery.isLoading;
 
   const openCreate = () => {
@@ -151,299 +208,232 @@ export default function UsersList() {
     setDialog({ mode: "create" });
   };
 
-  const openEdit = async (user) => {
+  const openView = async (u) => {
     try {
-      const details = await userService.getById(user.userId);
+      const details = await userService.getById(u.userId);
+      setDialog({ mode: "view", user: details });
+    } catch {
+      setDialog({ mode: "view", user: u });
+    }
+  };
+
+  const openEdit = async (u) => {
+    try {
+      const details = await userService.getById(u.userId);
       setForm({
         firstName: details.firstName || "",
         lastName: details.lastName || "",
         email: details.email || "",
-        mobileNumber: details.mobileNumber || "",
+        mobileNumber: details.mobileNumber || details.phone || "",
         roleId: String(details.roleId || ""),
         branchId: String(details.branchId || ""),
       });
-      setDialog({ mode: "edit", user });
+      setDialog({ mode: "edit", user: details });
     } catch (error) {
-      toast.error(getErrorMessage(error, "Unable to load the user."));
+      toast.error(getErrorMessage(error, "Unable to load employee details."));
     }
+  };
+
+  const handleResetFilters = () => {
+    setSearch("");
+    setRoleFilter("");
+    setBranchFilter("");
+    setStatusFilter("");
+    setPage(0);
   };
 
   const setField = (field) => (event) =>
     setForm((current) => ({ ...current, [field]: event.target.value }));
 
-  const getRoleColor = (role) =>
-    ({
-      super_admin: "#0F766E",
-      branch_manager: "#2563EB",
-      field_officer: "#7C3AED",
-      accountant: "#F59E0B",
-    })[role?.toLowerCase()] || "#64748B";
+  const totalEmployees = pagination.totalRecords || users.length;
+  const activeCount = users.filter((u) => u.status === "ACTIVE").length;
 
   return (
     <SectionPage
-      title="User Management"
-      subtitle="Create, update, activate, and manage system users."
+      title={isSuperAdmin ? "Administrator Management" : "Employee Management"}
+      subtitle={
+        isSuperAdmin
+          ? "Manage system administrators and admin user accounts across all branches."
+          : "Manage employee staff members, field officers, branch managers, and branch assignments."
+      }
       actions={
-        <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap" }}>
-          <TextField
-            size="small"
-            placeholder="Search users by name or email..."
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            onKeyDown={(event) => event.key === "Enter" && usersQuery.refetch()}
-            slotProps={{
-              input: {
-                startAdornment: <SearchIcon sx={{ mr: 1, color: "#94A3B8" }} />,
-              },
-            }}
-          />
-          <Button
-            variant="contained"
-            onClick={() => usersQuery.refetch()}
-            sx={{ bgcolor: "#0F766E" }}
-          >
-            Search
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={openCreate}
-          >
-            Add User
-          </Button>
-        </Stack>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={openCreate}
+          sx={{ bgcolor: "#0F766E", "&:hover": { bgcolor: "#0D655D" } }}
+        >
+          {isSuperAdmin ? "Add Admin User" : "Add Employee"}
+        </Button>
       }
     >
-      <Paper
-        elevation={0}
-        sx={{
-          border: "1px solid #E2E8F0",
-          borderRadius: 3,
-          overflow: "hidden",
-        }}
-      >
-        {usersQuery.isLoading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", p: 6 }}>
-            <CircularProgress />
-          </Box>
-        ) : usersQuery.isError ? (
-          <Box sx={{ p: 6 }}>
-            <Alert severity="error">
-              Unable to load users. Please try again.
-            </Alert>
-          </Box>
-        ) : users.length === 0 ? (
-          <Box sx={{ p: 6, textAlign: "center" }}>
-            <Typography color="#64748B">No users found.</Typography>
-          </Box>
-        ) : (
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ bgcolor: "#F8FAFC", width: "100%" }}>
-                  <TableCell>ID</TableCell>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Email</TableCell>
-                  <TableCell>Role</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.userId}>
-                    <TableCell>{user.userId}</TableCell>
-                    <TableCell>
-                      {`${user.firstName || ""} ${user.lastName || ""}`.trim() ||
-                        "-"}
-                    </TableCell>
-                    <TableCell>{user.email || "-"}</TableCell>
-                    <TableCell>
-                      <Chip
-                        label={user.role || "-"}
-                        size="small"
-                        sx={{ bgcolor: getRoleColor(user.role), color: "#fff" }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={user.status || "-"}
-                        size="small"
-                        color={user.status === "ACTIVE" ? "success" : "error"}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Stack
-                        direction="row"
-                        spacing={1}
-                        sx={{ flexWrap: "wrap" }}
-                      >
-                        <Button size="small" onClick={() => openEdit(user)}>
-                          Edit
-                        </Button>
-                        <Button
-                          size="small"
-                          onClick={() =>
-                            changeStatus.mutate({
-                              id: user.userId,
-                              status:
-                                user.status === "ACTIVE"
-                                  ? "INACTIVE"
-                                  : "ACTIVE",
-                            })
-                          }
-                        >
-                          {user.status === "ACTIVE" ? "Deactivate" : "Activate"}
-                        </Button>
-                        <Button
-                          size="small"
-                          color="error"
-                          onClick={() => setDialog({ mode: "delete", user })}
-                        >
-                          Delete
-                        </Button>
-                      </Stack>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </Paper>
-
-      <Dialog
-        open={Boolean(dialog)}
-        onClose={() =>
-          !saveUser.isPending && !removeUser.isPending && setDialog(null)
-        }
-        fullWidth
-        maxWidth="sm"
-      >
-        {dialog?.mode === "delete" ? (
-          <>
-            <DialogTitle>Delete user?</DialogTitle>
-            <DialogContent>
-              <Typography>
-                This will deactivate and remove {dialog.user.firstName}{" "}
-                {dialog.user.lastName} from the user list.
-              </Typography>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setDialog(null)}>Cancel</Button>
-              <Button
-                color="error"
-                variant="contained"
-                disabled={removeUser.isPending}
-                onClick={() => removeUser.mutate(dialog.user.userId)}
-              >
-                Delete
-              </Button>
-            </DialogActions>
-          </>
-        ) : (
-          <>
-            <DialogTitle>
-              {dialog?.mode === "create" ? "Add User" : "Edit User"}
-            </DialogTitle>
-            <DialogContent>
-              <Stack spacing={2} sx={{ pt: 1 }}>
-                {formLoading && (
-                  <Alert severity="info">
-                    Loading available roles and branches…
-                  </Alert>
-                )}
-                <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                  <TextField
-                    required
-                    fullWidth
-                    label="First name"
-                    value={form.firstName}
-                    onChange={setField("firstName")}
-                  />
-                  <TextField
-                    fullWidth
-                    label="Last name"
-                    value={form.lastName}
-                    onChange={setField("lastName")}
-                  />
+      <Stack spacing={3}>
+        {/* Metric Cards */}
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card elevation={0} sx={{ border: "1px solid #E2E8F0", borderRadius: 2 }}>
+              <CardContent sx={{ py: 2 }}>
+                <Stack direction="row" alignItems="center" spacing={2}>
+                  <Avatar sx={{ bgcolor: "#F0FDFA", color: "#0F766E" }}>
+                    <PeopleIcon />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="body2" color="#64748B">
+                      {isSuperAdmin ? "Total Admins" : "Total Employees"}
+                    </Typography>
+                    <Typography variant="h5" fontWeight="bold" color="#0F172A">
+                      {totalEmployees}
+                    </Typography>
+                  </Box>
                 </Stack>
-                <TextField
-                  required
-                  fullWidth
-                  label="Email"
-                  type="email"
-                  value={form.email}
-                  onChange={setField("email")}
-                />
-                <TextField
-                  required
-                  fullWidth
-                  label="Mobile number"
-                  slotProps={{
-                    htmlInput: { inputMode: "numeric", maxLength: 10 },
-                  }}
-                  value={form.mobileNumber}
-                  onChange={setField("mobileNumber")}
-                />
-                <TextField
-                  required
-                  select
-                  fullWidth
-                  label="Role"
-                  value={form.roleId}
-                  onChange={setField("roleId")}
-                  disabled={formLoading}
-                >
-                  <MenuItem value="">Select a role</MenuItem>
-                   {selectableRoles.map((role) => (
-                     <MenuItem key={role.role_id || role.roleId} value={String(role.role_id || role.roleId)}>
-                       {role.role_name || role.roleName}
-                    </MenuItem>
-                  ))}
-                </TextField>
-                <TextField
-                  required
-                  select
-                  fullWidth
-                  label="Branch"
-                  value={form.branchId}
-                  onChange={setField("branchId")}
-                  disabled={formLoading}
-                >
-                  <MenuItem value="">Select a branch</MenuItem>
-                  {branches.map((branch) => (
-                    <MenuItem
-                      key={branch.branch_id}
-                      value={String(branch.branch_id)}
-                    >
-                      {branch.branch_name}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Stack>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setDialog(null)}>Cancel</Button>
-              <Button
-                variant="contained"
-                disabled={
-                  saveUser.isPending ||
-                  formLoading ||
-                  !form.firstName ||
-                  !form.email ||
-                  !form.mobileNumber ||
-                  !form.roleId ||
-                  !form.branchId
-                }
-                onClick={() => saveUser.mutate()}
-              >
-                {saveUser.isPending ? "Saving…" : "Save"}
-              </Button>
-            </DialogActions>
-          </>
-        )}
-      </Dialog>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card elevation={0} sx={{ border: "1px solid #E2E8F0", borderRadius: 2 }}>
+              <CardContent sx={{ py: 2 }}>
+                <Stack direction="row" alignItems="center" spacing={2}>
+                  <Avatar sx={{ bgcolor: "#F0FDF4", color: "#16A34A" }}>
+                    <ActiveIcon />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="body2" color="#64748B">
+                      {isSuperAdmin ? "Active Admins" : "Active Staff"}
+                    </Typography>
+                    <Typography variant="h5" fontWeight="bold" color="#0F172A">
+                      {activeCount}
+                    </Typography>
+                  </Box>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        {/* Data Table */}
+        <Paper
+          elevation={0}
+          sx={{
+            border: "1px solid #E2E8F0",
+            borderRadius: 3,
+            overflow: "hidden",
+          }}
+        >
+          {usersQuery.isLoading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", p: 6 }}>
+              <CircularProgress />
+            </Box>
+          ) : users.length === 0 ? (
+            <Box sx={{ p: 6, textAlign: "center" }}>
+              <PersonIcon sx={{ fontSize: 48, color: "#94A3B8", mb: 1 }} />
+              <Typography color="#64748B" fontWeight="medium">
+                {isSuperAdmin
+                  ? "No administrator users found matching the criteria."
+                  : "No employees found matching the criteria."}
+              </Typography>
+            </Box>
+          ) : (
+            <>
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow sx={{ bgcolor: "#F8FAFC" }}>
+                      <TableCell fontWeight="bold">
+                        {isSuperAdmin ? "Administrator" : "Employee"}
+                      </TableCell>
+                      <TableCell fontWeight="bold">Contact</TableCell>
+                      <TableCell fontWeight="bold">Role</TableCell>
+                      <TableCell fontWeight="bold">Branch</TableCell>
+                      <TableCell fontWeight="bold">Status</TableCell>
+                      <TableCell align="right" fontWeight="bold">Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {users.map((u) => {
+                      const fullName = `${u.firstName || ""} ${u.lastName || ""}`.trim() || "Unnamed Staff";
+                      return (
+                        <TableRow key={u.userId} hover>
+                          <TableCell>
+                            <Stack direction="row" spacing={1.5} alignItems="center">
+                              <Avatar
+                                sx={{
+                                  bgcolor: "#0F766E",
+                                  width: 36,
+                                  height: 36,
+                                  fontSize: "0.875rem",
+                                  fontWeight: "bold",
+                                }}
+                              >
+                                {getInitials(u.firstName, u.lastName)}
+                              </Avatar>
+                              <Box>
+                                <Typography variant="subtitle2" fontWeight="600" color="#0F172A">
+                                  {fullName}
+                                </Typography>
+                                {u.employeeCode && (
+                                  <Chip
+                                    label={u.employeeCode}
+                                    size="small"
+                                    variant="outlined"
+                                    sx={{ height: 20, fontSize: "0.7rem", color: "#64748B", borderColor: "#CBD5E1" }}
+                                  />
+                                )}
+                              </Box>
+                            </Stack>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" color="#334155">
+                              {u.email || "-"}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={u.role || "MEMBER"}
+                              size="small"
+                              sx={{
+                                bgcolor: getRoleColor(u.role),
+                                color: "#fff",
+                                fontWeight: "600",
+                                fontSize: "0.75rem",
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" color="#334155">
+                              {u.branch || "Head Office"}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={u.status || "ACTIVE"}
+                              size="small"
+                              color={u.status === "ACTIVE" ? "success" : "error"}
+                            />
+                          </TableCell>
+                          <TableCell align="right">
+                            <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                              <Tooltip title="View Details">
+                                <IconButton size="small" color="info" onClick={() => openView(u)}>
+                                  <ViewIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Edit">
+                                <IconButton size="small" color="primary" onClick={() => openEdit(u)}>
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </Stack>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </>
+          )}
+        </Paper>
+      </Stack>
     </SectionPage>
   );
 }

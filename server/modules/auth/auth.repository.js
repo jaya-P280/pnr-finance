@@ -5,6 +5,7 @@ class AuthRepository {
     const [rows] = await pool.execute(
       `SELECT 
           u.user_id,
+          u.employee_code,
           u.first_name,
           u.last_name,
           u.email,
@@ -12,10 +13,13 @@ class AuthRepository {
           u.branch_id,
           u.role_id,
           r.role_name,
+          b.branch_name,
+          b.branch_code,
           u.profile_image,
           u.status                          
        FROM users u
        INNER JOIN roles r ON r.role_id = u.role_id
+       LEFT JOIN branches b ON b.branch_id = u.branch_id
        WHERE LOWER(u.email) = LOWER(?)
          AND u.deleted_at IS NULL`,
       [email ? String(email).trim() : ""],
@@ -27,16 +31,20 @@ class AuthRepository {
     const [rows] = await pool.execute(
       `SELECT 
           u.user_id,
+          u.employee_code,
           u.first_name,
           u.last_name,
           u.email,
           u.role_id,
           u.branch_id,
           r.role_name,
+          b.branch_name,
+          b.branch_code,
           u.profile_image,
           u.status                          
        FROM users u
        INNER JOIN roles r ON r.role_id = u.role_id
+       LEFT JOIN branches b ON b.branch_id = u.branch_id
        WHERE u.user_id = ?
          AND u.deleted_at IS NULL`,        
       [UserId],

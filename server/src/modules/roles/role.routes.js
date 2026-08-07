@@ -21,7 +21,7 @@ router.use(authenticate);
 
 router.get(
   "/",
-  authorize("ROLE_VIEW"),
+  authorize("ROLE_VIEW", "USER_VIEW"),
   roleController.getRoles
 );
 

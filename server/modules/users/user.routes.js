@@ -17,7 +17,7 @@ router.post("/",
 
 router.get("/",
     authenticate,
-    authorize("ADMINISTRATOR_VIEW", "USER_VIEW"),
+    authorize("ADMINISTRATOR_VIEW", "USER_VIEW", "ATTENDANCE_VIEW", "ATTENDANCE_CREATE", "COLLECTION_VIEW", "LOAN_VIEW"),
     userListValidation,
     validateRequest,
     userController.getUsers

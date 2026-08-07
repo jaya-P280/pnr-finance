@@ -1,0 +1,22 @@
+{
+  "name": "pnr-finance",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev:client": "npm run dev --workspace=client",
+    "dev:server": "node server/server.js",
+    "dev": "concurrently \"npm:dev:client\" \"npm:dev:server\"",
+    "build:client": "npm run build --workspace=client",
+    "build": "npm run build --workspace=client",
+    "start": "npm run build:client && node server/server.js",
+    "lint": "npm run lint --workspace=client"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

@@ -19,6 +19,9 @@ import customerPortalRoutes from "../modules/customer-portal/customerPortal.rout
 import taskRoutes from "../modules/tasks/tasks.routes.js";
 import financeRoutes from "../modules/finance/finance.routes.js";
 import auditRoutes from "../modules/audit/audit.routes.js";
+import attendanceRoutes from "../modules/attendance/attendance.routes.js";
+import letterRoutes from "../modules/letters/letters.routes.js";
+import salaryRoutes from "../modules/salaries/salaries.routes.js";
 
 const router = express.Router();
 
@@ -42,5 +45,8 @@ router.use("/emi", emiRoutes);
 router.use("/customer", customerPortalRoutes);
 router.use("/tasks", taskRoutes);
 router.use("/audit-logs", auditRoutes);
+router.use("/attendance", attendanceRoutes);
+router.use("/letters", letterRoutes);
+router.use("/salaries", salaryRoutes);
 
 export default router;

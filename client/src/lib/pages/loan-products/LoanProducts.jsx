@@ -30,14 +30,14 @@ import SectionPage from "../../components/layout/SectionPage";
 import loanProductService from "../../services/loanProduct.service";
 
 const emptyForm = {
-  name: "", // was productName
+  name: "",
   productType: "INDIVIDUAL",
   interestType: "FLAT",
-  recoveryType: "", // was recoveryFrequency
-  minAmount: "", // was minimumAmount
-  maxAmount: "", // was maximumAmount
-  minTenure: "", // was minimumTenure
-  maxTenure: "", // was maximumTenure
+  recoveryType: "",
+  minAmount: "",
+  maxAmount: "",
+  minTenure: "",
+  maxTenure: "",
   interestRate: "",
   processingFeeType: "PERCENTAGE",
   processingFee: "0",
@@ -181,8 +181,8 @@ export default function LoanProducts() {
 
   return (
     <SectionPage
-      title="Loan Products"
-      subtitle="Configure loan product types, interest rates, fees, and eligibility ranges."
+      title="Loan Schemes & Products"
+      subtitle="Configure microfinance loan products, interest rates, fee structures, and eligibility ranges."
       actions={
         <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap" }}>
           <TextField
@@ -210,8 +210,9 @@ export default function LoanProducts() {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={openCreate}
+            sx={{ bgcolor: "#0F766E", "&:hover": { bgcolor: "#0D655D" } }}
           >
-            Add Loan Product
+            Add New Loan Scheme
           </Button>
         </Stack>
       }
@@ -236,35 +237,34 @@ export default function LoanProducts() {
           </Box>
         ) : products.length === 0 ? (
           <Box sx={{ p: 6, textAlign: "center" }}>
-            <Typography color="#64748B">No loan products found.</Typography>
+            <Typography color="#64748B">No loan schemes found.</Typography>
           </Box>
         ) : (
           <TableContainer>
             <Table>
               <TableHead>
                 <TableRow sx={{ bgcolor: "#F8FAFC" }}>
-                  <TableCell>Code</TableCell>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Type</TableCell>
-                  <TableCell>Recovery</TableCell>
-                  <TableCell>Amount Range</TableCell>
-                  <TableCell>Rate</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Actions</TableCell>
+                  <TableCell fontWeight="bold">Code</TableCell>
+                  <TableCell fontWeight="bold">Scheme Name</TableCell>
+                  <TableCell fontWeight="bold">Type</TableCell>
+                  <TableCell fontWeight="bold">Recovery</TableCell>
+                  <TableCell fontWeight="bold">Amount Range</TableCell>
+                  <TableCell fontWeight="bold">Interest Rate</TableCell>
+                  <TableCell fontWeight="bold">Status</TableCell>
+                  <TableCell align="right" fontWeight="bold">Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {products.map((product) => (
-                  <TableRow key={product.loan_product_id}>
+                  <TableRow key={product.loan_product_id} hover>
                     <TableCell>{product.product_code || "-"}</TableCell>
-                    <TableCell>{product.product_name || "-"}</TableCell>
+                    <TableCell fontWeight="600">{product.product_name || "-"}</TableCell>
                     <TableCell>{product.product_type || "-"}</TableCell>
                     <TableCell>{product.recovery_frequency || "-"}</TableCell>
                     <TableCell>
-                      {product.minimum_amount ?? "-"} -{" "}
-                      {product.maximum_amount ?? "-"}
+                      ₹{product.minimum_amount ? Number(product.minimum_amount).toLocaleString() : 0} - ₹{product.maximum_amount ? Number(product.maximum_amount).toLocaleString() : 0}
                     </TableCell>
-                    <TableCell>{product.interest_rate ?? "-"}%</TableCell>
+                    <TableCell>{product.interest_rate ?? "-"}% p.a.</TableCell>
                     <TableCell>
                       <Chip
                         label={product.status || "-"}
@@ -274,17 +274,18 @@ export default function LoanProducts() {
                         }
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell align="right">
                       <Stack
                         direction="row"
                         spacing={1}
-                        sx={{ flexWrap: "wrap" }}
+                        justifyContent="flex-end"
                       >
                         <Button size="small" onClick={() => openEdit(product)}>
                           Edit
                         </Button>
                         <Button
                           size="small"
+                          color={product.status === "ACTIVE" ? "warning" : "success"}
                           onClick={() =>
                             changeStatus.mutate({
                               id: product.loan_product_id,
@@ -296,8 +297,8 @@ export default function LoanProducts() {
                           }
                         >
                           {product.status === "ACTIVE"
-                            ? "Deactivate"
-                            : "Activate"}
+                            ? "Disable"
+                            : "Enable"}
                         </Button>
                         <Button
                           size="small"
@@ -326,11 +327,10 @@ export default function LoanProducts() {
       >
         {dialog?.mode === "delete" ? (
           <>
-            <DialogTitle>Delete loan product?</DialogTitle>
+            <DialogTitle>Delete Loan Scheme?</DialogTitle>
             <DialogContent>
-              <Typography>
-                This will remove {dialog.product.product_name} from the loan
-                product list.
+              <Typography color="text.secondary">
+                Are you sure you want to remove <strong>{dialog.product.product_name}</strong> from the active loan scheme catalog?
               </Typography>
             </DialogContent>
             <DialogActions>
@@ -343,7 +343,7 @@ export default function LoanProducts() {
                   removeProduct.mutate(dialog.product.loan_product_id)
                 }
               >
-                Delete
+                Delete Scheme
               </Button>
             </DialogActions>
           </>
@@ -351,15 +351,15 @@ export default function LoanProducts() {
           <>
             <DialogTitle>
               {dialog?.mode === "create"
-                ? "Add Loan Product"
-                : "Edit Loan Product"}
+                ? "Add New Loan Scheme"
+                : "Edit Loan Scheme Details"}
             </DialogTitle>
             <DialogContent>
               <Stack spacing={2} sx={{ pt: 1 }}>
                 <TextField
                   required
                   fullWidth
-                  label="Product name"
+                  label="Scheme Name"
                   value={form.name}
                   onChange={setField("name")}
                 />
@@ -367,38 +367,36 @@ export default function LoanProducts() {
                   <TextField
                     select
                     fullWidth
-                    label="Product type"
+                    label="Product Type"
                     value={form.productType}
                     onChange={setField("productType")}
                   >
-                    <MenuItem value="INDIVIDUAL">Individual</MenuItem>
-                    <MenuItem value="GROUP">Group</MenuItem>
+                    <MenuItem value="INDIVIDUAL">Individual Loan</MenuItem>
+                    <MenuItem value="GROUP">Group / SHG Loan</MenuItem>
                   </TextField>
                   <TextField
                     select
                     fullWidth
-                    label="Interest type"
+                    label="Interest Calculation Type"
                     value={form.interestType}
                     onChange={setField("interestType")}
                   >
-                    <MenuItem value="FLAT">Flat</MenuItem>
-                    <MenuItem value="REDUCING">Reducing</MenuItem>
+                    <MenuItem value="FLAT">Flat Rate</MenuItem>
+                    <MenuItem value="REDUCING">Reducing Balance</MenuItem>
                   </TextField>
                   <TextField
                     required
                     select
                     fullWidth
-                    label="Recovery frequency"
+                    label="Recovery Frequency"
                     value={form.recoveryType}
                     onChange={setField("recoveryType")}
                   >
-                    <MenuItem value="">Select frequency</MenuItem>
+                    <MenuItem value="">Select Frequency</MenuItem>
                     <MenuItem value="DAILY">Daily</MenuItem>
                     <MenuItem value="WEEKLY">Weekly</MenuItem>
-                    <MenuItem value="BI_WEEKLY">Bi-weekly</MenuItem>
+                    <MenuItem value="BI_WEEKLY">Bi-Weekly</MenuItem>
                     <MenuItem value="MONTHLY">Monthly</MenuItem>
-                    <MenuItem value="YEARLY">Yearly</MenuItem>
-                    <MenuItem value="ONE_TIME">One-time</MenuItem>
                   </TextField>
                 </Stack>
                 <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
@@ -406,7 +404,7 @@ export default function LoanProducts() {
                     required
                     fullWidth
                     type="number"
-                    label="Minimum amount"
+                    label="Minimum Amount (₹)"
                     value={form.minAmount}
                     onChange={setField("minAmount")}
                   />
@@ -414,7 +412,7 @@ export default function LoanProducts() {
                     required
                     fullWidth
                     type="number"
-                    label="Maximum amount"
+                    label="Maximum Amount (₹)"
                     value={form.maxAmount}
                     onChange={setField("maxAmount")}
                   />
@@ -422,7 +420,7 @@ export default function LoanProducts() {
                     required
                     fullWidth
                     type="number"
-                    label="Interest rate (%)"
+                    label="Interest Rate (% p.a.)"
                     value={form.interestRate}
                     onChange={setField("interestRate")}
                   />
@@ -432,7 +430,7 @@ export default function LoanProducts() {
                     required
                     fullWidth
                     type="number"
-                    label="Minimum tenure"
+                    label="Minimum Tenure (Months)"
                     value={form.minTenure}
                     onChange={setField("minTenure")}
                   />
@@ -440,7 +438,7 @@ export default function LoanProducts() {
                     required
                     fullWidth
                     type="number"
-                    label="Maximum tenure"
+                    label="Maximum Tenure (Months)"
                     value={form.maxTenure}
                     onChange={setField("maxTenure")}
                   />
@@ -449,84 +447,26 @@ export default function LoanProducts() {
                   <TextField
                     select
                     fullWidth
-                    label="Processing fee type"
+                    label="Processing Fee Type"
                     value={form.processingFeeType}
                     onChange={setField("processingFeeType")}
                   >
-                    <MenuItem value="FIXED">Fixed</MenuItem>
-                    <MenuItem value="PERCENTAGE">Percentage</MenuItem>
+                    <MenuItem value="FIXED">Flat (₹)</MenuItem>
+                    <MenuItem value="PERCENTAGE">Percentage (%)</MenuItem>
                   </TextField>
                   <TextField
                     fullWidth
                     type="number"
-                    label="Processing fee"
+                    label="Processing Fee Amount/Rate"
                     value={form.processingFee}
                     onChange={setField("processingFee")}
-                  />
-                </Stack>
-                <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                  <TextField
-                    select
-                    fullWidth
-                    label="Insurance fee type"
-                    value={form.insuranceFeeType}
-                    onChange={setField("insuranceFeeType")}
-                  >
-                    <MenuItem value="FIXED">Fixed</MenuItem>
-                    <MenuItem value="PERCENTAGE">Percentage</MenuItem>
-                  </TextField>
-                  <TextField
-                    fullWidth
-                    type="number"
-                    label="Insurance fee"
-                    value={form.insuranceFee}
-                    onChange={setField("insuranceFee")}
-                  />
-                </Stack>
-                <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                  <TextField
-                    select
-                    fullWidth
-                    label="Penalty type"
-                    value={form.penaltyType}
-                    onChange={setField("penaltyType")}
-                  >
-                    <MenuItem value="FIXED">Fixed</MenuItem>
-                    <MenuItem value="PERCENTAGE">Percentage</MenuItem>
-                  </TextField>
-                  <TextField
-                    fullWidth
-                    type="number"
-                    label="Penalty"
-                    value={form.penalty}
-                    onChange={setField("penalty")}
-                  />
-                </Stack>
-                <Stack direction="row" spacing={2}>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={form.holidayExcluded}
-                        onChange={setChecked("holidayExcluded")}
-                      />
-                    }
-                    label="Exclude holidays from recovery"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={form.includeGst}
-                        onChange={setChecked("includeGst")}
-                      />
-                    }
-                    label="Include GST"
                   />
                 </Stack>
                 <TextField
                   fullWidth
                   multiline
                   minRows={2}
-                  label="Description"
+                  label="Description & Scheme Features"
                   value={form.description}
                   onChange={setField("description")}
                 />
@@ -538,8 +478,9 @@ export default function LoanProducts() {
                 variant="contained"
                 disabled={saveProduct.isPending || !requiredFilled}
                 onClick={() => saveProduct.mutate()}
+                sx={{ bgcolor: "#0F766E" }}
               >
-                {saveProduct.isPending ? "Saving…" : "Save"}
+                {saveProduct.isPending ? "Saving Scheme…" : "Save Scheme"}
               </Button>
             </DialogActions>
           </>

@@ -8,7 +8,9 @@ class DashboardController {
       if (!branchId && req.user && !["SUPER_ADMIN", "ADMIN"].includes(req.user.role_name)) {
         branchId = req.user.branch_id || null;
       }
-      const stats = await dashboardService.getStats(branchId);
+      const roleName = req.user?.role_name || req.user?.role || "";
+      const userId = req.user?.user_id || req.user?.userId;
+      const stats = await dashboardService.getStats(branchId, roleName, userId);
       res.json(new ApiResponse(200, "Dashboard stats fetched.", stats));
     } catch (error) {
       next(error);

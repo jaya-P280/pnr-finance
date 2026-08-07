@@ -362,7 +362,114 @@ class InitializeService {
         );
       }
 
+      // --- Seed Commercial Bank & NBFC Loan Schemes ---
+      const commercialLoanProducts = [
+        ["LP001", "Commercial Unsecured Personal Loan", "Instant unsecured personal credit for salaried and self-employed professionals for personal expenses and emergencies", 50000, 1000000, 12, 60, 12.50, "PERCENTAGE", 1.50, "MONTHLY", "ACTIVE", 1],
+        ["LP002", "Commercial SME Business Expansion Loan", "Collateral-free commercial business loan for SMEs, retail traders, distributors, and service enterprises", 100000, 2500000, 12, 60, 13.50, "PERCENTAGE", 2.00, "MONTHLY", "ACTIVE", 1],
+        ["LP003", "Commercial Vehicle & Auto Finance Loan", "Vehicle purchase financing for commercial pickup vans, delivery trucks, cars, and fleet vehicles", 100000, 1500000, 12, 60, 11.75, "PERCENTAGE", 1.00, "MONTHLY", "ACTIVE", 1],
+        ["LP004", "Commercial Equipment & Machinery Financing", "Asset purchase financing for industrial machinery, medical equipment, printing presses, and commercial tools", 150000, 3000000, 12, 60, 12.00, "PERCENTAGE", 1.50, "MONTHLY", "ACTIVE", 1],
+        ["LP005", "Commercial Loan Against Property (LAP)", "High-value secured loan against residential or commercial property for long-term business expansion and capital investment", 300000, 5000000, 24, 120, 10.50, "PERCENTAGE", 1.00, "MONTHLY", "ACTIVE", 1],
+        ["LP006", "Commercial Gold Jewellery Credit Loan", "Fast collateralized credit against gold ornaments & jewellery with instant disbursement and flexible repayment", 10000, 1000000, 3, 12, 9.90, "PERCENTAGE", 0.50, "MONTHLY", "ACTIVE", 1],
+        ["LP007", "Merchant Invoice & PoS Working Capital Credit", "Swipe-machine and merchant invoice based daily/weekly working capital financing for retail store owners", 25000, 500000, 3, 18, 14.00, "PERCENTAGE", 1.50, "MONTHLY", "ACTIVE", 1],
+        ["LP008", "Commercial Home Loan & Housing Finance", "Long-term home loan for purchasing residential flats, independent houses, or plot construction", 500000, 7500000, 36, 240, 8.75, "PERCENTAGE", 1.00, "MONTHLY", "ACTIVE", 1],
+      ];
+
+      for (const p of commercialLoanProducts) {
+        await connection.execute(
+          `INSERT IGNORE INTO loan_products (product_code, product_name, description, minimum_amount, maximum_amount, minimum_tenure, maximum_tenure, interest_rate, processing_fee_type, processing_fee, recovery_frequency, status, created_by)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          p
+        );
+      }
+      logger.info("Commercial Bank & NBFC Loan Products seeded successfully");
+
+      // --- Seed Employee Salaries & Payroll Logs ---
+      const [staffRows] = await connection.execute(
+        `SELECT u.user_id, r.role_name FROM users u INNER JOIN roles r ON r.role_id = u.role_id WHERE r.role_name != 'CUSTOMER'`
+      );
+
+      for (const staff of staffRows) {
+        const base = staff.role_name === 'BRANCH_MANAGER' ? 45000 : staff.role_name === 'ACCOUNTANT' ? 35000 : 28000;
+        const hra = Math.round(base * 0.2);
+        const allow = Math.round(base * 0.1);
+        const pf = 1800;
+        const net = base + hra + allow - pf;
+
+        await connection.execute(
+          `INSERT IGNORE INTO employee_salaries (user_id, basic_salary, hra, allowances, pf_deduction, tax_deduction, net_salary, effective_date)
+           VALUES (?, ?, ?, ?, ?, 0, ?, '2026-08-01')`,
+          [staff.user_id, base, hra, allow, pf, net]
+        );
+
+        await connection.execute(
+          `INSERT IGNORE INTO payroll_logs (payroll_number, user_id, month_year, basic_salary, hra, allowances, deductions, net_payable, payment_method, payment_date, payment_status, reference_no, remarks, processed_by)
+           VALUES (?, ?, 'August 2026', ?, ?, ?, ?, ?, 'BANK_TRANSFER', '2026-08-01', 'PAID', ?, 'Monthly Salary Payout', 1)`,
+          [`PAY-202608-${staff.user_id}`, staff.user_id, base, hra, allow, pf, net, `TXN-BANK-${staff.user_id}892`]
+        );
+
+        // --- Seed Employee Attendance ---
+        await connection.execute(
+          `INSERT IGNORE INTO employee_attendance (user_id, branch_id, attendance_date, clock_in, clock_out, status, remarks, recorded_by)
+           VALUES (?, ?, '2026-08-07', '09:00:00', '18:00:00', 'PRESENT', 'Biometric Terminal Logged', 1)`,
+          [staff.user_id, branchId]
+        );
+      }
+      logger.info("Employee Salaries, Payroll Logs, and Attendance seeded");
+
+      // --- Seed Income Ledger Records ---
+      const [incomeCount] = await connection.execute(`SELECT COUNT(*) AS total FROM income`);
+      if (incomeCount[0]?.total === 0) {
+        const sampleIncome = [
+          ["INC-2026-001", "Loan Processing Fee", 12500.00, "UPI", "2026-08-07", "Commercial Loan Applicants", branchId, "REC-UPI-901", "Processing fee collection for new commercial business loan applications"],
+          ["INC-2026-002", "Weekly EMI Recovery", 36000.00, "CASH", "2026-08-07", "Maha Lakshmi SHG Group", branchId, "REC-CASH-402", "Weekly installment recovery collected by Field Officer"],
+          ["INC-2026-003", "Loan Application Documentation Fee", 4500.00, "BANK_TRANSFER", "2026-08-06", "Retail Merchants", branchId, "REC-NEFT-112", "Document verification and legal check fee"]
+        ];
+        for (const inc of sampleIncome) {
+          await connection.execute(
+            `INSERT INTO income (income_number, category, amount, payment_method, income_date, received_from, branch_id, receipt_ref, description, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+            inc
+          );
+        }
+        logger.info("Sample Income records seeded");
+      }
+
+      // --- Seed Expenses Ledger Records ---
+      const [expenseCount] = await connection.execute(`SELECT COUNT(*) AS total FROM expenses`);
+      if (expenseCount[0]?.total === 0) {
+        const sampleExpenses = [
+          ["EXP-2026-001", "Branch Utility & Rent", 12400.00, "BANK_TRANSFER", "2026-08-07", "Head Office Premises", branchId, "VOUCH-101", "Monthly electricity, internet, and office maintenance bill"],
+          ["EXP-2026-002", "Field Officer Fuel Allowance", 8200.00, "CASH", "2026-08-07", "Field Collection Staff", branchId, "VOUCH-102", "Travel and conveyance reimbursement for field officers"]
+        ];
+        for (const exp of sampleExpenses) {
+          await connection.execute(
+            `INSERT INTO expenses (expense_number, category, amount, payment_method, expense_date, paid_to, branch_id, voucher_ref, description, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+            exp
+          );
+        }
+        logger.info("Sample Expense records seeded");
+      }
+
+      // --- Seed Initial HR Letters ---
+      const [letterCount] = await connection.execute(`SELECT COUNT(*) AS total FROM letters`);
+      if (letterCount[0]?.total === 0) {
+        const sampleLetters = [
+          ["PNRG/HR/OFFER/2026/101", "OFFER", "Paslem Jaya Prakash Goud", "Branch Manager", "Head Office", "Letter of Employment Offer", "We are pleased to offer you employment at PNRG Finance Microfinance ERP under the position of Branch Manager.", "2026-08-01", "PASLEM JAYA PRAKASH GOUD", "HR Managing Director"],
+          ["PNRG/HR/EXP/2026/102", "EXPERIENCE", "Kiran Verma", "Field Officer", "Head Office", "Experience Certificate", "This is to certify that Kiran Verma was employed with PNRG Finance as Field Officer with sincere dedication.", "2026-08-02", "PASLEM JAYA PRAKASH GOUD", "HR Head"]
+        ];
+        for (const l of sampleLetters) {
+          await connection.execute(
+            `INSERT INTO letters (letter_number, letter_type, recipient_name, recipient_designation, organization, subject, body, issued_date, signatory_name, signatory_title, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+            l
+          );
+        }
+        logger.info("Sample HR Letters seeded");
+      }
+
       await repository.commit(connection);
+      logger.info("Database initialization completed successfully with full original data persistence.");
       logger.info("Database initialization completed successfully.");
     } catch (error) {
       await repository.rollback(connection);

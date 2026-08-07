@@ -417,30 +417,37 @@ class CustomerRepository {
     return { customer, kyc, family, nominees };
   }
   async getKycQueue(filters) {
-    const { status, branchId, search, page, limit } = filters;
+    const { status, branchId, search, page = 1, limit = 20 } = filters;
     let sql = `
     SELECT
       c.customer_id, c.customer_code, c.first_name, c.last_name, c.mobile_number,
-      b.branch_name,
-      ck.aadhaar_number, ck.pan_number, ck.aadhaar_front, ck.aadhaar_back, ck.pan_image,
-      ck.kyc_status, ck.verified_by, ck.verified_at, ck.remarks, ck.created_at AS kyc_submitted_at
-    FROM customer_kyc ck
-    INNER JOIN customers c ON c.customer_id = ck.customer_id
-    INNER JOIN branches b ON b.branch_id = c.branch_id
-    WHERE ck.kyc_status = ?
+      COALESCE(b.branch_name, 'Head Office') as branch_name,
+      COALESCE(ck.aadhaar_number, c.aadhaar_number) as aadhaar_number,
+      COALESCE(ck.pan_number, c.pan_number) as pan_number,
+      ck.aadhaar_front, ck.aadhaar_back, ck.pan_image,
+      COALESCE(ck.kyc_status, 'PENDING') as kyc_status,
+      ck.verified_by, ck.verified_at, ck.remarks, c.created_at AS kyc_submitted_at
+    FROM customers c
+    LEFT JOIN customer_kyc ck ON c.customer_id = ck.customer_id
+    LEFT JOIN branches b ON b.branch_id = c.branch_id
+    WHERE c.deleted_at IS NULL
   `;
-    const values = [status];
+    const values = [];
+    if (status) {
+      sql += ` AND (ck.kyc_status = ? OR (ck.kyc_status IS NULL AND ? = 'PENDING'))`;
+      values.push(status, status);
+    }
     if (branchId) {
       sql += ` AND c.branch_id = ?`;
       values.push(branchId);
     }
     if (search) {
-      sql += ` AND (c.customer_code LIKE ? OR CONCAT(c.first_name,' ',c.last_name) LIKE ? OR c.mobile_number LIKE ?)`;
+      sql += ` AND (c.customer_code LIKE ? OR CONCAT(c.first_name,' ',COALESCE(c.last_name,'')) LIKE ? OR c.mobile_number LIKE ?)`;
       const kw = `%${search}%`;
       values.push(kw, kw, kw);
     }
-    sql += ` ORDER BY ck.created_at DESC LIMIT ? OFFSET ?`;
-    values.push(limit, (page - 1) * limit);
+    sql += ` ORDER BY c.created_at DESC LIMIT ? OFFSET ?`;
+    values.push(Number(limit), (Number(page) - 1) * Number(limit));
     const [rows] = await pool.query(sql, values);
     return rows;
   }
@@ -449,17 +456,21 @@ class CustomerRepository {
     const { status, branchId, search } = filters;
     let sql = `
     SELECT COUNT(*) total
-    FROM customer_kyc ck
-    INNER JOIN customers c ON c.customer_id = ck.customer_id
-    WHERE ck.kyc_status = ?
+    FROM customers c
+    LEFT JOIN customer_kyc ck ON c.customer_id = ck.customer_id
+    WHERE c.deleted_at IS NULL
   `;
-    const values = [status];
+    const values = [];
+    if (status) {
+      sql += ` AND (ck.kyc_status = ? OR (ck.kyc_status IS NULL AND ? = 'PENDING'))`;
+      values.push(status, status);
+    }
     if (branchId) {
       sql += ` AND c.branch_id = ?`;
       values.push(branchId);
     }
     if (search) {
-      sql += ` AND (c.customer_code LIKE ? OR CONCAT(c.first_name,' ',c.last_name) LIKE ? OR c.mobile_number LIKE ?)`;
+      sql += ` AND (c.customer_code LIKE ? OR CONCAT(c.first_name,' ',COALESCE(c.last_name,'')) LIKE ? OR c.mobile_number LIKE ?)`;
       const kw = `%${search}%`;
       values.push(kw, kw, kw);
     }

@@ -3,6 +3,26 @@ import { useNavigate } from "react-router-dom";
 import { customerPortalApi } from "../../api/customer.api";
 import toast from "react-hot-toast";
 import {
+  Box,
+  Card,
+  CardContent,
+  Grid,
+  Typography,
+  Button,
+  Chip,
+  TextField,
+  MenuItem,
+  Stack,
+  Avatar,
+  Slider,
+  Paper,
+  Alert,
+  Divider,
+  Stepper,
+  Step,
+  StepLabel,
+} from "@mui/material";
+import {
   Calculate as Calculator,
   CheckCircle,
   ArrowForward as ArrowRight,
@@ -10,17 +30,15 @@ import {
   Description as FileText,
   InfoOutlined as Info,
   BusinessCenter as Briefcase,
-  Home,
-  DirectionsCar as Car,
-  Person as User,
-  MedicalServices as Stethoscope,
-  School as GraduationCap,
+  Person as UserIcon,
   ArrowBack,
   Shield,
   Percent,
   Payments,
   AttachMoney,
   Done,
+  VerifiedUser,
+  AccountBalance,
 } from "@mui/icons-material";
 
 export default function ApplyLoan() {
@@ -34,15 +52,32 @@ export default function ApplyLoan() {
     loanProductId: "",
     amount: 50000,
     tenureMonths: 12,
-    purpose: "Personal",
-    employmentType: "Salaried",
-    monthlyIncome: "50000",
+    purpose: "Business Expansion",
+    employmentType: "Self-Employed",
+    monthlyIncome: "45000",
+    remarks: "",
     documents: null,
   });
 
+  const [kycVerified, setKycVerified] = useState(true);
+
   useEffect(() => {
     fetchProducts();
+    checkKycStatus();
   }, []);
+
+  const checkKycStatus = async () => {
+    try {
+      const res = await customerPortalApi.getKycStatus();
+      const statusData = res.data?.data || res.data;
+      const status = String(statusData?.status || statusData?.kyc_status || "").toUpperCase();
+      if (status && status !== "VERIFIED" && status !== "APPROVED") {
+        setKycVerified(false);
+      }
+    } catch {
+      // Default fallback
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -60,11 +95,11 @@ export default function ApplyLoan() {
       const productList = rawList.map((product) => ({
         ...product,
         loan_product_id: product.loan_product_id ?? product.id,
-        product_name: product.product_name ?? product.name ?? "Personal Loan",
+        product_name: product.product_name ?? product.name ?? "Micro Business Loan",
         interestRate: Number(product.interest_rate ?? product.interestRate ?? 12),
         maxAmount: Number(product.maximum_amount ?? product.maxAmount ?? 500000),
-        minTenure: product.minimum_tenure ?? product.minTenure ?? 3,
-        maxTenure: product.maximum_tenure ?? product.maxTenure ?? 60,
+        minTenure: Number(product.minimum_tenure ?? product.minTenure ?? 3),
+        maxTenure: Number(product.maximum_tenure ?? product.maxTenure ?? 60),
       }));
 
       setProducts(productList);
@@ -73,12 +108,11 @@ export default function ApplyLoan() {
         setFormData((prev) => ({
           ...prev,
           loanProductId: productList[0].loan_product_id,
-          amount: Math.min(50000, productList[0].maxAmount || 500000),
         }));
       }
     } catch (error) {
       console.error("Failed to fetch products", error);
-      toast.error("Could not load loan products");
+      toast.error("Failed to load loan schemes");
     }
   };
 
@@ -117,14 +151,16 @@ export default function ApplyLoan() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleFileChange = (e) => {
-    setFormData((prev) => ({ ...prev, documents: e.target.files[0] }));
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.loanProductId) {
-      toast.error("Please select a loan product");
+    if (!selectedProduct) {
+      toast.error("Please select a loan scheme.");
+      return;
+    }
+
+    if (!kycVerified) {
+      toast.error("eKYC Verification Required! Please complete your eKYC identity verification before submitting a loan application.");
+      navigate("/customer/ekyc");
       return;
     }
 
@@ -137,10 +173,11 @@ export default function ApplyLoan() {
         purpose: formData.purpose,
         employmentType: formData.employmentType,
         monthlyIncome: Number(formData.monthlyIncome || 0),
+        remarks: formData.remarks,
       };
 
       await customerPortalApi.applyForLoan(payload);
-      toast.success("Loan application submitted successfully!");
+      toast.success("Loan application submitted successfully! Your application is under review.");
       navigate("/customer/applications");
     } catch (error) {
       console.error("Submission failed", error);
@@ -151,359 +188,483 @@ export default function ApplyLoan() {
   };
 
   const steps = [
-    { num: 1, title: "Product & Amount" },
-    { num: 2, title: "Employment & Income" },
-    { num: 3, title: "Upload Documents" },
-    { num: 4, title: "Review & Submit" },
+    "Select Loan Scheme & Amount",
+    "Employment & Income",
+    "Supporting Documents",
+    "Review & Confirm",
   ];
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto pb-12">
-      {/* Header */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <button
-            onClick={() => navigate("/customer/dashboard")}
-            className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-800 mb-2 transition-colors"
-          >
-            <ArrowBack className="w-3.5 h-3.5" /> Back to Dashboard
-          </button>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Apply for a New Loan</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Customize loan amount, select tenure, and complete instant application</p>
-        </div>
-
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold border border-emerald-200">
-          <Shield className="w-4 h-4" /> 100% Secure & Instant Evaluation
-        </div>
-      </div>
-
-      {/* Stepper Navigation */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          {steps.map((s) => {
-            const isDone = activeStep > s.num;
-            const isCurrent = activeStep === s.num;
-            return (
-              <button
-                key={s.num}
-                onClick={() => isDone && setActiveStep(s.num)}
-                disabled={!isDone && !isCurrent}
-                className={`flex items-center gap-3 p-3 rounded-xl transition-all text-left ${
-                  isCurrent
-                    ? "bg-teal-700 text-white shadow-md shadow-teal-700/20"
-                    : isDone
-                    ? "bg-teal-50 text-teal-800 cursor-pointer"
-                    : "bg-slate-50 text-slate-400 opacity-60"
-                }`}
+    <Box sx={{ maxWidth: 1050, mx: "auto", pb: 6 }}>
+      {/* Top Header Card */}
+      <Card elevation={0} sx={{ mb: 3, border: "1px solid #E2E8F0", borderRadius: 3, bgcolor: "#FFFFFF" }}>
+        <CardContent sx={{ p: 3 }}>
+          <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }} spacing={2}>
+            <Box>
+              <Button
+                size="small"
+                startIcon={<ArrowBack />}
+                onClick={() => navigate("/customer/dashboard")}
+                sx={{ color: "#64748B", textTransform: "none", fontWeight: 600, mb: 0.5 }}
               >
-                <div
-                  className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
-                    isCurrent
-                      ? "bg-white text-teal-700"
-                      : isDone
-                      ? "bg-teal-700 text-white"
-                      : "bg-slate-200 text-slate-600"
-                  }`}
-                >
-                  {isDone ? <Done className="w-4 h-4" /> : s.num}
-                </div>
-                <span className="text-xs font-bold truncate">{s.title}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+                Back to Customer Dashboard
+              </Button>
+              <Typography variant="h5" fontWeight={800} color="#0F172A">
+                Apply for a New Loan Scheme
+              </Typography>
+              <Typography variant="body2" color="#64748B">
+                Select your loan product, customize amount & tenure, and complete instant digital evaluation.
+              </Typography>
+            </Box>
 
-      {/* Main Form Body */}
-      <form onSubmit={handleSubmit} className="space-y-8">
-        {/* STEP 1: Product & Amount Selection */}
+            <Chip
+              icon={<Shield style={{ color: "#0F766E", fontSize: 16 }} />}
+              label="100% Secure Digital Processing"
+              sx={{ bgcolor: "#CCFBF1", color: "#0F766E", fontWeight: 700, px: 1 }}
+            />
+          </Stack>
+        </CardContent>
+      </Card>
+
+      {/* eKYC Verification Banner */}
+      {!kycVerified && (
+        <Alert
+          severity="warning"
+          sx={{ mb: 3, borderRadius: 3 }}
+          action={
+            <Button
+              color="inherit"
+              size="small"
+              onClick={() => navigate("/customer/ekyc")}
+              sx={{ fontWeight: 700, bgcolor: "rgba(0,0,0,0.06)" }}
+            >
+              Complete eKYC Now
+            </Button>
+          }
+        >
+          <Typography fontWeight={700}>Identity eKYC Verification Required</Typography>
+          You must complete your Aadhaar & PAN eKYC verification before your loan application can be processed.
+        </Alert>
+      )}
+
+      {/* Stepper Header */}
+      <Paper elevation={0} sx={{ p: 3, mb: 4, border: "1px solid #E2E8F0", borderRadius: 3 }}>
+        <Stepper activeStep={activeStep - 1} alternativeLabel>
+          {steps.map((label, index) => (
+            <Step key={label} completed={activeStep > index + 1}>
+              <StepLabel
+                StepIconProps={{
+                  sx: {
+                    "&.Mui-active": { color: "#0F766E" },
+                    "&.Mui-completed": { color: "#0F766E" },
+                  },
+                }}
+              >
+                <Typography variant="caption" fontWeight={activeStep === index + 1 ? 700 : 500} color={activeStep === index + 1 ? "#0F766E" : "#64748B"}>
+                  {label}
+                </Typography>
+              </StepLabel>
+            </Step>
+          ))}
+        </Stepper>
+      </Paper>
+
+      <form onSubmit={handleSubmit}>
+        {/* STEP 1: SELECT PRODUCT & CALCULATE */}
         {activeStep === 1 && (
-          <div className="space-y-6">
-            {/* Loan Product Selection */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
-              <h2 className="text-lg font-bold text-slate-900">Select Loan Scheme</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {products.length === 0 ? (
-                  <div className="col-span-full py-8 text-center text-slate-400 text-sm">Loading loan products...</div>
-                ) : (
-                  products.map((p) => {
-                    const isSelected = selectedProduct?.loan_product_id === p.loan_product_id;
-                    return (
-                      <div
-                        key={p.loan_product_id}
-                        onClick={() => handleProductSelect(p)}
-                        className={`p-5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between space-y-3 ${
-                          isSelected
-                            ? "border-teal-700 bg-teal-50/50 shadow-md"
-                            : "border-slate-200 hover:border-slate-300 bg-white"
-                        }`}
-                      >
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-teal-100 text-teal-800">
-                              {p.interestRate}% p.a.
-                            </span>
-                            {isSelected && <CheckCircle className="w-5 h-5 text-teal-700" />}
-                          </div>
-                          <h3 className="font-bold text-slate-900 text-base">{p.product_name}</h3>
-                          <p className="text-xs text-slate-500 mt-1">
-                            Up to ₹{Number(p.maxAmount || 500000).toLocaleString("en-IN")}
-                          </p>
-                        </div>
-                        <p className="text-[11px] text-slate-400">Tenure: {p.minTenure} - {p.maxTenure} months</p>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
+          <Grid container spacing={3}>
+            {/* Schemes Selection */}
+            <Grid item xs={12} md={7}>
+              <Card elevation={0} sx={{ border: "1px solid #E2E8F0", borderRadius: 3, mb: 3 }}>
+                <CardContent sx={{ p: 3 }}>
+                  <Typography variant="h6" fontWeight={700} color="#0F172A" mb={2.5}>
+                    1. Select Microfinance Loan Scheme
+                  </Typography>
 
-            {/* Slider & Calculator */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-6">
-                <h2 className="text-lg font-bold text-slate-900">Customize Loan Details</h2>
+                  <TextField
+                    select
+                    fullWidth
+                    label="Select Microfinance Loan Scheme *"
+                    value={formData.loanProductId}
+                    onChange={(e) => {
+                      const prod = products.find(
+                        (p) => String(p.loan_product_id) === String(e.target.value)
+                      );
+                      if (prod) {
+                        handleProductSelect(prod);
+                      }
+                    }}
+                    helperText={
+                      selectedProduct
+                        ? `${selectedProduct.product_name} • Interest Rate: ${selectedProduct.interestRate}% p.a. • Allowed Amount: ₹${Number(selectedProduct.minAmount || 5000).toLocaleString()} - ₹${Number(selectedProduct.maxAmount || 500000).toLocaleString()}`
+                        : "Select a scheme to view interest rate and loan limits"
+                    }
+                    sx={{ mb: 3 }}
+                  >
+                    {products.map((p) => (
+                      <MenuItem key={p.loan_product_id} value={p.loan_product_id}>
+                        <Box sx={{ py: 0.5 }}>
+                          <Typography variant="subtitle2" fontWeight={700} color="#0F172A">
+                            {p.product_name} ({p.interestRate}% p.a.)
+                          </Typography>
+                          <Typography variant="caption" color="textSecondary">
+                            Limits: ₹{Number(p.minAmount || 5000).toLocaleString()} - ₹{Number(p.maxAmount || 500000).toLocaleString()} | Tenure: {p.minTenure || 3} - {p.maxTenure || 60} Mos
+                          </Typography>
+                        </Box>
+                      </MenuItem>
+                    ))}
+                  </TextField>
 
-                {/* Amount Slider */}
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <label className="text-xs font-bold uppercase text-slate-500">Loan Amount (₹)</label>
-                    <span className="text-xl font-extrabold text-teal-700">
-                      ₹{Number(formData.amount).toLocaleString("en-IN")}
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min="10000"
-                    max={selectedProduct?.maxAmount || 500000}
-                    step="5000"
-                    value={formData.amount}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, amount: Number(e.target.value) }))}
-                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-teal-700"
+                  <Divider sx={{ my: 3 }} />
+
+                  {/* Direct Loan Amount & Tenure Numeric Inputs */}
+                  <Typography variant="subtitle1" fontWeight={700} color="#0F172A" mb={2}>
+                    2. Enter Loan Amount & Repayment Tenure
+                  </Typography>
+
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        type="number"
+                        label="Requested Loan Amount (₹) *"
+                        name="amount"
+                        value={formData.amount}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setFormData((prev) => ({ ...prev, amount: val }));
+                        }}
+                        InputProps={{
+                          startAdornment: (
+                            <Typography variant="body2" fontWeight={700} color="#0F766E" sx={{ mr: 1 }}>
+                              ₹
+                            </Typography>
+                          ),
+                        }}
+                        helperText={
+                          selectedProduct
+                            ? `Min: ₹${Number(selectedProduct.minAmount || 5000).toLocaleString()} | Max: ₹${Number(selectedProduct.maxAmount || 500000).toLocaleString()}`
+                            : "Enter desired loan amount"
+                        }
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        type="number"
+                        label="Repayment Tenure (Months) *"
+                        name="tenureMonths"
+                        value={formData.tenureMonths}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setFormData((prev) => ({ ...prev, tenureMonths: val }));
+                        }}
+                        InputProps={{
+                          endAdornment: (
+                            <Typography variant="body2" fontWeight={600} color="textSecondary" sx={{ ml: 1 }}>
+                              Months
+                            </Typography>
+                          ),
+                        }}
+                        helperText={
+                          selectedProduct
+                            ? `Min: ${selectedProduct.minTenure || 3} Mos | Max: ${selectedProduct.maxTenure || 60} Mos`
+                            : "Enter duration in months"
+                        }
+                      />
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Live EMI Calculator Breakdown Preview */}
+            <Grid item xs={12} md={5}>
+              <Card
+                elevation={0}
+                sx={{
+                  background: "linear-gradient(135deg, #0F172A 0%, #1E293B 100%)",
+                  color: "#FFFFFF",
+                  borderRadius: 3,
+                  p: 1,
+                  position: "sticky",
+                  top: 90,
+                }}
+              >
+                <CardContent sx={{ p: 3 }}>
+                  <Stack direction="row" spacing={1.5} alignItems="center" mb={2}>
+                    <Avatar sx={{ bgcolor: "rgba(15, 118, 110, 0.3)", color: "#2DD4BF" }}>
+                      <Calculator />
+                    </Avatar>
+                    <Box>
+                      <Typography variant="subtitle1" fontWeight={800}>
+                        EMI Calculation Breakdown
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: "#94A3B8" }}>
+                        Real-time estimated loan repayments
+                      </Typography>
+                    </Box>
+                  </Stack>
+
+                  <Divider sx={{ borderColor: "rgba(255,255,255,0.1)", my: 2 }} />
+
+                  <Box sx={{ my: 2 }}>
+                    <Typography variant="caption" sx={{ color: "#94A3B8" }}>
+                      Estimated Monthly EMI
+                    </Typography>
+                    <Typography variant="h3" fontWeight={800} sx={{ color: "#2DD4BF" }}>
+                      ₹{emiDetails.monthlyEmi.toLocaleString()}
+                    </Typography>
+                  </Box>
+
+                  <Stack spacing={1.5} sx={{ mt: 3, bgcolor: "rgba(255,255,255,0.05)", p: 2, borderRadius: 2 }}>
+                    <Stack direction="row" justifyContent="space-between">
+                      <Typography variant="body2" sx={{ color: "#94A3B8" }}>
+                        Principal Amount
+                      </Typography>
+                      <Typography variant="body2" fontWeight={700}>
+                        ₹{Number(formData.amount).toLocaleString()}
+                      </Typography>
+                    </Stack>
+                    <Stack direction="row" justifyContent="space-between">
+                      <Typography variant="body2" sx={{ color: "#94A3B8" }}>
+                        Interest Rate
+                      </Typography>
+                      <Typography variant="body2" fontWeight={700} sx={{ color: "#2DD4BF" }}>
+                        {selectedProduct?.interestRate || 12}% p.a.
+                      </Typography>
+                    </Stack>
+                    <Stack direction="row" justifyContent="space-between">
+                      <Typography variant="body2" sx={{ color: "#94A3B8" }}>
+                        Total Interest Payable
+                      </Typography>
+                      <Typography variant="body2" fontWeight={700}>
+                        ₹{emiDetails.totalInterest.toLocaleString()}
+                      </Typography>
+                    </Stack>
+                    <Divider sx={{ borderColor: "rgba(255,255,255,0.1)" }} />
+                    <Stack direction="row" justifyContent="space-between">
+                      <Typography variant="body2" fontWeight={700}>
+                        Total Payable Amount
+                      </Typography>
+                      <Typography variant="body2" fontWeight={800} sx={{ color: "#2DD4BF" }}>
+                        ₹{emiDetails.totalPayment.toLocaleString()}
+                      </Typography>
+                    </Stack>
+                  </Stack>
+
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    size="large"
+                    endIcon={<ArrowRight />}
+                    onClick={() => setActiveStep(2)}
+                    sx={{ mt: 3, bgcolor: "#0F766E", py: 1.5, borderRadius: 2.5, fontWeight: 700 }}
+                  >
+                    Continue to Employment Info
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        )}
+
+        {/* STEP 2: EMPLOYMENT & INCOME INFO */}
+        {activeStep === 2 && (
+          <Card elevation={0} sx={{ border: "1px solid #E2E8F0", borderRadius: 3, p: 2 }}>
+            <CardContent>
+              <Typography variant="h6" fontWeight={700} color="#0F172A" mb={3}>
+                Employment & Financial Profile
+              </Typography>
+
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    select
+                    fullWidth
+                    label="Employment Type *"
+                    name="employmentType"
+                    value={formData.employmentType}
+                    onChange={handleChange}
+                  >
+                    <MenuItem value="Salaried">Salaried Employee</MenuItem>
+                    <MenuItem value="Self-Employed">Self-Employed / Business Owner</MenuItem>
+                    <MenuItem value="Micro-Entrepreneur">Micro-Entrepreneur (SHG / Small Business)</MenuItem>
+                    <MenuItem value="Agricultural">Agricultural / Farming</MenuItem>
+                  </TextField>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Monthly Net Income (₹) *"
+                    name="monthlyIncome"
+                    value={formData.monthlyIncome}
+                    onChange={handleChange}
                   />
-                  <div className="flex justify-between text-xs text-slate-400 font-mono">
-                    <span>₹10,000</span>
-                    <span>₹{Number(selectedProduct?.maxAmount || 500000).toLocaleString("en-IN")}</span>
-                  </div>
-                </div>
+                </Grid>
 
-                {/* Tenure Slider */}
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <label className="text-xs font-bold uppercase text-slate-500">Tenure (Months)</label>
-                    <span className="text-xl font-extrabold text-teal-700">{formData.tenureMonths} Months</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={selectedProduct?.minTenure || 3}
-                    max={selectedProduct?.maxTenure || 60}
-                    step="3"
-                    value={formData.tenureMonths}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, tenureMonths: Number(e.target.value) }))}
-                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-teal-700"
-                  />
-                  <div className="flex justify-between text-xs text-slate-400 font-mono">
-                    <span>{selectedProduct?.minTenure || 3} Months</span>
-                    <span>{selectedProduct?.maxTenure || 60} Months</span>
-                  </div>
-                </div>
-
-                {/* Purpose Selection */}
-                <div>
-                  <label className="block text-xs font-bold uppercase text-slate-500 mb-2">Loan Purpose</label>
-                  <select
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    select
+                    fullWidth
+                    label="Purpose of Loan *"
                     name="purpose"
                     value={formData.purpose}
                     onChange={handleChange}
-                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
                   >
-                    <option value="Personal">Personal Expense</option>
-                    <option value="Home Improvement">Home Improvement</option>
-                    <option value="Education">Higher Education</option>
-                    <option value="Medical">Medical Emergency</option>
-                    <option value="Business Expansion">Business Expansion</option>
-                    <option value="Vehicle Purchase">Vehicle Purchase</option>
-                  </select>
-                </div>
-              </div>
+                    <MenuItem value="Business Expansion">Business Expansion / Inventory Purchase</MenuItem>
+                    <MenuItem value="Home Improvement">Home Improvement / Renovation</MenuItem>
+                    <MenuItem value="Education">Education / Skill Training</MenuItem>
+                    <MenuItem value="Emergency">Emergency / Healthcare Expense</MenuItem>
+                    <MenuItem value="Agriculture">Agricultural / Cattle Purchase</MenuItem>
+                  </TextField>
+                </Grid>
 
-              {/* EMI Preview Card */}
-              <div className="bg-gradient-to-br from-slate-900 via-teal-950 to-slate-900 rounded-2xl p-6 text-white shadow-xl flex flex-col justify-between space-y-6">
-                <div>
-                  <div className="flex items-center gap-2 text-teal-400 text-xs font-bold uppercase tracking-wider mb-3">
-                    <Calculator className="w-4 h-4" /> EMI Calculator Breakdown
-                  </div>
-                  <p className="text-xs text-slate-400">Estimated monthly repayment based on current interest rates.</p>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Additional Remarks / Notes"
+                    name="remarks"
+                    value={formData.remarks}
+                    onChange={handleChange}
+                    placeholder="Optional notes for loan officer evaluation"
+                  />
+                </Grid>
+              </Grid>
 
-                  <div className="mt-6 space-y-4">
-                    <div className="p-4 rounded-xl bg-white/10 border border-white/10">
-                      <span className="text-xs text-slate-300">Estimated Monthly EMI</span>
-                      <p className="text-3xl font-extrabold text-white mt-1">
-                        ₹{emiDetails.monthlyEmi.toLocaleString("en-IN")}
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3 text-xs">
-                      <div className="p-3 rounded-lg bg-white/5 border border-white/5">
-                        <span className="text-slate-400">Total Interest</span>
-                        <p className="font-bold text-amber-300 mt-0.5">₹{emiDetails.totalInterest.toLocaleString("en-IN")}</p>
-                      </div>
-                      <div className="p-3 rounded-lg bg-white/5 border border-white/5">
-                        <span className="text-slate-400">Total Payable</span>
-                        <p className="font-bold text-teal-300 mt-0.5">₹{emiDetails.totalPayment.toLocaleString("en-IN")}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveStep(2)}
-                  className="w-full py-3.5 bg-teal-700 hover:bg-teal-600 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-teal-700/30 transition-all flex items-center justify-center gap-2"
-                >
-                  Continue to Step 2 <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
+              <Stack direction="row" justifyContent="space-between" sx={{ mt: 4 }}>
+                <Button variant="outlined" onClick={() => setActiveStep(1)}>
+                  Back
+                </Button>
+                <Button variant="contained" onClick={() => setActiveStep(3)} sx={{ bgcolor: "#0F766E" }}>
+                  Continue to Documents
+                </Button>
+              </Stack>
+            </CardContent>
+          </Card>
         )}
 
-        {/* STEP 2: Employment & Income Details */}
-        {activeStep === 2 && (
-          <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-6">
-            <h2 className="text-lg font-bold text-slate-900">Employment & Financial Profile</h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-xs font-bold uppercase text-slate-500 mb-2">Employment Type</label>
-                <select
-                  name="employmentType"
-                  value={formData.employmentType}
-                  onChange={handleChange}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
-                >
-                  <option value="Salaried">Salaried Employee</option>
-                  <option value="Self Employed">Self Employed / Business Owner</option>
-                  <option value="Professional">Doctor / Lawyer / CA</option>
-                  <option value="Government Employee">Government Sector</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase text-slate-500 mb-2">Net Monthly Income (₹)</label>
-                <input
-                  type="number"
-                  name="monthlyIncome"
-                  required
-                  value={formData.monthlyIncome}
-                  onChange={handleChange}
-                  placeholder="e.g. 50000"
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center pt-4 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setActiveStep(1)}
-                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl"
-              >
-                Back
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveStep(3)}
-                className="px-6 py-2.5 bg-teal-700 hover:bg-teal-800 text-white font-semibold text-xs rounded-xl flex items-center gap-1.5"
-              >
-                Next Step <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* STEP 3: Document Upload */}
+        {/* STEP 3: SUPPORTING DOCUMENTS */}
         {activeStep === 3 && (
-          <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-6">
-            <h2 className="text-lg font-bold text-slate-900">Upload Supporting Documents</h2>
-            <p className="text-xs text-slate-500">Upload income proof, salary slips, or bank statement (Optional at stage 1)</p>
+          <Card elevation={0} sx={{ border: "1px solid #E2E8F0", borderRadius: 3, p: 2 }}>
+            <CardContent>
+              <Typography variant="h6" fontWeight={700} color="#0F172A" mb={1}>
+                Upload Supporting Documents
+              </Typography>
+              <Typography variant="body2" color="textSecondary" mb={3}>
+                Attach proof of income or business registration (optional for fast-track processing).
+              </Typography>
 
-            <div className="border-2 border-dashed border-slate-300 hover:border-teal-600 rounded-2xl p-8 text-center bg-slate-50/50 transition-all">
-              <Upload className="w-10 h-10 text-teal-600 mx-auto mb-2" />
-              <p className="text-sm font-bold text-slate-800">Select Document File</p>
-              <p className="text-xs text-slate-400 mt-1">PDF, PNG, or JPG up to 10MB</p>
-              <input type="file" onChange={handleFileChange} className="mt-4 text-xs mx-auto" />
-              {formData.documents && (
-                <p className="text-xs font-semibold text-teal-700 mt-3">
-                  Selected: {formData.documents.name}
-                </p>
-              )}
-            </div>
-
-            <div className="flex justify-between items-center pt-4 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setActiveStep(2)}
-                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl"
+              <Paper
+                sx={{
+                  p: 4,
+                  border: "2px dashed #CBD5E1",
+                  borderRadius: 3,
+                  textAlign: "center",
+                  bgcolor: "#F8FAFC",
+                  cursor: "pointer",
+                  "&:hover": { borderColor: "#0F766E" },
+                }}
               >
-                Back
-              </button>
+                <Upload sx={{ fontSize: 48, color: "#0F766E", mb: 1 }} />
+                <Typography variant="subtitle1" fontWeight={700} color="#0F172A">
+                  Click or Drag & Drop Documents Here
+                </Typography>
+                <Typography variant="caption" color="textSecondary">
+                  Supports PDF, PNG, JPG up to 10MB (Aadhaar, PAN, Bank Statement, Income Proof)
+                </Typography>
+              </Paper>
 
-              <button
-                type="button"
-                onClick={() => setActiveStep(4)}
-                className="px-6 py-2.5 bg-teal-700 hover:bg-teal-800 text-white font-semibold text-xs rounded-xl flex items-center gap-1.5"
-              >
-                Review Application <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+              <Stack direction="row" justifyContent="space-between" sx={{ mt: 4 }}>
+                <Button variant="outlined" onClick={() => setActiveStep(2)}>
+                  Back
+                </Button>
+                <Button variant="contained" onClick={() => setActiveStep(4)} sx={{ bgcolor: "#0F766E" }}>
+                  Review Application
+                </Button>
+              </Stack>
+            </CardContent>
+          </Card>
         )}
 
-        {/* STEP 4: Final Review & Submit */}
+        {/* STEP 4: REVIEW & SUBMIT */}
         {activeStep === 4 && (
-          <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-6">
-            <h2 className="text-lg font-bold text-slate-900">Review Application Summary</h2>
+          <Card elevation={0} sx={{ border: "1px solid #E2E8F0", borderRadius: 3, p: 2 }}>
+            <CardContent>
+              <Typography variant="h6" fontWeight={700} color="#0F172A" mb={3}>
+                Application Review & Summary
+              </Typography>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 rounded-xl bg-slate-50 border border-slate-200/80 text-sm">
-              <div>
-                <span className="text-slate-400 text-xs">Loan Scheme</span>
-                <p className="font-bold text-slate-900">{selectedProduct?.product_name}</p>
-              </div>
-              <div>
-                <span className="text-slate-400 text-xs">Requested Loan Amount</span>
-                <p className="font-bold text-teal-700">₹{Number(formData.amount).toLocaleString("en-IN")}</p>
-              </div>
-              <div>
-                <span className="text-slate-400 text-xs">Tenure & Rate</span>
-                <p className="font-bold text-slate-900">{formData.tenureMonths} Months @ {selectedProduct?.interestRate}% p.a.</p>
-              </div>
-              <div>
-                <span className="text-slate-400 text-xs">Monthly Estimated EMI</span>
-                <p className="font-bold text-teal-700">₹{emiDetails.monthlyEmi.toLocaleString("en-IN")}</p>
-              </div>
-            </div>
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={6}>
+                  <Paper sx={{ p: 2.5, borderRadius: 2.5, bgcolor: "#F8FAFC", border: "1px solid #E2E8F0" }}>
+                    <Typography variant="subtitle2" fontWeight={700} color="#0F766E" mb={1.5}>
+                      Selected Scheme & Details
+                    </Typography>
+                    <Stack spacing={1}>
+                      <Stack direction="row" justifyContent="space-between">
+                        <Typography variant="body2" color="textSecondary">Scheme</Typography>
+                        <Typography variant="body2" fontWeight={700}>{selectedProduct?.product_name}</Typography>
+                      </Stack>
+                      <Stack direction="row" justifyContent="space-between">
+                        <Typography variant="body2" color="textSecondary">Requested Amount</Typography>
+                        <Typography variant="body2" fontWeight={700}>₹{Number(formData.amount).toLocaleString()}</Typography>
+                      </Stack>
+                      <Stack direction="row" justifyContent="space-between">
+                        <Typography variant="body2" color="textSecondary">Tenure</Typography>
+                        <Typography variant="body2" fontWeight={700}>{formData.tenureMonths} Months</Typography>
+                      </Stack>
+                      <Stack direction="row" justifyContent="space-between">
+                        <Typography variant="body2" color="textSecondary">Interest Rate</Typography>
+                        <Typography variant="body2" fontWeight={700}>{selectedProduct?.interestRate}% p.a.</Typography>
+                      </Stack>
+                    </Stack>
+                  </Paper>
+                </Grid>
 
-            <div className="flex justify-between items-center pt-4 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setActiveStep(3)}
-                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl"
-              >
-                Back
-              </button>
+                <Grid item xs={12} md={6}>
+                  <Paper sx={{ p: 2.5, borderRadius: 2.5, bgcolor: "#F8FAFC", border: "1px solid #E2E8F0" }}>
+                    <Typography variant="subtitle2" fontWeight={700} color="#0F766E" mb={1.5}>
+                      Applicant Profile & Repayment
+                    </Typography>
+                    <Stack spacing={1}>
+                      <Stack direction="row" justifyContent="space-between">
+                        <Typography variant="body2" color="textSecondary">Employment</Typography>
+                        <Typography variant="body2" fontWeight={700}>{formData.employmentType}</Typography>
+                      </Stack>
+                      <Stack direction="row" justifyContent="space-between">
+                        <Typography variant="body2" color="textSecondary">Monthly Income</Typography>
+                        <Typography variant="body2" fontWeight={700}>₹{Number(formData.monthlyIncome).toLocaleString()}</Typography>
+                      </Stack>
+                      <Stack direction="row" justifyContent="space-between">
+                        <Typography variant="body2" color="textSecondary">Estimated EMI</Typography>
+                        <Typography variant="body2" fontWeight={700} color="#0F766E">₹{emiDetails.monthlyEmi.toLocaleString()} / mo</Typography>
+                      </Stack>
+                    </Stack>
+                  </Paper>
+                </Grid>
+              </Grid>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-8 py-3 bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md shadow-teal-700/30 transition-all flex items-center gap-2"
-              >
-                {loading ? "Submitting..." : "Submit Loan Application"}
-              </button>
-            </div>
-          </div>
+              <Stack direction="row" justifyContent="space-between" sx={{ mt: 4 }}>
+                <Button variant="outlined" onClick={() => setActiveStep(3)}>
+                  Back
+                </Button>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  disabled={loading || !kycVerified}
+                  sx={{ bgcolor: "#0F766E", py: 1.5, px: 4, borderRadius: 2.5, fontWeight: 700 }}
+                >
+                  {loading ? "Submitting Application..." : "Confirm & Submit Application"}
+                </Button>
+              </Stack>
+            </CardContent>
+          </Card>
         )}
       </form>
-    </div>
+    </Box>
   );
 }

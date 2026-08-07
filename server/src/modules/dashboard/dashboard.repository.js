@@ -50,6 +50,39 @@ class DashboardRepository {
     return rows;
   }
 
+  async getTodayExpenses() {
+    const [rows] = await db.execute(`SELECT COALESCE(SUM(amount),0) total FROM expenses WHERE DATE(expense_date)=CURDATE() OR DATE(created_at)=CURDATE()`);
+    return rows[0].total;
+  }
+
+  async getPendingKycCount() {
+    const [rows] = await db.execute(`SELECT COUNT(*) total FROM customers WHERE status='PENDING' OR pan_number IS NULL OR aadhaar_number IS NULL`);
+    return rows[0].total;
+  }
+
+  async getTotalStaffCount() {
+    const [rows] = await db.execute(`SELECT COUNT(*) total FROM users u INNER JOIN roles r ON u.role_id=r.role_id WHERE r.role_name!='CUSTOMER'`);
+    return rows[0].total;
+  }
+
+  async getRecentFinancialLedger() {
+    const [rows] = await db.query(`
+      (SELECT income_number as code, category as description, 'INCOME' as type, amount, payment_method, created_at FROM income ORDER BY created_at DESC LIMIT 3)
+      UNION ALL
+      (SELECT expense_number as code, category as description, 'EXPENSE' as type, amount, payment_method, created_at FROM expenses ORDER BY created_at DESC LIMIT 3)
+      ORDER BY created_at DESC LIMIT 5
+    `);
+    return rows;
+  }
+
+  async getRecentKycQueue() {
+    const [rows] = await db.query(`
+      SELECT customer_id, customer_code, first_name, last_name, mobile_number, aadhaar_number, pan_number, 'PENDING' as kyc_status
+      FROM customers ORDER BY created_at DESC LIMIT 5
+    `);
+    return rows;
+  }
+
   async getBranchPerformance() {
     const [rows] = await db.query(`
       SELECT b.branch_id, b.branch_name,

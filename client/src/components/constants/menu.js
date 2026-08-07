@@ -12,42 +12,18 @@ import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import BusinessIcon from "@mui/icons-material/Business";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import AssignmentIcon from "@mui/icons-material/Assignment";
+import FingerprintIcon from "@mui/icons-material/Fingerprint";
+import DescriptionIcon from "@mui/icons-material/Description";
 
 export const ROLE_ACCESS = {
   SUPER_ADMIN: [
     "/dashboard",
-    "/branches",
-    "/customers",
-    "/groups",
-    "/customer-documents",
     "/users",
-    "/roles",
-    "/permissions",
-    "/audit-logs",
-    "/loan-products",
-    "/loan-applications",
-    "/loans",
-    "/collections",
-    "/cash-book",
-    "/cashbook",
-    "/expenses",
-    "/income",
-    "/loan-reports",
-    "/collection-reports",
-    "/customer-reports",
     "/profile",
-    "/settings",
-    "/tasks",
-    "/customer/dashboard",
-    "/customer/profile",
-    "/customer/applications",
-    "/customer/apply-loan",
-    "/customer/loans",
-    "/customer/ekyc",
-    "/customer/settings",
   ],
   ADMIN: [
     "/dashboard",
+    "/users",
     "/branches",
     "/customers",
     "/groups",
@@ -69,6 +45,9 @@ export const ROLE_ACCESS = {
     "/profile",
     "/settings",
     "/tasks",
+    "/attendance",
+    "/letters",
+    "/salary",
     "/customer/dashboard",
     "/customer/profile",
     "/customer/applications",
@@ -483,22 +462,53 @@ export function getFilteredMenu(rawRole) {
           icon: VerifiedUserIcon,
           path: "/customer-documents",
         },
+      ],
+    },
+    {
+      section: "HR & Employee Management",
+      items: [
         {
-          title: "User Management",
+          title: "Employee Staff Users",
           icon: PeopleIcon,
-          children: [
-            { title: "Roles (View)", path: "/roles" },
-            { title: "Permissions (View)", path: "/permissions" },
-            { title: "Audit Trail", path: "/audit-logs" },
-          ],
+          path: "/users",
+        },
+        {
+          title: "Employee Attendance",
+          icon: FingerprintIcon,
+          path: "/attendance",
+        },
+        {
+          title: "Employee Letters",
+          icon: DescriptionIcon,
+          path: "/letters",
+        },
+        {
+          title: "Salary & Payroll",
+          icon: PaidIcon,
+          path: "/salary",
+        },
+        {
+          title: "System Roles",
+          icon: ShieldIcon,
+          path: "/roles",
+        },
+        {
+          title: "System Permissions",
+          icon: LockIcon,
+          path: "/permissions",
+        },
+        {
+          title: "Audit Logs",
+          icon: AssignmentIcon,
+          path: "/audit-logs",
         },
       ],
     },
     {
-      section: "Loans",
+      section: "Loan Operations",
       items: [
         {
-          title: "Loan Products",
+          title: "Loan Products & Schemes",
           icon: AccountBalanceWalletIcon,
           path: "/loan-products",
         },
@@ -520,7 +530,7 @@ export function getFilteredMenu(rawRole) {
       ],
     },
     {
-      section: "Finance",
+      section: "Finance & Accounts",
       items: [
         {
           title: "Cash Book",
@@ -540,7 +550,7 @@ export function getFilteredMenu(rawRole) {
       ],
     },
     {
-      section: "Reports",
+      section: "Reports & Analytics",
       items: [
         {
           title: "Loan Reports",

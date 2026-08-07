@@ -40,6 +40,8 @@ const ENDPOINTS = {
   DASHBOARD: "/dashboard",
   EMI: "/emi",
   AUDIT: "/audit-logs",
+  ATTENDANCE: "/attendance",
+  LETTERS: "/letters",
 };
 
 export default ENDPOINTS;
