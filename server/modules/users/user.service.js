@@ -11,6 +11,7 @@ import path from "path";
 import fs from "fs/promises";
 import auditService from "../audit/audit.service.js";
 import CodeGenerator from "../../shared/codeGenerator.helper.js";
+import emailService from "../../shared/email.service.js";
 
 class UserService {
   async createUser(data, createdBy, metadata) {
@@ -115,6 +116,9 @@ class UserService {
         lastEmployee?.employee_code,
         EMPLOYEE.PAD_LENGTH,
       );
+      const defaultPassword = data.password || "Pnrg@123456";
+      const passwordHash = await bcrypt.hash(defaultPassword, 12);
+
       const userId = await userRepository.createUser(connection, {
         employeeCode,
         firstName: data.firstName,
@@ -125,33 +129,23 @@ class UserService {
         branchId: data.branchId,
         profileImage: data.profileImage ?? null,
         createdBy: createdBy.user_id,
+        passwordHash,
       });
-      const tokenDetails = await passwordResetService.createAccountSetupToken(
-        connection,
-        {
-          userId,
-
-          firstName: data.firstName,
-
-          lastName: data.lastName,
-
-          email: data.email,
-        },
-      );
-
-      await emailService.sendEmail({
-        to: data.email,
-
-        subject: "Welcome to PNRG Finance",
-
-        html: passwordSetupTemplate({
-          name: `${data.firstName} ${data.lastName}`,
-
-          username: data.email,
-
-          setupLink: tokenDetails.setupLink,
-        }),
-      });
+      try {
+        await emailService.sendEmail({
+          to: data.email,
+          subject: "Welcome to PNRG Finance - Account Credentials",
+          html: emailService.generateWelcomeTemplate({
+            name: `${data.firstName} ${data.lastName || ""}`.trim(),
+            username: data.email,
+            tempPassword: defaultPassword,
+            role: createdBy?.role_name === "SUPER_ADMIN" ? "Admin" : "Employee",
+            employeeCode,
+          }),
+        });
+      } catch (emailErr) {
+        logger.warn("Notification email sending skipped: " + emailErr?.message);
+      }
 
       await userRepository.commit(connection);
       await auditService.log({
@@ -159,8 +153,8 @@ class UserService {
         action: "CREATE",
         module: "USER",
         description: `User ${employeeCode} created.`,
-        ipAddress: metadata.ipAddress,
-        userAgent: metadata.userAgent,
+        ipAddress: metadata?.ipAddress,
+        userAgent: metadata?.userAgent,
       });
 
       logger.info(`User Created :${employeeCode}`);
@@ -211,8 +205,8 @@ class UserService {
         action: "DELETE",
         module: "USER",
         description: `User soft Deleted. `,
-        ipAddress: metadata.ipAddress,
-        userAgent: metadata.userAgent,
+        ipAddress: metadata?.ipAddress,
+        userAgent: metadata?.userAgent,
       });
     } catch (error) {
       await userRepository.rollback(connection);
@@ -350,8 +344,8 @@ class UserService {
         action: "UPDATE",
         module: "USER",
         description: `user details updated.`,
-        ipAddress: metadata.ipAddress,
-        userAgent: metadata.userAgent,
+        ipAddress: metadata?.ipAddress,
+        userAgent: metadata?.userAgent,
       });
       return;
     } catch (error) {
@@ -382,8 +376,8 @@ class UserService {
         action: "STATUS_CHANGE",
         module: "USER",
         description: `User status changed to ${status}.`,
-        ipAddress: metadata.ipAddress,
-        userAgent: metadata.userAgent,
+        ipAddress: metadata?.ipAddress,
+        userAgent: metadata?.userAgent,
       });
     } catch (error) {
       await userRepository.rollback(connection);
@@ -426,8 +420,8 @@ class UserService {
         action: "UPDATE",
         module: "USER",
         description: `User Profile IMAGE is Updated`,
-        ipAddress: metadata.ipAddress,
-        userAgent: metadata.userAgent,
+        ipAddress: metadata?.ipAddress,
+        userAgent: metadata?.userAgent,
       });
       return {
         profileImage: file.filename,

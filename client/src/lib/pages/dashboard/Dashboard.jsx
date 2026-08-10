@@ -10,6 +10,7 @@ import {
   Stack,
   Typography,
   CircularProgress,
+  LinearProgress,
   Paper,
   Avatar,
   Chip,
@@ -200,7 +201,7 @@ function SuperAdminDashboard({ user, navigate, stats }) {
               variant="contained"
               size="large"
               startIcon={<AddIcon />}
-              onClick={() => navigate("/users")}
+              onClick={() => navigate("/users", { state: { openCreate: true } })}
               sx={{ bgcolor: "#0F766E", "&:hover": { bgcolor: "#0D9488" }, py: 1.8, borderRadius: 2.5, fontWeight: 700, fontSize: "0.95rem" }}
             >
               Add New Administrator Account
@@ -570,28 +571,244 @@ function FieldOfficerDashboard({ user, navigate, stats }) {
         </Grid>
       </Grid>
 
-      <Card sx={{ borderRadius: 3, p: 3, border: "1px solid #E2E8F0" }}>
+      <Card sx={{ borderRadius: 3, p: 3, border: "1px solid #E2E8F0", mb: 4 }}>
         <Typography variant="h6" fontWeight={700} color="#0F172A" mb={2}>
           Field Officer Quick Tools
         </Typography>
         <Grid container spacing={2}>
           <Grid item xs={12} sm={4}>
-            <Button fullWidth variant="contained" startIcon={<TrendingUpIcon />} onClick={() => navigate("/collections")} sx={{ bgcolor: "#059669", py: 1.2, borderRadius: 2 }}>
+            <Button fullWidth variant="contained" startIcon={<TrendingUpIcon />} onClick={() => navigate("/collections")} sx={{ bgcolor: "#059669", "&:hover": { bgcolor: "#047857" }, py: 1.2, borderRadius: 2, fontWeight: 700 }}>
               Record Field Collection
             </Button>
           </Grid>
           <Grid item xs={12} sm={4}>
-            <Button fullWidth variant="outlined" startIcon={<PersonAddIcon />} onClick={() => navigate("/customers")} sx={{ py: 1.2, borderRadius: 2 }}>
+            <Button fullWidth variant="outlined" startIcon={<PersonAddIcon />} onClick={() => navigate("/customers")} sx={{ py: 1.2, borderRadius: 2, fontWeight: 700 }}>
               Onboard New Customer
             </Button>
           </Grid>
           <Grid item xs={12} sm={4}>
-            <Button fullWidth variant="outlined" startIcon={<TaskIcon />} onClick={() => navigate("/tasks")} sx={{ py: 1.2, borderRadius: 2 }}>
+            <Button fullWidth variant="outlined" startIcon={<TaskIcon />} onClick={() => navigate("/tasks")} sx={{ py: 1.2, borderRadius: 2, fontWeight: 700 }}>
               Field Tasks & Schedule
             </Button>
           </Grid>
         </Grid>
       </Card>
+
+      {/* SECTION 1: Daily Collection Tracker & SHG Center Meeting Schedule */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} md={5}>
+          <Card sx={{ borderRadius: 3, p: 3, border: "1px solid #E2E8F0", height: "100%" }}>
+            <Typography variant="h6" fontWeight={700} color="#0F172A" mb={0.5}>
+              Daily Recovery Target Tracker
+            </Typography>
+            <Typography variant="body2" color="textSecondary" mb={3}>
+              Real-time field collection achievement against today's EMI dues.
+            </Typography>
+
+            <Box sx={{ mb: 3 }}>
+              <Stack direction="row" justifyContent="space-between" mb={1}>
+                <Typography variant="subtitle2" fontWeight={700} color="#059669">
+                  Collected: ₹14,200
+                </Typography>
+                <Typography variant="subtitle2" fontWeight={700} color="#64748B">
+                  Target: ₹18,500 (76.8%)
+                </Typography>
+              </Stack>
+              <LinearProgress
+                variant="determinate"
+                value={76.8}
+                sx={{ height: 10, borderRadius: 5, bgcolor: "#E2E8F0", "& .MuiLinearProgress-bar": { bgcolor: "#059669" } }}
+              />
+            </Box>
+
+            <Stack spacing={2}>
+              <Paper elevation={0} sx={{ p: 2, bgcolor: "#F8FAFC", borderRadius: 2, border: "1px solid #E2E8F0" }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Box>
+                    <Typography variant="caption" color="textSecondary" fontWeight={600}>Cash Collected</Typography>
+                    <Typography variant="h6" fontWeight={800} color="#0F172A">₹11,500</Typography>
+                  </Box>
+                  <Chip label="Hand Cash" size="small" sx={{ bgcolor: "#DCFCE7", color: "#15803D", fontWeight: 700 }} />
+                </Stack>
+              </Paper>
+
+              <Paper elevation={0} sx={{ p: 2, bgcolor: "#F8FAFC", borderRadius: 2, border: "1px solid #E2E8F0" }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Box>
+                    <Typography variant="caption" color="textSecondary" fontWeight={600}>Digital / UPI QR</Typography>
+                    <Typography variant="h6" fontWeight={800} color="#0F172A">₹2,700</Typography>
+                  </Box>
+                  <Chip label="Instant UPI" size="small" sx={{ bgcolor: "#E0F2FE", color: "#0369A1", fontWeight: 700 }} />
+                </Stack>
+              </Paper>
+
+              <Paper elevation={0} sx={{ p: 2, bgcolor: "#FEF2F2", borderRadius: 2, border: "1px solid #FCA5A5" }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Box>
+                    <Typography variant="caption" color="#991B1B" fontWeight={600}>Pending Dues Follow-up</Typography>
+                    <Typography variant="h6" fontWeight={800} color="#991B1B">₹4,300</Typography>
+                  </Box>
+                  <Chip label="Overdue" size="small" color="error" sx={{ fontWeight: 700 }} />
+                </Stack>
+              </Paper>
+            </Stack>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={7}>
+          <Card sx={{ borderRadius: 3, p: 3, border: "1px solid #E2E8F0", height: "100%" }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+              <Typography variant="h6" fontWeight={700} color="#0F172A">
+                Today's Center / SHG Meeting Schedule
+              </Typography>
+              <Button size="small" onClick={() => navigate("/groups")} sx={{ fontWeight: 700 }}>
+                View All Groups
+              </Button>
+            </Stack>
+
+            <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid #E2E8F0", borderRadius: 2 }}>
+              <Table size="small">
+                <TableHead sx={{ bgcolor: "#F8FAFC" }}>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 700 }}>Center / Group Name</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Time</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>EMI Due</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Action</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  <TableRow hover>
+                    <TableCell sx={{ fontWeight: 700 }}>Surya Mahila SHG (#104)</TableCell>
+                    <TableCell>09:30 AM</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: "#059669" }}>₹6,500</TableCell>
+                    <TableCell><Chip label="Completed" size="small" color="success" sx={{ fontWeight: 700 }} /></TableCell>
+                    <TableCell>
+                      <Button size="small" variant="text" onClick={() => navigate("/collections")} sx={{ fontWeight: 700 }}>View Log</Button>
+                    </TableCell>
+                  </TableRow>
+                  <TableRow hover>
+                    <TableCell sx={{ fontWeight: 700 }}>Laxmi Self-Help Group (#108)</TableCell>
+                    <TableCell>11:30 AM</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: "#059669" }}>₹7,200</TableCell>
+                    <TableCell><Chip label="In Progress" size="small" color="primary" sx={{ fontWeight: 700 }} /></TableCell>
+                    <TableCell>
+                      <Button size="small" variant="contained" color="success" onClick={() => navigate("/collections")} sx={{ fontWeight: 700 }}>Collect</Button>
+                    </TableCell>
+                  </TableRow>
+                  <TableRow hover>
+                    <TableCell sx={{ fontWeight: 700 }}>Pragati Women SHG (#112)</TableCell>
+                    <TableCell>02:30 PM</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: "#059669" }}>₹4,800</TableCell>
+                    <TableCell><Chip label="Pending" size="small" color="warning" sx={{ fontWeight: 700 }} /></TableCell>
+                    <TableCell>
+                      <Button size="small" variant="outlined" onClick={() => navigate("/collections")} sx={{ fontWeight: 700 }}>Collect</Button>
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* SECTION 2: Field Tasks & Recent Collection Receipts */}
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={6}>
+          <Card sx={{ borderRadius: 3, p: 3, border: "1px solid #E2E8F0" }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+              <Typography variant="h6" fontWeight={700} color="#0F172A">
+                Assigned Field Tasks & Verifications
+              </Typography>
+              <Button size="small" onClick={() => navigate("/tasks")} sx={{ fontWeight: 700 }}>
+                Manage Tasks
+              </Button>
+            </Stack>
+
+            <Stack spacing={2}>
+              <Paper elevation={0} sx={{ p: 2, border: "1px solid #E2E8F0", borderRadius: 2 }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+                  <Box>
+                    <Chip label="HIGH PRIORITY" size="small" color="error" sx={{ fontWeight: 800, mb: 1 }} />
+                    <Typography variant="subtitle2" fontWeight={700} color="#0F172A">
+                      eKYC & Residence Audit — Ramesh Kumar (CUST-409)
+                    </Typography>
+                    <Typography variant="caption" color="textSecondary" display="block">
+                      Address: House #42, Main Road, Market Area | Due: Today 04:00 PM
+                    </Typography>
+                  </Box>
+                  <Button size="small" variant="contained" onClick={() => navigate("/customer-documents")} sx={{ bgcolor: "#0F766E", "&:hover": { bgcolor: "#0D9488" }, fontWeight: 700 }}>
+                    Audit
+                  </Button>
+                </Stack>
+              </Paper>
+
+              <Paper elevation={0} sx={{ p: 2, border: "1px solid #E2E8F0", borderRadius: 2 }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+                  <Box>
+                    <Chip label="MEDIUM PRIORITY" size="small" color="warning" sx={{ fontWeight: 800, mb: 1 }} />
+                    <Typography variant="subtitle2" fontWeight={700} color="#0F172A">
+                      Borrower Field Verification — Sunita Devi (CUST-412)
+                    </Typography>
+                    <Typography variant="caption" color="textSecondary" display="block">
+                      Business Visit & Photo Upload | Due: Today 05:30 PM
+                    </Typography>
+                  </Box>
+                  <Button size="small" variant="outlined" onClick={() => navigate("/customers")} sx={{ fontWeight: 700 }}>
+                    Verify
+                  </Button>
+                </Stack>
+              </Paper>
+            </Stack>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={6}>
+          <Card sx={{ borderRadius: 3, p: 3, border: "1px solid #E2E8F0" }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+              <Typography variant="h6" fontWeight={700} color="#0F172A">
+                Recent Collection Log Today
+              </Typography>
+              <Button size="small" onClick={() => navigate("/collections")} sx={{ fontWeight: 700 }}>
+                View All Receipts
+              </Button>
+            </Stack>
+
+            <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid #E2E8F0", borderRadius: 2 }}>
+              <Table size="small">
+                <TableHead sx={{ bgcolor: "#F8FAFC" }}>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 700 }}>Receipt #</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Borrower</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Amount</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Mode</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  <TableRow hover>
+                    <TableCell sx={{ fontWeight: 700 }}>REC-2026-0901</TableCell>
+                    <TableCell>Meena Devi (Surya SHG)</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: "#059669" }}>₹1,200</TableCell>
+                    <TableCell><Chip label="CASH" size="small" sx={{ fontWeight: 700 }} /></TableCell>
+                  </TableRow>
+                  <TableRow hover>
+                    <TableCell sx={{ fontWeight: 700 }}>REC-2026-0899</TableCell>
+                    <TableCell>Savitri Bai (Surya SHG)</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: "#059669" }}>₹1,500</TableCell>
+                    <TableCell><Chip label="UPI QR" size="small" color="info" sx={{ fontWeight: 700 }} /></TableCell>
+                  </TableRow>
+                  <TableRow hover>
+                    <TableCell sx={{ fontWeight: 700 }}>REC-2026-0895</TableCell>
+                    <TableCell>Kavita Reddy (Laxmi SHG)</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: "#059669" }}>₹2,000</TableCell>
+                    <TableCell><Chip label="CASH" size="small" sx={{ fontWeight: 700 }} /></TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Card>
+        </Grid>
+      </Grid>
     </Box>
   );
 }

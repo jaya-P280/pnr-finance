@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Alert,
@@ -179,26 +181,31 @@ export default function UsersList() {
   const branches = branchesQuery.data?.branches || [];
   const roles = Array.isArray(rolesQuery.data?.roles) ? rolesQuery.data.roles : [];
 
+  const location = useLocation();
+
   const selectableRoles = isSuperAdmin
-    ? roles.filter((role) => (role.role_name || role.roleName) === "ADMIN")
+    ? roles.filter((role) => {
+        const name = (role.role_name || role.roleName || "").toUpperCase();
+        return name === "ADMIN" || name.includes("ADMIN");
+      })
     : isAdmin
     ? roles.filter((role) =>
         ["BRANCH_MANAGER", "FIELD_OFFICER", "ACCOUNTANT"].includes(
-          role.role_name || role.roleName,
+          (role.role_name || role.roleName || "").toUpperCase(),
         ),
       )
     : roles.filter((role) =>
         ["FIELD_OFFICER", "ACCOUNTANT"].includes(
-          role.role_name || role.roleName,
+          (role.role_name || role.roleName || "").toUpperCase(),
         ),
       );
 
   const formLoading = rolesQuery.isLoading || branchesQuery.isLoading;
 
   const openCreate = () => {
-    const adminRole = selectableRoles.find(
-      (role) => (role.role_name || role.roleName) === "ADMIN",
-    );
+    const adminRole = roles.find(
+      (role) => (role.role_name || role.roleName || "").toUpperCase() === "ADMIN",
+    ) || selectableRoles[0];
     setForm({
       ...emptyForm,
       roleId: isSuperAdmin
@@ -207,6 +214,26 @@ export default function UsersList() {
     });
     setDialog({ mode: "create" });
   };
+
+  useEffect(() => {
+    if (location.state?.openCreate || new URLSearchParams(location.search).get("action") === "create") {
+      openCreate();
+    }
+  }, [location.state, location.search]);
+
+  useEffect(() => {
+    if (dialog?.mode === "create" && isSuperAdmin && !form.roleId && roles.length > 0) {
+      const adminRole = roles.find(
+        (r) => (r.role_name || r.roleName || "").toUpperCase() === "ADMIN",
+      ) || roles.find((r) => (r.role_name || r.roleName || "").toUpperCase().includes("ADMIN"));
+      if (adminRole) {
+        setForm((prev) => ({
+          ...prev,
+          roleId: String(adminRole.role_id || adminRole.roleId),
+        }));
+      }
+    }
+  }, [dialog, isSuperAdmin, form.roleId, roles]);
 
   const openView = async (u) => {
     try {
@@ -434,6 +461,271 @@ export default function UsersList() {
           )}
         </Paper>
       </Stack>
+
+      {/* View Details Dialog */}
+      <Dialog
+        open={dialog?.mode === "view"}
+        onClose={() => setDialog(null)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle sx={{ pb: 1 }}>
+          <Stack direction="row" alignItems="center" spacing={1.5}>
+            <Avatar sx={{ bgcolor: "#0F766E" }}>
+              {getInitials(dialog?.user?.firstName, dialog?.user?.lastName)}
+            </Avatar>
+            <Box>
+              <Typography variant="h6" fontWeight="bold">
+                {dialog?.user?.firstName} {dialog?.user?.lastName}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Employee Code: {dialog?.user?.employeeCode || "N/A"}
+              </Typography>
+            </Box>
+          </Stack>
+        </DialogTitle>
+        <Divider />
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            <Grid container spacing={2}>
+              <Grid item xs={6}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <EmailIcon fontSize="small" color="action" />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" display="block">Email Address</Typography>
+                    <Typography variant="body2" fontWeight="500">{dialog?.user?.email || "-"}</Typography>
+                  </Box>
+                </Stack>
+              </Grid>
+              <Grid item xs={6}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <PhoneIcon fontSize="small" color="action" />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" display="block">Mobile Number</Typography>
+                    <Typography variant="body2" fontWeight="500">{dialog?.user?.mobileNumber || dialog?.user?.phone || "-"}</Typography>
+                  </Box>
+                </Stack>
+              </Grid>
+              <Grid item xs={6}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <BadgeIcon fontSize="small" color="action" />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" display="block">Role / Designation</Typography>
+                    <Chip
+                      label={dialog?.user?.role || "MEMBER"}
+                      size="small"
+                      sx={{ bgcolor: getRoleColor(dialog?.user?.role), color: "#fff", mt: 0.5 }}
+                    />
+                  </Box>
+                </Stack>
+              </Grid>
+              <Grid item xs={6}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <BranchIcon fontSize="small" color="action" />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" display="block">Assigned Branch</Typography>
+                    <Typography variant="body2" fontWeight="500">{dialog?.user?.branch || "Head Office"}</Typography>
+                  </Box>
+                </Stack>
+              </Grid>
+              <Grid item xs={6}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <ActiveIcon fontSize="small" color="action" />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" display="block">Account Status</Typography>
+                    <Chip
+                      label={dialog?.user?.status || "ACTIVE"}
+                      size="small"
+                      color={dialog?.user?.status === "ACTIVE" ? "success" : "error"}
+                      sx={{ mt: 0.5 }}
+                    />
+                  </Box>
+                </Stack>
+              </Grid>
+              <Grid item xs={6}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <DateIcon fontSize="small" color="action" />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" display="block">Joined Date</Typography>
+                    <Typography variant="body2" fontWeight="500">
+                      {dialog?.user?.createdAt ? new Date(dialog.user.createdAt).toLocaleDateString() : "-"}
+                    </Typography>
+                  </Box>
+                </Stack>
+              </Grid>
+            </Grid>
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            variant="outlined"
+            onClick={() => {
+              const u = dialog.user;
+              setDialog(null);
+              openEdit(u);
+            }}
+          >
+            Edit Profile
+          </Button>
+          <Button variant="contained" onClick={() => setDialog(null)} sx={{ bgcolor: "#0F766E" }}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={dialog?.mode === "delete"} onClose={() => setDialog(null)}>
+        <DialogTitle>
+          {isSuperAdmin ? "Delete Admin Account?" : "Delete Employee Account?"}
+        </DialogTitle>
+        <DialogContent>
+          <Typography color="text.secondary">
+            Are you sure you want to deactivate and delete{" "}
+            <strong>
+              {dialog?.user?.firstName} {dialog?.user?.lastName}
+            </strong>{" "}
+            ({dialog?.user?.employeeCode || dialog?.user?.email})? This action will disable their access.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDialog(null)}>Cancel</Button>
+          <Button
+            color="error"
+            variant="contained"
+            disabled={removeUser.isPending}
+            onClick={() => removeUser.mutate(dialog.user.userId)}
+          >
+            {removeUser.isPending ? "Deleting…" : "Delete"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Create / Edit Dialog */}
+      <Dialog
+        open={dialog?.mode === "create" || dialog?.mode === "edit"}
+        onClose={() => !saveUser.isPending && setDialog(null)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>
+          {dialog?.mode === "create"
+            ? isSuperAdmin
+              ? "Add New Admin User"
+              : "Add New Employee"
+            : isSuperAdmin
+            ? "Edit Admin Details"
+            : "Edit Employee Details"}
+        </DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            {dialog?.mode === "create" && (
+              <Alert severity="info">
+                An account setup link will be emailed to the new user automatically upon creation.
+              </Alert>
+            )}
+            {formLoading && (
+              <Alert severity="info">Loading available roles and branches…</Alert>
+            )}
+
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <TextField
+                required
+                fullWidth
+                label="First Name"
+                value={form.firstName}
+                onChange={setField("firstName")}
+              />
+              <TextField
+                fullWidth
+                label="Last Name"
+                value={form.lastName}
+                onChange={setField("lastName")}
+              />
+            </Stack>
+
+            <TextField
+              required
+              fullWidth
+              label="Email Address"
+              type="email"
+              value={form.email}
+              onChange={setField("email")}
+            />
+
+            <TextField
+              required
+              fullWidth
+              label="Mobile Number"
+              placeholder="e.g. 9876543210"
+              slotProps={{
+                htmlInput: { inputMode: "numeric", maxLength: 10 },
+              }}
+              value={form.mobileNumber}
+              onChange={setField("mobileNumber")}
+            />
+
+            <TextField
+              required
+              select
+              fullWidth
+              label="Role / Designation"
+              value={form.roleId}
+              onChange={setField("roleId")}
+              disabled={formLoading}
+            >
+              <MenuItem value="">Select a Role</MenuItem>
+              {selectableRoles.map((role) => (
+                <MenuItem
+                  key={role.role_id || role.roleId}
+                  value={String(role.role_id || role.roleId)}
+                >
+                  {role.role_name || role.roleName}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <TextField
+              required
+              select
+              fullWidth
+              label="Assigned Branch"
+              value={form.branchId}
+              onChange={setField("branchId")}
+              disabled={formLoading}
+            >
+              <MenuItem value="">Select a Branch</MenuItem>
+              {branches.map((branch) => (
+                <MenuItem key={branch.branch_id} value={String(branch.branch_id)}>
+                  {branch.branch_name}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setDialog(null)}>Cancel</Button>
+          <Button
+            variant="contained"
+            disabled={
+              saveUser.isPending ||
+              formLoading ||
+              !form.firstName ||
+              !form.email ||
+              !form.mobileNumber ||
+              !form.roleId ||
+              !form.branchId
+            }
+            onClick={() => saveUser.mutate()}
+            sx={{ bgcolor: "#0F766E", "&:hover": { bgcolor: "#0D655D" } }}
+          >
+            {saveUser.isPending
+              ? "Saving…"
+              : isSuperAdmin
+              ? "Save Admin User"
+              : "Save Employee"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </SectionPage>
   );
 }

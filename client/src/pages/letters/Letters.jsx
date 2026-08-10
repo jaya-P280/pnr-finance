@@ -45,26 +45,46 @@ export default function Letters() {
   const [activeTab, setActiveTab] = useState(0);
 
   // Queries for Branches and Employees
-  const { data: branches = [] } = useQuery({
-    queryKey: ["branches-list"],
+  const { data: rawBranches } = useQuery({
+    queryKey: ["letters", "branches"],
     queryFn: async () => {
       const res = await branchService.getAll({ limit: 100 });
       return res.branches || [];
     },
   });
 
-  const { data: employees = [] } = useQuery({
-    queryKey: ["employees-list"],
+  const branches = Array.isArray(rawBranches)
+    ? rawBranches
+    : Array.isArray(rawBranches?.branches)
+    ? rawBranches.branches
+    : [];
+
+  const { data: rawEmployees } = useQuery({
+    queryKey: ["letters", "employees"],
     queryFn: async () => {
       const res = await userService.getAll({ limit: 100 });
       return res.users || [];
     },
   });
 
-  const { data: savedLetters = [], refetch: refetchLetters } = useQuery({
-    queryKey: ["saved-letters"],
+  const employees = Array.isArray(rawEmployees)
+    ? rawEmployees
+    : Array.isArray(rawEmployees?.users)
+    ? rawEmployees.users
+    : [];
+
+  const { data: rawSavedLetters, refetch: refetchLetters } = useQuery({
+    queryKey: ["letters", "saved-letters"],
     queryFn: () => letterService.getLetters(),
   });
+
+  const savedLetters = Array.isArray(rawSavedLetters)
+    ? rawSavedLetters
+    : Array.isArray(rawSavedLetters?.letters)
+    ? rawSavedLetters.letters
+    : Array.isArray(rawSavedLetters?.data)
+    ? rawSavedLetters.data
+    : [];
 
   // 1. OFFER LETTER FORM STATE
   const [offerState, setOfferState] = useState({
@@ -120,7 +140,7 @@ export default function Letters() {
     mutationFn: (payload) => letterService.createLetter(payload),
     onSuccess: () => {
       toast.success("Letter generated and saved to records!");
-      queryClient.invalidateQueries(["saved-letters"]);
+      queryClient.invalidateQueries({ queryKey: ["letters", "saved-letters"] });
     },
     onError: (err) => {
       toast.error(err?.response?.data?.message || err?.message || "Failed to save letter.");
@@ -128,8 +148,23 @@ export default function Letters() {
   });
 
   // Helper to find employee object
-  const getEmp = (empId) => employees.find((e) => e.user_id === Number(empId));
-  const getBranch = (bId) => branches.find((b) => b.branch_id === Number(bId));
+  const getEmp = (empId) => employees.find((e) => Number(e.user_id || e.userId) === Number(empId));
+  const getBranch = (bId) => branches.find((b) => Number(b.branch_id || b.branchId) === Number(bId));
+
+  // Helper to filter staff employees by role and branch
+  const getFilteredEmployees = (selectedBranchId) => {
+    const staff = employees.filter((e) => {
+      const role = (e.role_name || e.role || e.roleName || "").toUpperCase();
+      return role !== "CUSTOMER";
+    });
+
+    if (!selectedBranchId) return staff;
+
+    return staff.filter((e) => {
+      const empBranchId = e.branch_id ?? e.branchId;
+      return !empBranchId || Number(empBranchId) === Number(selectedBranchId);
+    });
+  };
 
   // Generate Letter Preview Handlers
   const handleGenerateOffer = () => {
@@ -139,22 +174,44 @@ export default function Letters() {
     }
     const emp = getEmp(offerState.employeeId);
     const branch = getBranch(offerState.branchId);
+    const empName = `${emp?.first_name || ""} ${emp?.last_name || ""}`.trim() || "Employee Name";
 
     const letterData = {
       type: "OFFER LETTER",
       letterNumber: `PNRG/HR/OFFER/${new Date().getFullYear()}/${emp?.user_id || 101}`,
-      employeeName: `${emp?.first_name || ""} ${emp?.last_name || ""}`.trim() || "Employee Name",
+      employeeName: empName,
       employeeCode: emp?.employee_code || "EMP-101",
       branchName: branch?.branch_name || "Head Office",
       date: new Date().toISOString().split("T")[0],
       managerName: offerState.managerName,
       ctc: offerState.annualCtc,
-      subject: "Letter of Employment Offer - PNRG Finance",
-      body: `We are pleased to offer you employment at PNRG Finance Microfinance ERP under the position of ${
+      subject: "Formal Letter of Employment Offer - PNRG Finance",
+      body: `Dear ${empName},
+
+With reference to your application and subsequent interviews with PNRG Finance Microfinance ERP Solutions Ltd., we have great pleasure in offering you employment for the position of ${
         emp?.role_name || "Staff Officer"
-      }. You will be reporting to ${offerState.managerName}. Your total Annual CTC will be ₹${Number(
-        offerState.annualCtc
-      ).toLocaleString("en-IN")} per annum. We welcome you to our organization and look forward to a successful relationship.`,
+      } at our ${branch?.branch_name || "Head Office"} branch.
+
+1. APPOINTMENT & REPORTING:
+Your official appointment will take effect from your mutually agreed date of joining. You will be reporting directly to ${
+        offerState.managerName || "Reporting Manager"
+      } or any authorized officer designated by management.
+
+2. REMUNERATION & BENEFITS:
+Your Total Gross Annual CTC will be ₹${Number(
+        offerState.annualCtc || 600000
+      ).toLocaleString("en-IN")} per annum. A detailed breakdown of your monthly salary structure, including basic salary, house rent allowance (HRA), special allowances, Provident Fund (PF) contributions, and statutory tax deductions, will be annexed to your official Employment Agreement.
+
+3. PROBATION & CONFIRMATION:
+You will be placed on an initial probation period of six (6) months from your date of joining. Management reserves the right to extend the probation period based on performance evaluation. Upon successful completion of your probation, your service will be formally confirmed in writing.
+
+4. CODE OF CONDUCT & CONFIDENTIALITY:
+You agree to perform all duties assigned to you faithfully, industriously, and to the best of your ability. You shall strictly preserve the confidentiality of all operational workflows, borrower financial records, credit models, and proprietary software data of PNRG Finance.
+
+5. NOTICE PERIOD & SEPARATION:
+During probation, either party may terminate this employment by providing thirty (30) days' written notice or salary in lieu thereof. Post confirmation, a notice period of sixty (60) days shall apply.
+
+We welcome you to PNRG Finance and look forward to a successful and mutually rewarding career.`,
       signatoryName: "PASLEM JAYA PRAKASH GOUD",
       signatoryTitle: "Managing Director / HR Head",
     };
@@ -181,22 +238,37 @@ export default function Letters() {
     }
     const emp = getEmp(expState.employeeId);
     const branch = getBranch(expState.branchId);
+    const empName = `${emp?.first_name || ""} ${emp?.last_name || ""}`.trim() || "Employee Name";
 
     const letterData = {
       type: "EXPERIENCE LETTER",
       letterNumber: `PNRG/HR/EXP/${new Date().getFullYear()}/${emp?.user_id || 102}`,
-      employeeName: `${emp?.first_name || ""} ${emp?.last_name || ""}`.trim() || "Employee Name",
+      employeeName: empName,
       employeeCode: emp?.employee_code || "EMP-102",
       branchName: branch?.branch_name || "Head Office",
       date: new Date().toISOString().split("T")[0],
-      subject: "Experience Certificate & Employment Verification",
-      body: `This is to certify that ${emp?.first_name} ${emp?.last_name} (Employee Code: ${
-        emp?.employee_code
-      }) was employed with PNRG Finance from ${expState.startDate} to ${
-        expState.endDate
-      }. During their tenure as ${emp?.role_name || "Staff Officer"} at ${
-        branch?.branch_name
-      }, we found them to be hard-working, sincere, and dedicated. We wish them success in all future endeavors.`,
+      subject: "Experience Certificate & Service Verification",
+      body: `TO WHOM IT MAY CONCERN
+
+This is to certify that ${empName} (Employee Code: ${
+        emp?.employee_code || "STAFF-102"
+      }) was associated with PNRG Finance Microfinance ERP Solutions Ltd. as a full-time employee from ${
+        expState.startDate
+      } to ${expState.endDate}.
+
+During their service tenure at our ${
+        branch?.branch_name || "Head Office"
+      } branch, ${empName} held the designation of ${
+        emp?.role_name || "Staff Officer"
+      }. In this capacity, they were actively involved in managing microfinance operations, branch administrative functions, field credit audits, customer relations, and team coordination.
+
+1. PROFESSIONAL CONDUCT & SKILLS:
+During their tenure, we found them to be sincere, hard-working, and result-oriented. They consistently exhibited strong leadership skills, technical competence, and high enthusiasm toward achieving organizational objectives.
+
+2. COMPLIANCE & INTEGRITY:
+They maintained strict compliance with our corporate governance guidelines, ethical financial practices, and customer data privacy mandates throughout their service period.
+
+We express our sincere appreciation for their valuable services and contributions to PNRG Finance and wish them continued success and prosperity in all their future professional endeavors.`,
       signatoryName: "PASLEM JAYA PRAKASH GOUD",
       signatoryTitle: "Head of Human Resources",
     };
@@ -223,16 +295,36 @@ export default function Letters() {
     }
     const emp = getEmp(relState.employeeId);
     const branch = getBranch(relState.branchId);
+    const empName = `${emp?.first_name || ""} ${emp?.last_name || ""}`.trim() || "Employee Name";
 
     const letterData = {
       type: "RELIEVING LETTER",
       letterNumber: `PNRG/HR/REL/${new Date().getFullYear()}/${emp?.user_id || 103}`,
-      employeeName: `${emp?.first_name || ""} ${emp?.last_name || ""}`.trim() || "Employee Name",
+      employeeName: empName,
       employeeCode: emp?.employee_code || "EMP-103",
       branchName: branch?.branch_name || "Head Office",
       date: new Date().toISOString().split("T")[0],
-      subject: "Relieving Letter & Discharge Certificate",
-      body: `With reference to your resignation dated ${relState.resignationDate}, we hereby accept your resignation and confirm that your last day of employment with PNRG Finance is ${relState.lastDay}. You have been relieved of all official responsibilities and duties. All company assets and liabilities have been settled in full.`,
+      subject: "Relieving Order & Official Service Discharge Certificate",
+      body: `Dear ${empName},
+
+With reference to your formal resignation letter dated ${
+        relState.resignationDate
+      }, we hereby convey that Management has accepted your resignation from the services of PNRG Finance Microfinance ERP Solutions Ltd. (${
+        branch?.branch_name || "Head Office"
+      } Branch), where you held the position of ${emp?.role_name || "Staff Officer"}.
+
+1. OFFICIAL RELIEVING:
+You are formally relieved of all employment obligations, duties, and responsibilities with PNRG Finance effective from the close of business hours on ${
+        relState.lastDay
+      }.
+
+2. CLEARANCE & SETTLEMENT:
+You have completed the departmental handover process and surrendered all company assets, hardware, identification badges, credentials, and records. Your Full & Final (F&F) accounts settlement, including earned salary and statutory entitlements, has been completed.
+
+3. POST-EMPLOYMENT CONFIDENTIALITY:
+Please note that all non-disclosure obligations and confidentiality clauses concerning proprietary microfinance software, borrower databases, and organizational operational strategies remain in full force post-employment.
+
+We thank you for your service and wish you all the best in your future career undertakings.`,
       signatoryName: "PASLEM JAYA PRAKASH GOUD",
       signatoryTitle: "Head of Operations",
     };
@@ -259,20 +351,38 @@ export default function Letters() {
     }
     const emp = getEmp(confState.employeeId);
     const branch = getBranch(confState.branchId);
+    const empName = `${emp?.first_name || ""} ${emp?.last_name || ""}`.trim() || "Employee Name";
 
     const letterData = {
       type: "CONFIRMATION LETTER",
       letterNumber: `PNRG/HR/CONF/${new Date().getFullYear()}/${emp?.user_id || 104}`,
-      employeeName: `${emp?.first_name || ""} ${emp?.last_name || ""}`.trim() || "Employee Name",
+      employeeName: empName,
       employeeCode: emp?.employee_code || "EMP-104",
       branchName: branch?.branch_name || "Head Office",
       date: new Date().toISOString().split("T")[0],
-      subject: "Confirmation of Employment",
-      body: `We are pleased to inform you that upon successful completion of your probation period from ${
+      subject: "Letter of Service Confirmation",
+      body: `Dear ${empName},
+
+Following a thorough evaluation of your performance during your probation period from ${
         confState.probationStart
-      } to ${confState.probationEnd}, your services with PNRG Finance Microfinance ERP stand confirmed with effect from ${
+      } to ${
         confState.probationEnd
-      } under the designation of ${emp?.role_name || "Permanent Staff"}.`,
+      }, we take immense pleasure in informing you that your employment with PNRG Finance Microfinance ERP Solutions Ltd. stands CONFIRMED with effect from ${
+        confState.probationEnd
+      }.
+
+1. CONFIRMED DESIGNATION:
+You are confirmed as a permanent full-time employee in the designation of ${
+        emp?.role_name || "Permanent Staff Officer"
+      } assigned to our ${branch?.branch_name || "Head Office"} branch.
+
+2. SERVICE TERMS & ENTITLEMENTS:
+All terms and conditions detailed in your original Offer of Employment shall remain in effect. As a confirmed employee, you are entitled to standard corporate leave policies, health insurance coverage, performance bonuses, and statutory benefits per company guidelines.
+
+3. COMMITMENT & EXPECTATIONS:
+We trust that you will continue to discharge your duties with the same commitment, professionalism, and dedication that you demonstrated during your probation period, helping PNRG Finance achieve its organizational objectives.
+
+We congratulate you on your confirmation and look forward to a long and successful association with us.`,
       signatoryName: "PASLEM JAYA PRAKASH GOUD",
       signatoryTitle: "Managing Director",
     };
@@ -291,6 +401,7 @@ export default function Letters() {
       signatoryTitle: letterData.signatoryTitle,
     });
   };
+
 
   const handleGenerateCustom = () => {
     if (!customState.recipientName || !customState.subject || !customState.body) {
@@ -381,14 +492,20 @@ export default function Letters() {
                     size="small"
                     label="BRANCH *"
                     value={offerState.branchId}
-                    onChange={(e) => setOfferState({ ...offerState, branchId: e.target.value })}
+                    onChange={(e) => setOfferState({ ...offerState, branchId: e.target.value, employeeId: "" })}
                     sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
                   >
-                    {branches.map((b, idx) => (
-                      <MenuItem key={b.branch_id || b.branchId || `off-br-${idx}`} value={b.branch_id || b.branchId}>
-                        {b.branch_name || b.branchName}
+                    {branches.length === 0 ? (
+                      <MenuItem disabled value="">
+                        No branches available
                       </MenuItem>
-                    ))}
+                    ) : (
+                      branches.map((b, idx) => (
+                        <MenuItem key={b.branch_id || b.branchId || `off-br-${idx}`} value={b.branch_id || b.branchId}>
+                          {b.branch_name || b.branchName}
+                        </MenuItem>
+                      ))
+                    )}
                   </TextField>
 
                   <TextField
@@ -400,13 +517,21 @@ export default function Letters() {
                     onChange={(e) => setOfferState({ ...offerState, employeeId: e.target.value })}
                     sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
                   >
-                    {employees
-                      .filter((e) => !offerState.branchId || Number(e.branch_id || e.branchId) === Number(offerState.branchId))
-                      .map((emp, idx) => (
+                    {(() => {
+                      const list = getFilteredEmployees(offerState.branchId);
+                      if (list.length === 0) {
+                        return (
+                          <MenuItem disabled value="">
+                            No staff employees found
+                          </MenuItem>
+                        );
+                      }
+                      return list.map((emp, idx) => (
                         <MenuItem key={emp.user_id || emp.userId || `off-emp-${idx}`} value={emp.user_id || emp.userId}>
-                          {emp.first_name || emp.firstName} {emp.last_name || emp.lastName} ({emp.employee_code || emp.employeeCode || "STAFF"})
+                          {emp.first_name || emp.firstName} {emp.last_name || emp.lastName} ({emp.employee_code || emp.employeeCode || emp.role_name || "STAFF"})
                         </MenuItem>
-                      ))}
+                      ));
+                    })()}
                   </TextField>
 
                   <TextField
@@ -476,14 +601,20 @@ export default function Letters() {
                     size="small"
                     label="BRANCH *"
                     value={expState.branchId}
-                    onChange={(e) => setExpState({ ...expState, branchId: e.target.value })}
+                    onChange={(e) => setExpState({ ...expState, branchId: e.target.value, employeeId: "" })}
                     sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
                   >
-                    {branches.map((b, idx) => (
-                      <MenuItem key={b.branch_id || b.branchId || `exp-br-${idx}`} value={b.branch_id || b.branchId}>
-                        {b.branch_name || b.branchName}
+                    {branches.length === 0 ? (
+                      <MenuItem disabled value="">
+                        No branches available
                       </MenuItem>
-                    ))}
+                    ) : (
+                      branches.map((b, idx) => (
+                        <MenuItem key={b.branch_id || b.branchId || `exp-br-${idx}`} value={b.branch_id || b.branchId}>
+                          {b.branch_name || b.branchName}
+                        </MenuItem>
+                      ))
+                    )}
                   </TextField>
 
                   <TextField
@@ -495,13 +626,21 @@ export default function Letters() {
                     onChange={(e) => setExpState({ ...expState, employeeId: e.target.value })}
                     sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
                   >
-                    {employees
-                      .filter((e) => !expState.branchId || Number(e.branch_id || e.branchId) === Number(expState.branchId))
-                      .map((emp, idx) => (
+                    {(() => {
+                      const list = getFilteredEmployees(expState.branchId);
+                      if (list.length === 0) {
+                        return (
+                          <MenuItem disabled value="">
+                            No staff employees found
+                          </MenuItem>
+                        );
+                      }
+                      return list.map((emp, idx) => (
                         <MenuItem key={emp.user_id || emp.userId || `exp-emp-${idx}`} value={emp.user_id || emp.userId}>
-                          {emp.first_name || emp.firstName} {emp.last_name || emp.lastName} ({emp.employee_code || emp.employeeCode || "STAFF"})
+                          {emp.first_name || emp.firstName} {emp.last_name || emp.lastName} ({emp.employee_code || emp.employeeCode || emp.role_name || "STAFF"})
                         </MenuItem>
-                      ))}
+                      ));
+                    })()}
                   </TextField>
 
                   <TextField
@@ -575,14 +714,20 @@ export default function Letters() {
                     size="small"
                     label="BRANCH *"
                     value={relState.branchId}
-                    onChange={(e) => setRelState({ ...relState, branchId: e.target.value })}
+                    onChange={(e) => setRelState({ ...relState, branchId: e.target.value, employeeId: "" })}
                     sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
                   >
-                    {branches.map((b, idx) => (
-                      <MenuItem key={b.branch_id || b.branchId || `rel-br-${idx}`} value={b.branch_id || b.branchId}>
-                        {b.branch_name || b.branchName}
+                    {branches.length === 0 ? (
+                      <MenuItem disabled value="">
+                        No branches available
                       </MenuItem>
-                    ))}
+                    ) : (
+                      branches.map((b, idx) => (
+                        <MenuItem key={b.branch_id || b.branchId || `rel-br-${idx}`} value={b.branch_id || b.branchId}>
+                          {b.branch_name || b.branchName}
+                        </MenuItem>
+                      ))
+                    )}
                   </TextField>
 
                   <TextField
@@ -594,13 +739,21 @@ export default function Letters() {
                     onChange={(e) => setRelState({ ...relState, employeeId: e.target.value })}
                     sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
                   >
-                    {employees
-                      .filter((e) => !relState.branchId || Number(e.branch_id || e.branchId) === Number(relState.branchId))
-                      .map((emp, idx) => (
+                    {(() => {
+                      const list = getFilteredEmployees(relState.branchId);
+                      if (list.length === 0) {
+                        return (
+                          <MenuItem disabled value="">
+                            No staff employees found
+                          </MenuItem>
+                        );
+                      }
+                      return list.map((emp, idx) => (
                         <MenuItem key={emp.user_id || emp.userId || `rel-emp-${idx}`} value={emp.user_id || emp.userId}>
-                          {emp.first_name || emp.firstName} {emp.last_name || emp.lastName} ({emp.employee_code || emp.employeeCode || "STAFF"})
+                          {emp.first_name || emp.firstName} {emp.last_name || emp.lastName} ({emp.employee_code || emp.employeeCode || emp.role_name || "STAFF"})
                         </MenuItem>
-                      ))}
+                      ));
+                    })()}
                   </TextField>
 
                   <TextField
@@ -674,14 +827,20 @@ export default function Letters() {
                     size="small"
                     label="BRANCH *"
                     value={confState.branchId}
-                    onChange={(e) => setConfState({ ...confState, branchId: e.target.value })}
+                    onChange={(e) => setConfState({ ...confState, branchId: e.target.value, employeeId: "" })}
                     sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
                   >
-                    {branches.map((b, idx) => (
-                      <MenuItem key={b.branch_id || b.branchId || `conf-br-${idx}`} value={b.branch_id || b.branchId}>
-                        {b.branch_name || b.branchName}
+                    {branches.length === 0 ? (
+                      <MenuItem disabled value="">
+                        No branches available
                       </MenuItem>
-                    ))}
+                    ) : (
+                      branches.map((b, idx) => (
+                        <MenuItem key={b.branch_id || b.branchId || `conf-br-${idx}`} value={b.branch_id || b.branchId}>
+                          {b.branch_name || b.branchName}
+                        </MenuItem>
+                      ))
+                    )}
                   </TextField>
 
                   <TextField
@@ -693,14 +852,23 @@ export default function Letters() {
                     onChange={(e) => setConfState({ ...confState, employeeId: e.target.value })}
                     sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
                   >
-                    {employees
-                      .filter((e) => !confState.branchId || Number(e.branch_id || e.branchId) === Number(confState.branchId))
-                      .map((emp, idx) => (
+                    {(() => {
+                      const list = getFilteredEmployees(confState.branchId);
+                      if (list.length === 0) {
+                        return (
+                          <MenuItem disabled value="">
+                            No staff employees found
+                          </MenuItem>
+                        );
+                      }
+                      return list.map((emp, idx) => (
                         <MenuItem key={emp.user_id || emp.userId || `conf-emp-${idx}`} value={emp.user_id || emp.userId}>
-                          {emp.first_name || emp.firstName} {emp.last_name || emp.lastName} ({emp.employee_code || emp.employeeCode || "STAFF"})
+                          {emp.first_name || emp.firstName} {emp.last_name || emp.lastName} ({emp.employee_code || emp.employeeCode || emp.role_name || "STAFF"})
                         </MenuItem>
-                      ))}
+                      ));
+                    })()}
                   </TextField>
+
 
                   <TextField
                     type="date"
@@ -910,6 +1078,62 @@ export default function Letters() {
       )}
 
       {/* OFFICIAL LETTERHEAD PREVIEW & PRINT DIALOG */}
+      <style>{`
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 12mm 15mm 12mm 15mm;
+          }
+          body {
+            background: #ffffff !important;
+            color: #000000 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          body * {
+            visibility: hidden !important;
+          }
+          #printable-letterhead,
+          #printable-letterhead * {
+            visibility: visible !important;
+          }
+          #printable-letterhead {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            background: #ffffff !important;
+          }
+          .MuiDialog-root,
+          .MuiDialog-container,
+          .MuiDialog-paper,
+          .MuiDialogContent-root {
+            position: static !important;
+            display: block !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow: visible !important;
+            box-shadow: none !important;
+            border: none !important;
+            background: transparent !important;
+            max-width: 100% !important;
+            width: 100% !important;
+          }
+          .MuiDialogTitle-root,
+          .MuiDialogActions-root,
+          .MuiBackdrop-root,
+          .no-print {
+            display: none !important;
+          }
+        }
+      `}</style>
+
       <Dialog
         open={previewOpen}
         onClose={() => setPreviewOpen(false)}
@@ -918,7 +1142,7 @@ export default function Letters() {
         disableRestoreFocus
         PaperProps={{ sx: { borderRadius: 4, p: 2 } }}
       >
-        <DialogTitle component="div" sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <DialogTitle component="div" className="no-print" sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <Typography variant="h6" component="span" fontWeight={700}>
             Letterhead Preview & Print View
           </Typography>
@@ -933,12 +1157,12 @@ export default function Letters() {
               elevation={0}
               id="printable-letterhead"
               sx={{
-                p: 5,
+                p: { xs: 3, md: 4 },
                 border: "1px solid #CBD5E1",
                 borderRadius: 2,
                 bgcolor: "#FFFFFF",
                 color: "#0F172A",
-                fontFamily: "serif",
+                fontFamily: "'Georgia', 'Times New Roman', serif",
               }}
             >
               {/* LETTERHEAD HEADER */}
@@ -946,7 +1170,7 @@ export default function Letters() {
                 direction="row"
                 justifyContent="space-between"
                 alignItems="center"
-                sx={{ pb: 3, borderBottom: "3px double #0F766E", mb: 4 }}
+                sx={{ pb: 2.5, borderBottom: "3px double #0F766E", mb: 3 }}
               >
                 <Box>
                   <Typography variant="h4" fontWeight={900} sx={{ color: "#0F766E", letterSpacing: 1 }}>
@@ -973,8 +1197,8 @@ export default function Letters() {
               </Stack>
 
               {/* RECIPIENT */}
-              <Box sx={{ mb: 4 }}>
-                <Typography variant="subtitle2" fontWeight={700}>
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" fontWeight={700} color="#475569">
                   TO WHOM IT MAY CONCERN / RECIPIENT:
                 </Typography>
                 <Typography variant="h6" fontWeight={800} sx={{ color: "#0F172A", mt: 0.5 }}>
@@ -988,7 +1212,7 @@ export default function Letters() {
               </Box>
 
               {/* SUBJECT */}
-              <Typography variant="subtitle1" fontWeight={800} sx={{ mb: 3, textDecoration: "underline" }}>
+              <Typography variant="subtitle1" fontWeight={800} sx={{ mb: 2.5, textDecoration: "underline", color: "#0F172A" }}>
                 SUBJECT: {currentLetterData.subject}
               </Typography>
 
@@ -998,8 +1222,8 @@ export default function Letters() {
                 sx={{
                   lineHeight: 1.8,
                   whiteSpace: "pre-wrap",
-                  fontSize: "1.05rem",
-                  mb: 6,
+                  fontSize: "1rem",
+                  mb: 4,
                   textAlign: "justify",
                 }}
               >
@@ -1007,12 +1231,17 @@ export default function Letters() {
               </Typography>
 
               {/* SIGNATURE BLOCK */}
-              <Stack direction="row" justifyContent="space-between" alignItems="flex-end" sx={{ mt: 8 }}>
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="flex-end"
+                sx={{ mt: 5, pageBreakInside: "avoid", breakInside: "avoid" }}
+              >
                 <Box>
                   <Typography variant="caption" color="textSecondary" display="block">
                     ISSUED BY & ON BEHALF OF:
                   </Typography>
-                  <Typography variant="subtitle1" fontWeight={800} sx={{ mt: 4, color: "#0F172A" }}>
+                  <Typography variant="subtitle1" fontWeight={800} sx={{ mt: 3, color: "#0F172A" }}>
                     {currentLetterData.signatoryName}
                   </Typography>
                   <Typography variant="body2" color="textSecondary">
@@ -1033,7 +1262,7 @@ export default function Letters() {
           )}
         </DialogContent>
 
-        <DialogActions sx={{ p: 2, justifyContent: "space-between" }}>
+        <DialogActions className="no-print" sx={{ p: 2, justifyContent: "space-between" }}>
           <Button variant="outlined" onClick={() => setPreviewOpen(false)}>
             Close
           </Button>
@@ -1048,6 +1277,7 @@ export default function Letters() {
           </Button>
         </DialogActions>
       </Dialog>
+
     </SectionPage>
   );
 }

@@ -35,7 +35,7 @@ import LoanReports from "../lib/pages/reports/LoanReports";
 import Roles from "../lib/pages/roles/Roles";
 import UnifiedSettings from "../lib/pages/settings/UnifiedSettings";
 import Tasks from "../lib/pages/tasks/Tasks";
-import UsersList from "../lib/pages/users/UsersList";
+import UsersList from "../pages/users/UsersList";
 import AuditLogs from "../pages/audit/AuditLogs";
 import Forbidden from "../pages/Forbidden";
 import Attendance from "../pages/attendance/Attendance";

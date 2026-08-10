@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Alert,
@@ -182,17 +183,22 @@ export default function UsersList() {
   const branches = branchesQuery.data?.branches || [];
   const roles = Array.isArray(rolesQuery.data?.roles) ? rolesQuery.data.roles : [];
 
+  const location = useLocation();
+
   const selectableRoles = isSuperAdmin
-    ? roles.filter((role) => (role.role_name || role.roleName) === "ADMIN")
+    ? roles.filter((role) => {
+        const name = (role.role_name || role.roleName || "").toUpperCase();
+        return name === "ADMIN" || name.includes("ADMIN");
+      })
     : isAdmin
     ? roles.filter((role) =>
         ["BRANCH_MANAGER", "FIELD_OFFICER", "ACCOUNTANT"].includes(
-          role.role_name || role.roleName,
+          (role.role_name || role.roleName || "").toUpperCase(),
         ),
       )
     : roles.filter((role) =>
         ["FIELD_OFFICER", "ACCOUNTANT"].includes(
-          role.role_name || role.roleName,
+          (role.role_name || role.roleName || "").toUpperCase(),
         ),
       );
 
@@ -200,9 +206,9 @@ export default function UsersList() {
 
   // Handlers
   const openCreate = () => {
-    const adminRole = selectableRoles.find(
-      (role) => (role.role_name || role.roleName) === "ADMIN",
-    );
+    const adminRole = roles.find(
+      (role) => (role.role_name || role.roleName || "").toUpperCase() === "ADMIN",
+    ) || selectableRoles[0];
     setForm({
       ...emptyForm,
       roleId: isSuperAdmin
@@ -211,6 +217,26 @@ export default function UsersList() {
     });
     setDialog({ mode: "create" });
   };
+
+  useEffect(() => {
+    if (location.state?.openCreate || new URLSearchParams(location.search).get("action") === "create") {
+      openCreate();
+    }
+  }, [location.state, location.search]);
+
+  useEffect(() => {
+    if (dialog?.mode === "create" && isSuperAdmin && !form.roleId && roles.length > 0) {
+      const adminRole = roles.find(
+        (r) => (r.role_name || r.roleName || "").toUpperCase() === "ADMIN",
+      ) || roles.find((r) => (r.role_name || r.roleName || "").toUpperCase().includes("ADMIN"));
+      if (adminRole) {
+        setForm((prev) => ({
+          ...prev,
+          roleId: String(adminRole.role_id || adminRole.roleId),
+        }));
+      }
+    }
+  }, [dialog, isSuperAdmin, form.roleId, roles]);
 
   const openView = async (user) => {
     try {

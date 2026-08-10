@@ -114,6 +114,7 @@ function KycVerificationSection() {
   const queryClient = useQueryClient();
 
   const status = selectedStatus === "ALL" ? undefined : selectedStatus;
+  const tab = selectedStatus.toLowerCase();
 
   const queueQuery = useQuery({
     queryKey: ["kycQueue", status, search, branchId],

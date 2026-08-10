@@ -116,6 +116,18 @@ export default function Attendance() {
 
   const safeAttendanceList = Array.isArray(attendanceList) ? attendanceList : [];
 
+  const safeBranches = Array.isArray(branches)
+    ? branches
+    : Array.isArray(branches?.branches)
+    ? branches.branches
+    : [];
+
+  const safeStaffUsers = Array.isArray(staffUsers)
+    ? staffUsers
+    : Array.isArray(staffUsers?.users)
+    ? staffUsers.users
+    : [];
+
   // Mutation for External Device API Push
   const markMutation = useMutation({
     mutationFn: (payload) => attendanceService.markAttendance(payload),
@@ -393,7 +405,7 @@ export default function Attendance() {
                       sx={{ minWidth: 160 }}
                     >
                       <MenuItem value="">All Branches</MenuItem>
-                      {branches.map((b, idx) => (
+                      {safeBranches.map((b, idx) => (
                         <MenuItem key={b.branch_id || b.branchId || `br-${idx}`} value={b.branch_id || b.branchId}>
                           {b.branch_name || b.branchName}
                         </MenuItem>
@@ -665,7 +677,7 @@ export default function Attendance() {
               value={simState.userId}
               onChange={(e) => setSimState({ ...simState, userId: e.target.value })}
             >
-              {staffUsers.map((emp, idx) => (
+              {safeStaffUsers.map((emp, idx) => (
                 <MenuItem key={emp.user_id || emp.userId || `staff-${idx}`} value={emp.user_id || emp.userId}>
                   {emp.first_name || emp.firstName} {emp.last_name || emp.lastName} ({emp.employee_code || emp.employeeCode || "STAFF"})
                 </MenuItem>

@@ -9,7 +9,7 @@ export const getSalaries = async (req, res, next) => {
         u.first_name,
         u.last_name,
         u.email,
-        u.phone,
+        u.mobile_number AS phone,
         r.role_name AS role,
         b.branch_name AS branch,
         s.basic_salary,
@@ -31,7 +31,7 @@ export const getSalaries = async (req, res, next) => {
       LEFT JOIN payroll_logs p ON u.user_id = p.user_id AND p.payroll_id = (
         SELECT MAX(payroll_id) FROM payroll_logs WHERE user_id = u.user_id
       )
-      WHERE r.role_name != 'CUSTOMER'
+      WHERE COALESCE(r.role_name, '') != 'CUSTOMER'
       ORDER BY u.user_id ASC
     `);
 

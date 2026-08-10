@@ -14,6 +14,8 @@ import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import FingerprintIcon from "@mui/icons-material/Fingerprint";
 import DescriptionIcon from "@mui/icons-material/Description";
+import ShieldIcon from "@mui/icons-material/Shield";
+import LockIcon from "@mui/icons-material/Lock";
 
 export const ROLE_ACCESS = {
   SUPER_ADMIN: [

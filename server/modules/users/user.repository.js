@@ -54,7 +54,7 @@ class UserRepository {
             `
             SELECT user_id
             FROM users
-            WHERE phone = ?
+            WHERE mobile_number = ? and status = "ACTIVE"
             LIMIT 1
             `,
             [phone]
@@ -96,6 +96,7 @@ class UserRepository {
     }
 
     async createUser(connection, user) {
+        const defaultHash = user.passwordHash || user.password_hash || "$2b$12$Defau1tTemporaryPasswordHashString1234";
         const [result] = await connection.execute(
             `
             INSERT INTO users
@@ -106,14 +107,15 @@ class UserRepository {
                 first_name,
                 last_name,
                 email,
+                password_hash,
                 mobile_number,
                 profile_image,
                 created_by,
-                must_change_password
+                is_first_login
             )
             VALUES
             (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
             )
             `,
             [
@@ -123,10 +125,11 @@ class UserRepository {
                 user.firstName,
                 user.lastName,
                 user.email,
+                defaultHash,
                 user.mobileNumber,
                 user.profileImage,
                 user.createdBy,
-                true
+                1
             ]
         );
 
@@ -138,8 +141,8 @@ class UserRepository {
             page,
             limit,
             search,
-             roleId,
-             roleName,
+            roleId,
+            roleName,
             branchId,
             status,
             sortBy,
@@ -253,10 +256,10 @@ class UserRepository {
 
         const {
 
-             search,
-             roleId,
-             roleName,
-             branchId,
+            search,
+            roleId,
+            roleName,
+            branchId,
             status
 
         } = filters;
@@ -394,7 +397,7 @@ class UserRepository {
             SELECT 
                 user_id 
             FROM users
-            WHERE phone = ?
+            WHERE mobile_number = ?
             AND deleted_at IS NULL
             LIMIT 1
             `,
@@ -465,7 +468,7 @@ class UserRepository {
 
             password_hash = ?,
 
-            must_change_password = FALSE,
+            is_first_login = 0,
 
             updated_at = CURRENT_TIMESTAMP
 
@@ -521,36 +524,22 @@ class UserRepository {
         userId,
         deletedBy
     ) {
-
         await connection.execute(
             `
         UPDATE users
-
         SET
-
             status = 'INACTIVE',
-
             deleted_at = CURRENT_TIMESTAMP,
-
-            deleted_by = ?,
-
             updated_at = CURRENT_TIMESTAMP
-
         WHERE
-
             user_id = ?
-
         AND
-
             deleted_at IS NULL
         `,
             [
-                deletedBy,
                 userId
             ]
         );
-
-
     }
 
     async updateProfileImage(
@@ -598,8 +587,8 @@ class UserRepository {
 
     }
 
-    async getAllAdmins(userId){
-        
+    async getAllAdmins(userId) {
+
     }
 
 }
