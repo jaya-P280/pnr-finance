@@ -156,7 +156,7 @@ export default function Income() {
     >
       {/* SUMMARY STATS */}
       <Grid container spacing={2.5} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid xs={12} sm={6} md={4}>
           <Card sx={{ borderRadius: 3, borderLeft: "4px solid #10B981", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
             <CardContent sx={{ p: 2.5 }}>
               <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
@@ -174,7 +174,7 @@ export default function Income() {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid xs={12} sm={6} md={4}>
           <Card sx={{ borderRadius: 3, borderLeft: "4px solid #0F766E", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
             <CardContent sx={{ p: 2.5 }}>
               <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
@@ -192,7 +192,7 @@ export default function Income() {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid xs={12} sm={6} md={4}>
           <Card sx={{ borderRadius: 3, borderLeft: "4px solid #3B82F6", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
             <CardContent sx={{ p: 2.5 }}>
               <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
@@ -214,7 +214,7 @@ export default function Income() {
       {/* FILTER BAR */}
       <Paper sx={{ p: 2, mb: 3, borderRadius: 3 }}>
         <Grid container spacing={2}  sx={{ alignItems: "center" }}>
-          <Grid item xs={12} sm={6} md={6}>
+          <Grid xs={12} sm={6} md={6}>
             <TextField
               fullWidth
               size="small"
@@ -228,7 +228,7 @@ export default function Income() {
               }}
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={6}>
+          <Grid xs={12} sm={6} md={6}>
             <FormControl fullWidth size="small">
               <InputLabel>Category</InputLabel>
               <Select
@@ -258,54 +258,47 @@ export default function Income() {
           <Table>
             <TableHead sx={{ backgroundColor: "#F8FAFC" }}>
               <TableRow>
-                <TableCell sx={{ fontWeight: 700 }}>INCOME NO</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>CATEGORY</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>RECEIVED FROM</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>PAYMENT MODE</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>DATE</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>DESCRIPTION</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700 }}>AMOUNT</TableCell>
-                <TableCell align="center" sx={{ fontWeight: 700 }}>ACTION</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Income No</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Category</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Received From</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Payment Method</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Date</TableCell>
+                <TableCell sx={{ fontWeight: 700, textAlign: "right" }}>Amount</TableCell>
+                <TableCell sx={{ fontWeight: 700, textAlign: "center" }}>Action</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {incomeList.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 6, color: "#64748B" }}>
-                    No direct income records found.
+                  <TableCell colSpan={7} align="center" sx={{ py: 6, color: "text.secondary" }}>
+                    No income records found in real database.
                   </TableCell>
                 </TableRow>
               ) : (
-                incomeList.map((inc) => (
-                  <TableRow key={inc.income_id} hover>
-                    <TableCell sx={{ fontWeight: 600, color: "#0F766E" }}>
-                      {inc.income_number}
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 500 }}>
-                      <Chip label={inc.category} size="small" sx={{ backgroundColor: "#ECFDF5", color: "#065F46", fontWeight: 600 }} />
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 500 }}>{inc.received_from || "-"}</TableCell>
+                incomeList.map((row) => (
+                  <TableRow key={row.income_id} hover>
+                    <TableCell sx={{ fontWeight: 600, color: "#0F766E" }}>{row.income_number}</TableCell>
                     <TableCell>
-                      <Chip label={inc.payment_method} size="small" variant="outlined" />
+                      <Chip label={row.category} size="small" sx={{ backgroundColor: "#E0F2FE", color: "#0369A1" }} />
                     </TableCell>
+                    <TableCell>{row.received_from || "-"}</TableCell>
                     <TableCell>
-                      {new Date(inc.income_date).toLocaleDateString("en-IN", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      })}
+                      <Chip
+                        label={row.payment_method}
+                        size="small"
+                        variant="outlined"
+                        color={row.payment_method === "CASH" ? "primary" : "secondary"}
+                      />
                     </TableCell>
-                    <TableCell sx={{ color: "#64748B", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {inc.description || "-"}
-                    </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, color: "#059669" }}>
-                      +{formatCurrency(inc.amount)}
+                    <TableCell>{new Date(row.income_date).toLocaleDateString("en-IN")}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700, color: "#10B981" }}>
+                      {formatCurrency(row.amount)}
                     </TableCell>
                     <TableCell align="center">
                       <IconButton
                         size="small"
                         color="error"
-                        onClick={() => deleteMutation.mutate(inc.income_id)}
+                        onClick={() => deleteMutation.mutate(row.income_id)}
                       >
                         <DeleteIcon fontSize="small" />
                       </IconButton>
@@ -320,111 +313,94 @@ export default function Income() {
 
       {/* RECORD INCOME DIALOG */}
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700 }}>Record Direct Income Entry</DialogTitle>
         <form onSubmit={handleSubmit}>
-          <DialogTitle sx={{ fontWeight: 700, borderBottom: "1px solid #E2E8F0" }}>
-            Record New Direct Income
-          </DialogTitle>
-          <DialogContent sx={{ pt: 3 }}>
-            <Stack spacing={2.5} sx={{ mt: 1 }}>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth size="small" required>
-                    <InputLabel>Category</InputLabel>
-                    <Select
-                      value={category}
-                      label="Category"
-                      onChange={(e) => setCategory(e.target.value)}
-                    >
-                      {INCOME_CATEGORIES.map((cat) => (
-                        <MenuItem key={cat} value={cat}>
-                          {cat}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    type="number"
-                    label="Amount (₹)"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    required
-                  />
-                </Grid>
-
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Payment Method</InputLabel>
-                    <Select
-                      value={paymentMethod}
-                      label="Payment Method"
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                    >
-                      <MenuItem value="CASH">CASH</MenuItem>
-                      <MenuItem value="BANK_TRANSFER">BANK TRANSFER</MenuItem>
-                      <MenuItem value="CHEQUE">CHEQUE</MenuItem>
-                      <MenuItem value="UPI">UPI</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    type="date"
-                    label="Income Date"
-                    value={incomeDate}
-                    onChange={(e) => setIncomeDate(e.target.value)}
-                    slotProps={{ inputLabel: { shrink: true } }}
-                  />
-                </Grid>
-
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="Received From"
-                    value={receivedFrom}
-                    onChange={(e) => setReceivedFrom(e.target.value)}
-                    placeholder="e.g. Applicant Name / Group"
-                  />
-                </Grid>
-
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="Receipt / Ref No."
-                    value={receiptRef}
-                    onChange={(e) => setReceiptRef(e.target.value)}
-                    placeholder="e.g. REC-5021"
-                  />
-                </Grid>
-
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    multiline
-                    rows={2}
-                    size="small"
-                    label="Description / Remarks"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Notes about this income entry..."
-                  />
-                </Grid>
+          <DialogContent dividers>
+            <Grid container spacing={2}>
+              <Grid xs={12} sm={6}>
+                <FormControl fullWidth size="small" required>
+                  <InputLabel>Category</InputLabel>
+                  <Select value={category} label="Category" onChange={(e) => setCategory(e.target.value)}>
+                    {INCOME_CATEGORIES.map((c) => (
+                      <MenuItem key={c} value={c}>
+                        {c}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
               </Grid>
-            </Stack>
+              <Grid xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  required
+                  type="number"
+                  label="Amount (₹)"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                />
+              </Grid>
+              <Grid xs={12} sm={6}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Payment Method</InputLabel>
+                  <Select
+                    value={paymentMethod}
+                    label="Payment Method"
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  >
+                    <MenuItem value="CASH">CASH</MenuItem>
+                    <MenuItem value="BANK_TRANSFER">BANK TRANSFER / NEFT</MenuItem>
+                    <MenuItem value="UPI">UPI / GPAY</MenuItem>
+                    <MenuItem value="CHEQUE">CHEQUE</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  type="date"
+                  label="Income Date"
+                  value={incomeDate}
+                  onChange={(e) => setIncomeDate(e.target.value)}
+                  slotProps={{ inputLabel: { shrink: true } }}
+                />
+              </Grid>
+              <Grid xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Received From"
+                  placeholder="e.g. Borrower Name / Batch #1"
+                  value={receivedFrom}
+                  onChange={(e) => setReceivedFrom(e.target.value)}
+                />
+              </Grid>
+              <Grid xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Receipt / Ref No"
+                  placeholder="e.g. REC-1002"
+                  value={receiptRef}
+                  onChange={(e) => setReceiptRef(e.target.value)}
+                />
+              </Grid>
+              <Grid xs={12}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  multiline
+                  rows={2}
+                  label="Description / Notes"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </Grid>
+            </Grid>
           </DialogContent>
-          <DialogActions sx={{ p: 2.5, borderTop: "1px solid #E2E8F0" }}>
-            <Button onClick={handleCloseDialog} color="inherit">
-              Cancel
-            </Button>
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={handleCloseDialog}>Cancel</Button>
             <Button
               type="submit"
               variant="contained"

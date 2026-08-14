@@ -52,6 +52,7 @@ import {
 import DashboardCard from "./DashboardCard";
 import dashboardService from "../../services/dashboard.service";
 import userService from "../../services/user.service";
+import customerDocumentService from "../../services/customerDocument.service";
 import useAuth from "../../hooks/useAuth";
 import CustomerDashboard from "../customer-portal/CustomerDashboard";
 
@@ -281,7 +282,7 @@ function SuperAdminDashboard({ user, navigate, stats }) {
 function AdminDashboard({ user, navigate, stats, isLoading }) {
   const kycQuery = useQuery({
     queryKey: ["admin-dashboard-kyc"],
-    queryFn: () => customerDocumentsService.getKycQueue({ limit: 5 }),
+    queryFn: () => customerDocumentService.getKycQueue({ limit: 5 }),
   });
 
   const kycRows = kycQuery.data?.rows || [];

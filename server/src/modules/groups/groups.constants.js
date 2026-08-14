@@ -1,6 +1,6 @@
 export const GROUP = {
   PREFIX: "GRP",
-  PAD_LENGTH: 4,
+  PAD_LENGTH: 6,
 };
 
 export const GROUP_STATUS = {

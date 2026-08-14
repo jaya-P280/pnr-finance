@@ -40,7 +40,7 @@ export default function CashBook() {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["cashbook", fromDate, toDate],
     queryFn: () => financeService.getCashBook({ fromDate, toDate }),
   });
@@ -117,7 +117,7 @@ export default function CashBook() {
     >
       {/* SUMMARY STATS */}
       <Grid container spacing={2.5} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid xs={12} sm={6} md={3}>
           <Card sx={{ borderRadius: 3, borderLeft: "4px solid #10B981", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
             <CardContent sx={{ p: 2.5 }}>
               <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
@@ -135,7 +135,7 @@ export default function CashBook() {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid xs={12} sm={6} md={3}>
           <Card sx={{ borderRadius: 3, borderLeft: "4px solid #EF4444", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
             <CardContent sx={{ p: 2.5 }}>
               <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
@@ -153,7 +153,7 @@ export default function CashBook() {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid xs={12} sm={6} md={3}>
           <Card sx={{ borderRadius: 3, borderLeft: "4px solid #0F766E", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
             <CardContent sx={{ p: 2.5 }}>
               <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
@@ -175,7 +175,7 @@ export default function CashBook() {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid xs={12} sm={6} md={3}>
           <Card sx={{ borderRadius: 3, borderLeft: "4px solid #6366F1", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
             <CardContent sx={{ p: 2.5 }}>
               <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
@@ -197,7 +197,7 @@ export default function CashBook() {
       {/* FILTERS */}
       <Paper sx={{ p: 2, mb: 3, borderRadius: 3 }}>
         <Grid container spacing={2}  sx={{ alignItems: "center" }}>
-          <Grid item xs={12} sm={4} md={4}>
+          <Grid xs={12} sm={4} md={4}>
             <TextField
               fullWidth
               size="small"
@@ -211,7 +211,7 @@ export default function CashBook() {
               }}
             />
           </Grid>
-          <Grid item xs={12} sm={3} md={2.5}>
+          <Grid xs={12} sm={3} md={2.5}>
             <FormControl fullWidth size="small">
               <InputLabel>Transaction Type</InputLabel>
               <Select
@@ -225,7 +225,7 @@ export default function CashBook() {
               </Select>
             </FormControl>
           </Grid>
-          <Grid item xs={12} sm={2.5} md={2.5}>
+          <Grid xs={12} sm={2.5} md={2.5}>
             <TextField
               fullWidth
               size="small"
@@ -236,7 +236,7 @@ export default function CashBook() {
               slotProps={{ inputLabel: { shrink: true } }}
             />
           </Grid>
-          <Grid item xs={12} sm={2.5} md={2.5}>
+          <Grid xs={12} sm={2.5} md={2.5}>
             <TextField
               fullWidth
               size="small"
@@ -250,7 +250,7 @@ export default function CashBook() {
         </Grid>
       </Paper>
 
-      {/* CASH BOOK TABLE */}
+      {/* CASH BOOK LEDGER TABLE */}
       {isLoading ? (
         <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
           <CircularProgress sx={{ color: "#0F766E" }} />
@@ -260,20 +260,19 @@ export default function CashBook() {
           <Table>
             <TableHead sx={{ backgroundColor: "#F8FAFC" }}>
               <TableRow>
-                <TableCell sx={{ fontWeight: 700 }}>DATE</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>TYPE</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>REF NUMBER</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>CATEGORY</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>PAYMENT MODE</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>DESCRIPTION</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700 }}>AMOUNT</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Type</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Category</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Ref Number</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Payment Method</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Date</TableCell>
+                <TableCell sx={{ fontWeight: 700, textAlign: "right" }}>Amount</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredEntries.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 6, color: "#64748B" }}>
-                    No cash book transactions found for the selected criteria.
+                  <TableCell colSpan={6} align="center" sx={{ py: 6, color: "text.secondary" }}>
+                    No ledger transactions found in real database.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -281,42 +280,27 @@ export default function CashBook() {
                   const isInflow = row.entry_type === "INFLOW";
                   return (
                     <TableRow key={idx} hover>
-                      <TableCell sx={{ fontSize: "0.875rem", fontWeight: 500 }}>
-                        {new Date(row.entry_date).toLocaleDateString("en-IN", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </TableCell>
                       <TableCell>
                         <Chip
-                          label={isInflow ? "INFLOW" : "OUTFLOW"}
+                          label={row.entry_type}
                           size="small"
                           sx={{
-                            fontWeight: 700,
-                            fontSize: "0.75rem",
                             backgroundColor: isInflow ? "#ECFDF5" : "#FEF2F2",
-                            color: isInflow ? "#059669" : "#DC2626",
-                            border: `1px solid ${isInflow ? "#A7F3D0" : "#FECACA"}`,
+                            color: isInflow ? "#047857" : "#B91C1C",
+                            fontWeight: 700,
                           }}
                         />
                       </TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: "#0F766E" }}>
-                        {row.ref_number || "N/A"}
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 500 }}>{row.category}</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>{row.category}</TableCell>
+                      <TableCell>{row.ref_number || "-"}</TableCell>
                       <TableCell>
-                        <Chip
-                          label={row.payment_method || "CASH"}
-                          size="small"
-                          variant="outlined"
-                          sx={{ fontSize: "0.7rem" }}
-                        />
+                        <Chip label={row.payment_method || "CASH"} size="small" variant="outlined" />
                       </TableCell>
-                      <TableCell sx={{ color: "#64748B", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {row.description || "-"}
-                      </TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 700, color: isInflow ? "#059669" : "#DC2626" }}>
+                      <TableCell>{new Date(row.entry_date).toLocaleDateString("en-IN")}</TableCell>
+                      <TableCell
+                        align="right"
+                        sx={{ fontWeight: 700, color: isInflow ? "#10B981" : "#EF4444" }}
+                      >
                         {isInflow ? "+" : "-"}{formatCurrency(row.amount)}
                       </TableCell>
                     </TableRow>

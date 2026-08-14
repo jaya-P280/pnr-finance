@@ -51,8 +51,7 @@ class CustomerService {
         mobileNumber: data.mobileNumber,
         alternateMobile: data.alternateMobile ?? null,
         email: data.email ?? null,
-        aadhaarNumber: data.aadhaarNumber ?? null,
-        panNumber: data.panNumber ?? null,
+        profileImage: data.profileImage ?? null,
         occupation: data.occupation ?? null,
         monthlyIncome: data.monthlyIncome ?? null,
         address: data.address,
@@ -61,6 +60,14 @@ class CustomerService {
         pincode: data.pincode,
         createdBy: currentUser.user_id,
       });
+
+      if (data.aadhaarNumber || data.panNumber) {
+        await customerRepository.createKyc(connection, {
+          customerId,
+          aadhaarNumber: data.aadhaarNumber ?? null,
+          panNumber: data.panNumber ?? null,
+        });
+      }
 
       await customerRepository.commit(connection);
       logger.info(`Customer Created : ${customerCode}`);
@@ -139,9 +146,7 @@ class CustomerService {
         alternateMobile:
           data.alternateMobile ?? existingCustomer.alternate_mobile ?? null,
         email: data.email ?? existingCustomer.email ?? null,
-        aadhaarNumber:
-          data.aadhaarNumber ?? existingCustomer.aadhaar_number ?? null,
-        panNumber: data.panNumber ?? existingCustomer.pan_number ?? null,
+        profileImage: data.profileImage ?? existingCustomer.profile_image ?? null,
         occupation: data.occupation ?? existingCustomer.occupation ?? null,
         monthlyIncome:
           data.monthlyIncome ?? existingCustomer.monthly_income ?? null,
@@ -152,7 +157,37 @@ class CustomerService {
         updatedBy: currentUser.user_id,
       });
 
+      if (data.aadhaarNumber !== undefined || data.panNumber !== undefined) {
+        await customerRepository.updateKyc(connection, {
+          customerId,
+          aadhaarNumber: data.aadhaarNumber ?? existingCustomer.aadhaar_number ?? null,
+          panNumber: data.panNumber ?? existingCustomer.pan_number ?? null,
+        });
+      }
+
       await customerRepository.commit(connection);
+    } catch (error) {
+      await customerRepository.rollback(connection);
+      throw error;
+    }
+  }
+
+  async updateProfileImage(customerId, file, currentUser) {
+    if (!file) throw new ApiError(400, "Profile image file is required.");
+    const connection = await customerRepository.beginTransaction();
+    try {
+      const customer = await customerRepository.getCustomerById(customerId);
+      if (!customer) throw new ApiError(404, CUSTOMER_MESSAGES.NOT_FOUND);
+
+      const profileImage = file.filename;
+      await customerRepository.updateProfileImage(
+        connection,
+        customerId,
+        profileImage,
+      );
+
+      await customerRepository.commit(connection);
+      return { profileImage };
     } catch (error) {
       await customerRepository.rollback(connection);
       throw error;
@@ -206,25 +241,10 @@ class CustomerService {
 
       const oldKyc = await customerRepository.findKycByCustomerId(customerId);
 
-      const aadhaarFront =
-        files?.aadhaarFront?.[0]?.filename ?? oldKyc?.aadhaar_front ?? null;
-      const aadhaarBack =
-        files?.aadhaarBack?.[0]?.filename ?? oldKyc?.aadhaar_back ?? null;
-      const panImage =
-        files?.panImage?.[0]?.filename ?? oldKyc?.pan_image ?? null;
-
       const kycPayload = {
         customerId,
         aadhaarNumber: body.aadhaarNumber,
         panNumber: body.panNumber,
-        aadhaarFront,
-        aadhaarBack,
-        panImage,
-        customerPhoto: oldKyc?.customer_photo ?? null,
-        signatureImage: oldKyc?.signature_image ?? null,
-        bankPassbook: oldKyc?.bank_passbook ?? null,
-        incomeProof: oldKyc?.income_proof ?? null,
-        addressProof: oldKyc?.address_proof ?? null,
       };
 
       if (oldKyc) {
@@ -244,7 +264,7 @@ class CustomerService {
         userAgent: metadata.userAgent,
       });
 
-      return { aadhaarFront, aadhaarBack, panImage };
+      return { customerId };
     } catch (error) {
       await customerRepository.rollback(connection);
       throw error;
@@ -294,127 +314,12 @@ class CustomerService {
     }
   }
 
-  async addFamilyMember(customerId, data) {
-    const connection = await customerRepository.beginTransaction();
-    try {
-      const customer = await customerRepository.getCustomerById(customerId);
-      if (!customer) throw new ApiError(404, CUSTOMER_MESSAGES.NOT_FOUND);
-
-      await customerRepository.createFamilyMember(connection, {
-        customerId,
-        memberName: data.memberName,
-        relationship: data.relationship,
-        age: data.age,
-        occupation: data.occupation ?? null,
-        mobile: data.mobile ?? null,
-      });
-
-      await customerRepository.commit(connection);
-    } catch (error) {
-      await customerRepository.rollback(connection);
-      throw error;
-    }
-  }
-
-  async getFamilyMembers(customerId) {
-    const customer = await customerRepository.getCustomerById(customerId);
-    if (!customer) throw new ApiError(404, CUSTOMER_MESSAGES.NOT_FOUND);
-    return await customerRepository.getFamilyMembers(customerId);
-  }
-
-  async updateFamilyMember(familyId, data) {
-    const connection = await customerRepository.beginTransaction();
-    try {
-      await customerRepository.updateFamilyMember(connection, {
-        familyId,
-        memberName: data.memberName,
-        relationship: data.relationship,
-        age: data.age,
-        occupation: data.occupation ?? null,
-        mobile: data.mobile ?? null,
-      });
-      await customerRepository.commit(connection);
-    } catch (error) {
-      await customerRepository.rollback(connection);
-      throw error;
-    }
-  }
-
-  async deleteFamilyMember(familyId) {
-    const connection = await customerRepository.beginTransaction();
-    try {
-      await customerRepository.deleteFamilyMember(connection, familyId);
-      await customerRepository.commit(connection);
-    } catch (error) {
-      await customerRepository.rollback(connection);
-      throw error;
-    }
-  }
-
-  async addNominee(customerId, data) {
-    const connection = await customerRepository.beginTransaction();
-    try {
-      const customer = await customerRepository.getCustomerById(customerId);
-      if (!customer) throw new ApiError(404, CUSTOMER_MESSAGES.NOT_FOUND);
-
-      await customerRepository.createNominee(connection, {
-        customerId,
-        nomineeName: data.nomineeName,
-        relationship: data.relationship,
-        dateOfBirth: data.dateOfBirth ?? null,
-        mobile: data.mobile ?? null,
-        address: data.address ?? null,
-        percentage: data.percentage ?? null,
-      });
-
-      await customerRepository.commit(connection);
-    } catch (error) {
-      await customerRepository.rollback(connection);
-      throw error;
-    }
-  }
-
-  async getNominees(customerId) {
-    const customer = await customerRepository.getCustomerById(customerId);
-    if (!customer) throw new ApiError(404, CUSTOMER_MESSAGES.NOT_FOUND);
-    return await customerRepository.getNominees(customerId);
-  }
-
-  async updateNominee(nomineeId, data) {
-    const connection = await customerRepository.beginTransaction();
-    try {
-      await customerRepository.updateNominee(connection, {
-        nomineeId,
-        nomineeName: data.nomineeName,
-        relationship: data.relationship,
-        dateOfBirth: data.dateOfBirth ?? null,
-        mobile: data.mobile ?? null,
-        address: data.address ?? null,
-        percentage: data.percentage ?? null,
-      });
-      await customerRepository.commit(connection);
-    } catch (error) {
-      await customerRepository.rollback(connection);
-      throw error;
-    }
-  }
-
-  async deleteNominee(nomineeId) {
-    const connection = await customerRepository.beginTransaction();
-    try {
-      await customerRepository.deleteNominee(connection, nomineeId);
-      await customerRepository.commit(connection);
-    } catch (error) {
-      await customerRepository.rollback(connection);
-      throw error;
-    }
-  }
-
   async getCustomerProfile(customerId) {
     const customer = await customerRepository.getCustomerById(customerId);
     if (!customer) throw new ApiError(404, CUSTOMER_MESSAGES.NOT_FOUND);
     return await customerRepository.getCustomerProfile(customerId);
   }
+
   async getKycQueue(query) {
     const { page, limit } = PaginationHelper.build(query);
     const filters = {

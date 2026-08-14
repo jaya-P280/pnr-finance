@@ -27,6 +27,18 @@ export const createLoanProductValidation = [
     "YEARLY",
     "ONE_TIME",
   ]),
+
+  body("processingFeeType")
+    .optional()
+    .isIn(["FIXED", "FLAT", "PERCENTAGE"]),
+
+  body("insuranceFeeType")
+    .optional()
+    .isIn(["FIXED", "FLAT", "PERCENTAGE"]),
+
+  body("penaltyType")
+    .optional()
+    .isIn(["FIXED", "FLAT", "PERCENTAGE"]),
 ];
 
 export const updateLoanProductValidation = [

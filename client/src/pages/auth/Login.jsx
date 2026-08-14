@@ -33,44 +33,13 @@ import {
 import toast from "react-hot-toast";
 import useAuth from "../../hooks/useAuth";
 
-const DEMO_ACCOUNTS = [
-  { label: "Super Admin", role: "SUPER_ADMIN", email: "superadmin@pnrgfinance.com", password: "SuperAdmin@123" },
-  { label: "Admin", role: "ADMIN", email: "admin@pnrgfinance.com", password: "Admin@123" },
-  { label: "Branch Manager", role: "BRANCH_MANAGER", email: "branchmanager@pnrgfinance.com", password: "BranchManager@123" },
-  { label: "Field Officer", role: "FIELD_OFFICER", email: "fieldofficer@pnrgfinance.com", password: "FieldOfficer@123" },
-  { label: "Accountant", role: "ACCOUNTANT", email: "accountant@pnrgfinance.com", password: "Accountant@123" },
-  { label: "Borrower / Customer", role: "CUSTOMER", email: "customer@pnrgfinance.com", password: "Customer@123" },
-];
-
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [demoMenuAnchor, setDemoMenuAnchor] = useState(null);
   const [rememberMe, setRememberMe] = useState(true);
-
-  const from = location.state?.from?.pathname || "/dashboard";
-
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    formState: { errors },
-  } = useForm({
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  });
-
-  const handleDemoClick = (account) => {
-    setValue("email", account.email, { shouldValidate: true });
-    setValue("password", account.password, { shouldValidate: true });
-    toast.success(`Loaded credentials for ${account.label}`);
-    setDemoMenuAnchor(null);
-  };
 
   const onSubmit = async (values) => {
     setLoading(true);
@@ -367,74 +336,7 @@ export default function Login() {
                   {loading ? "Authenticating..." : "Sign In to ERP Portal"}
                 </Button>
 
-                {/* Sleek Demo Credentials Helper Dropdown */}
-                <Box sx={{ pt: 1 }}>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={(e) => setDemoMenuAnchor(e.currentTarget)}
-                    endIcon={<ExpandMoreIcon />}
-                    fullWidth
-                    sx={{
-                      borderColor: "#E2E8F0",
-                      color: "#475569",
-                      borderRadius: 2,
-                      textTransform: "none",
-                      fontWeight: 600,
-                      fontSize: "0.85rem",
-                      py: 1,
-                      "&:hover": {
-                        borderColor: "#0F766E",
-                        bgcolor: "rgba(15, 118, 110, 0.04)",
-                        color: "#0F766E",
-                      },
-                    }}
-                  >
-                    Fill Demo Role Credentials (Testing)
-                  </Button>
 
-                  <Menu
-                    anchorEl={demoMenuAnchor}
-                    open={Boolean(demoMenuAnchor)}
-                    onClose={() => setDemoMenuAnchor(null)}
-                    slotProps={{
-                      paper: {
-                        elevation: 4,
-                        sx: { borderRadius: 2.5, mt: 1, minWidth: 260 },
-                      },
-                    }}
-                  >
-                    <Box sx={{ px: 2, py: 1, bgcolor: "#F8FAFC" }}>
-                      <Typography variant="caption" fontWeight={700} color="#64748B">
-                        SELECT DEMO ACCOUNT
-                      </Typography>
-                    </Box>
-                    <Divider />
-                    {DEMO_ACCOUNTS.map((acc) => (
-                      <MenuItem
-                        key={acc.label}
-                        onClick={() => handleDemoClick(acc)}
-                        sx={{ py: 1.2, px: 2 }}
-                      >
-                        <Box sx={{ width: "100%" }}>
-                          <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
-                            <Typography variant="body2" fontWeight={700} color="#0F172A">
-                              {acc.label}
-                            </Typography>
-                            <Chip
-                              label={acc.role}
-                              size="small"
-                              sx={{ height: 20, fontSize: "0.65rem", fontWeight: 700, bgcolor: "#CCFBF1", color: "#0F766E" }}
-                            />
-                          </Stack>
-                          <Typography variant="caption" color="text.secondary">
-                            {acc.email}
-                          </Typography>
-                        </Box>
-                      </MenuItem>
-                    ))}
-                  </Menu>
-                </Box>
 
                 <Typography
                   variant="body2"

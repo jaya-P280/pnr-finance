@@ -52,7 +52,7 @@ class CustomerRepository {
   async aadhaarExists(connection, aadhaarNumber) {
     if (!aadhaarNumber) return false;
     const [rows] = await connection.execute(
-      `SELECT customer_id FROM customers WHERE aadhaar_number = ? AND deleted_at IS NULL LIMIT 1`,
+      `SELECT customer_id FROM customer_kyc WHERE aadhaar_number = ? LIMIT 1`,
       [aadhaarNumber],
     );
     return rows.length > 0;
@@ -61,20 +61,19 @@ class CustomerRepository {
   async panExists(connection, panNumber) {
     if (!panNumber) return false;
     const [rows] = await connection.execute(
-      `SELECT customer_id FROM customers WHERE pan_number = ? AND deleted_at IS NULL LIMIT 1`,
+      `SELECT customer_id FROM customer_kyc WHERE pan_number = ? LIMIT 1`,
       [panNumber],
     );
     return rows.length > 0;
   }
 
   async createCustomer(connection, customer) {
-    console.log(customer)
     const [result] = await connection.execute(
       `INSERT INTO customers
        (customer_code, branch_id, first_name, last_name, gender, date_of_birth, mobile_number,
-        alternate_mobile, email, aadhaar_number, pan_number, occupation, monthly_income,
+        alternate_mobile, email, profile_image, occupation, monthly_income,
         address, city, state, pincode, created_by)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         customer.customerCode,
         customer.branchId,
@@ -85,8 +84,7 @@ class CustomerRepository {
         customer.mobileNumber,
         customer.alternateMobile,
         customer.email,
-        customer.aadhaarNumber,
-        customer.panNumber,
+        customer.profileImage || null,
         customer.occupation,
         customer.monthlyIncome,
         customer.address,
@@ -112,9 +110,15 @@ class CustomerRepository {
 
     let sql = `
       SELECT c.customer_id, c.customer_code, c.first_name, c.last_name, c.mobile_number,
-             c.email, c.gender, c.city, c.state, c.status, b.branch_name, c.created_at
+             c.email, c.gender, c.city, c.state, c.status, c.profile_image,
+             b.branch_name, c.created_at,
+             ck.aadhaar_number, ck.pan_number,
+             COALESCE(ck.aadhaar_verified, 0) AS aadhaar_verified,
+             COALESCE(ck.pan_verified, 0) AS pan_verified,
+             COALESCE(ck.kyc_status, 'PENDING') AS kyc_status
       FROM customers c
       INNER JOIN branches b ON b.branch_id = c.branch_id
+      LEFT JOIN customer_kyc ck ON ck.customer_id = c.customer_id
       WHERE c.deleted_at IS NULL
     `;
     const values = [];
@@ -134,7 +138,7 @@ class CustomerRepository {
     }
 
     sql += ` ORDER BY ${orderColumn} ${orderDirection} LIMIT ? OFFSET ?`;
-    values.push(limit, (page - 1) * limit);
+    values.push(Number(limit), (Number(page) - 1) * Number(limit));
 
     const [rows] = await pool.query(sql, values);
     return rows;
@@ -165,8 +169,14 @@ class CustomerRepository {
 
   async getCustomerById(customerId) {
     const [rows] = await pool.execute(
-      `SELECT c.*, b.branch_name FROM customers c
+      `SELECT c.*, b.branch_name,
+              ck.aadhaar_number, ck.pan_number,
+              COALESCE(ck.aadhaar_verified, 0) AS aadhaar_verified,
+              COALESCE(ck.pan_verified, 0) AS pan_verified,
+              COALESCE(ck.kyc_status, 'PENDING') AS kyc_status
+       FROM customers c
        INNER JOIN branches b ON b.branch_id = c.branch_id
+       LEFT JOIN customer_kyc ck ON ck.customer_id = c.customer_id
        WHERE c.customer_id = ? AND c.deleted_at IS NULL LIMIT 1`,
       [customerId],
     );
@@ -193,7 +203,7 @@ class CustomerRepository {
   async findByAadhaar(aadhaarNumber) {
     if (!aadhaarNumber) return null;
     const [rows] = await pool.execute(
-      `SELECT customer_id FROM customers WHERE aadhaar_number = ? AND deleted_at IS NULL LIMIT 1`,
+      `SELECT customer_id FROM customer_kyc WHERE aadhaar_number = ? LIMIT 1`,
       [aadhaarNumber],
     );
     return rows[0] || null;
@@ -202,7 +212,7 @@ class CustomerRepository {
   async findByPan(panNumber) {
     if (!panNumber) return null;
     const [rows] = await pool.execute(
-      `SELECT customer_id FROM customers WHERE pan_number = ? AND deleted_at IS NULL LIMIT 1`,
+      `SELECT customer_id FROM customer_kyc WHERE pan_number = ? LIMIT 1`,
       [panNumber],
     );
     return rows[0] || null;
@@ -212,7 +222,7 @@ class CustomerRepository {
     await connection.execute(
       `UPDATE customers SET
         branch_id=?, first_name=?, last_name=?, gender=?, date_of_birth=?, mobile_number=?,
-        alternate_mobile=?, email=?, aadhaar_number=?, pan_number=?, occupation=?, monthly_income=?,
+        alternate_mobile=?, email=?, profile_image=COALESCE(?, profile_image), occupation=?, monthly_income=?,
         address=?, city=?, state=?, pincode=?, updated_by=?, updated_at=CURRENT_TIMESTAMP
        WHERE customer_id=? AND deleted_at IS NULL`,
       [
@@ -224,8 +234,7 @@ class CustomerRepository {
         customer.mobileNumber,
         customer.alternateMobile,
         customer.email,
-        customer.aadhaarNumber,
-        customer.panNumber,
+        customer.profileImage || null,
         customer.occupation,
         customer.monthlyIncome,
         customer.address,
@@ -235,6 +244,13 @@ class CustomerRepository {
         customer.updatedBy,
         customer.customerId,
       ],
+    );
+  }
+
+  async updateProfileImage(connection, customerId, profileImage) {
+    await connection.execute(
+      `UPDATE customers SET profile_image=?, updated_at=CURRENT_TIMESTAMP WHERE customer_id=? AND deleted_at IS NULL`,
+      [profileImage, customerId],
     );
   }
 
@@ -255,22 +271,14 @@ class CustomerRepository {
 
   async createKyc(connection, kyc) {
     await connection.execute(
-      `INSERT INTO customer_kyc
-       (customer_id, aadhaar_number, pan_number, aadhaar_front, aadhaar_back, pan_image,
-        customer_photo, signature_image, bank_passbook, income_proof, address_proof)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO customer_kyc (customer_id, aadhaar_number, pan_number, aadhaar_verified, pan_verified)
+       VALUES (?,?,?,?,?)`,
       [
         kyc.customerId,
-        kyc.aadhaarNumber,
-        kyc.panNumber,
-        kyc.aadhaarFront,
-        kyc.aadhaarBack,
-        kyc.panImage,
-        kyc.customerPhoto,
-        kyc.signatureImage,
-        kyc.bankPassbook,
-        kyc.incomeProof,
-        kyc.addressProof,
+        kyc.aadhaarNumber || null,
+        kyc.panNumber || null,
+        kyc.aadhaarVerified ? 1 : 0,
+        kyc.panVerified ? 1 : 0,
       ],
     );
   }
@@ -285,30 +293,27 @@ class CustomerRepository {
 
   async updateKyc(connection, kyc) {
     await connection.execute(
-      `UPDATE customer_kyc SET
-        aadhaar_number=?, pan_number=?, aadhaar_front=?, aadhaar_back=?, pan_image=?,
-        customer_photo=?, signature_image=?, bank_passbook=?, income_proof=?, address_proof=?,
-        kyc_status='PENDING', remarks=NULL, verified_by=NULL, verified_at=NULL
-       WHERE customer_id=?`,
+      `INSERT INTO customer_kyc (customer_id, aadhaar_number, pan_number, aadhaar_verified, pan_verified)
+       VALUES (?,?,?,?,?)
+       ON DUPLICATE KEY UPDATE
+        aadhaar_number = COALESCE(VALUES(aadhaar_number), aadhaar_number),
+        pan_number = COALESCE(VALUES(pan_number), pan_number),
+        aadhaar_verified = COALESCE(VALUES(aadhaar_verified), aadhaar_verified),
+        pan_verified = COALESCE(VALUES(pan_verified), pan_verified),
+        updated_at = CURRENT_TIMESTAMP`,
       [
-        kyc.aadhaarNumber,
-        kyc.panNumber,
-        kyc.aadhaarFront,
-        kyc.aadhaarBack,
-        kyc.panImage,
-        kyc.customerPhoto,
-        kyc.signatureImage,
-        kyc.bankPassbook,
-        kyc.incomeProof,
-        kyc.addressProof,
         kyc.customerId,
+        kyc.aadhaarNumber || null,
+        kyc.panNumber || null,
+        kyc.aadhaarVerified !== undefined ? (kyc.aadhaarVerified ? 1 : 0) : null,
+        kyc.panVerified !== undefined ? (kyc.panVerified ? 1 : 0) : null,
       ],
     );
   }
 
   async verifyKyc(connection, customerId, verifiedBy) {
     await connection.execute(
-      `UPDATE customer_kyc SET kyc_status='VERIFIED', verified_by=?, verified_at=NOW(), remarks=NULL WHERE customer_id=?`,
+      `UPDATE customer_kyc SET kyc_status='VERIFIED', aadhaar_verified=1, pan_verified=1, verified_by=?, verified_at=NOW(), remarks=NULL WHERE customer_id=?`,
       [verifiedBy, customerId],
     );
   }
@@ -320,111 +325,21 @@ class CustomerRepository {
     );
   }
 
-  async createFamilyMember(connection, member) {
-    await connection.execute(
-      `INSERT INTO customer_family (customer_id, member_name, relationship, age, occupation, mobile)
-       VALUES (?,?,?,?,?,?)`,
-      [
-        member.customerId,
-        member.memberName,
-        member.relationship,
-        member.age,
-        member.occupation,
-        member.mobile,
-      ],
-    );
-  }
-
-  async getFamilyMembers(customerId) {
-    const [rows] = await pool.execute(
-      `SELECT * FROM customer_family WHERE customer_id=? ORDER BY family_id`,
-      [customerId],
-    );
-    return rows;
-  }
-
-  async updateFamilyMember(connection, member) {
-    await connection.execute(
-      `UPDATE customer_family SET member_name=?, relationship=?, age=?, occupation=?, mobile=? WHERE family_id=?`,
-      [
-        member.memberName,
-        member.relationship,
-        member.age,
-        member.occupation,
-        member.mobile,
-        member.familyId,
-      ],
-    );
-  }
-
-  async deleteFamilyMember(connection, familyId) {
-    await connection.execute(`DELETE FROM customer_family WHERE family_id=?`, [
-      familyId,
-    ]);
-  }
-
-  async createNominee(connection, nominee) {
-    await connection.execute(
-      `INSERT INTO customer_nominees (customer_id, nominee_name, relationship, dob, mobile, address, percentage)
-       VALUES (?,?,?,?,?,?,?)`,
-      [
-        nominee.customerId,
-        nominee.nomineeName,
-        nominee.relationship,
-        nominee.dateOfBirth,
-        nominee.mobile,
-        nominee.address,
-        nominee.percentage,
-      ],
-    );
-  }
-
-  async getNominees(customerId) {
-    const [rows] = await pool.execute(
-      `SELECT * FROM customer_nominees WHERE customer_id=? ORDER BY nominee_id`,
-      [customerId],
-    );
-    return rows;
-  }
-
-  async updateNominee(connection, nominee) {
-    await connection.execute(
-      `UPDATE customer_nominees SET nominee_name=?, relationship=?, dob=?, mobile=?, address=?, percentage=? WHERE nominee_id=?`,
-      [
-        nominee.nomineeName,
-        nominee.relationship,
-        nominee.dateOfBirth,
-        nominee.mobile,
-        nominee.address,
-        nominee.percentage,
-        nominee.nomineeId,
-      ],
-    );
-  }
-
-  async deleteNominee(connection, nomineeId) {
-    await connection.execute(
-      `DELETE FROM customer_nominees WHERE nominee_id=?`,
-      [nomineeId],
-    );
-  }
-
   async getCustomerProfile(customerId) {
     const customer = await this.getCustomerById(customerId);
     const kyc = await this.findKycByCustomerId(customerId);
-    const family = await this.getFamilyMembers(customerId);
-    const nominees = await this.getNominees(customerId);
-    return { customer, kyc, family, nominees };
+    return { customer, kyc };
   }
+
   async getKycQueue(filters) {
     const { status, branchId, search, page = 1, limit = 20 } = filters;
     let sql = `
     SELECT
-      c.customer_id, c.customer_code, c.first_name, c.last_name, c.mobile_number,
+      c.customer_id, c.customer_code, c.first_name, c.last_name, c.mobile_number, c.profile_image,
       COALESCE(b.branch_name, 'Head Office') as branch_name,
-      COALESCE(ck.aadhaar_number, c.aadhaar_number) as aadhaar_number,
-      COALESCE(ck.pan_number, c.pan_number) as pan_number,
-      ck.aadhaar_front, ck.aadhaar_back, ck.pan_image,
+      ck.aadhaar_number, ck.pan_number,
+      COALESCE(ck.aadhaar_verified, 0) AS aadhaar_verified,
+      COALESCE(ck.pan_verified, 0) AS pan_verified,
       COALESCE(ck.kyc_status, 'PENDING') as kyc_status,
       ck.verified_by, ck.verified_at, ck.remarks, c.created_at AS kyc_submitted_at
     FROM customers c

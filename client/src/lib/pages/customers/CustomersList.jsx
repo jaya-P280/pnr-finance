@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Alert,
+  Avatar,
   Box,
   Button,
   Chip,
@@ -10,6 +11,8 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
+  IconButton,
   MenuItem,
   Paper,
   Stack,
@@ -21,8 +24,15 @@ import {
   TableRow,
   TextField,
   Typography,
+  Tooltip,
 } from "@mui/material";
-import { Add as AddIcon, Search as SearchIcon } from "@mui/icons-material";
+import {
+  Add as AddIcon,
+  Search as SearchIcon,
+  PhotoCamera as PhotoCameraIcon,
+  Edit as EditIcon,
+  Visibility as VisibilityIcon,
+} from "@mui/icons-material";
 import toast from "react-hot-toast";
 import SectionPage from "../../components/layout/SectionPage";
 import branchService from "../../services/branch.service";
@@ -50,7 +60,25 @@ const emptyForm = {
 const getErrorMessage = (error, fallback) =>
   error?.response?.data?.message || error?.message || fallback;
 
-// Strip optional empty fields so blank strings don't fail optional validators
+const getProfileImageUrl = (customer) => {
+  if (!customer) return undefined;
+  if (typeof customer === "string") {
+    if (customer.startsWith("data:") || customer.startsWith("http") || customer.startsWith("/")) {
+      return customer;
+    }
+    return `/uploads/profiles/${customer}`;
+  }
+  if (customer.profile_image_base64) return customer.profile_image_base64;
+  if (customer.imgData) return customer.imgData;
+  if (customer.profile_image) {
+    if (customer.profile_image.startsWith("data:") || customer.profile_image.startsWith("http") || customer.profile_image.startsWith("/")) {
+      return customer.profile_image;
+    }
+    return `/uploads/profiles/${customer.profile_image}`;
+  }
+  return undefined;
+};
+
 const cleanPayload = (form) => {
   const payload = { ...form, branchId: Number(form.branchId) };
   [
@@ -72,6 +100,9 @@ export default function CustomerList() {
   const [search, setSearch] = useState("");
   const [dialog, setDialog] = useState(null);
   const [form, setForm] = useState(emptyForm);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef(null);
+
   const queryClient = useQueryClient();
 
   const customersQuery = useQuery({
@@ -159,9 +190,46 @@ export default function CustomerList() {
         state: details.state || "",
         pincode: details.pincode || "",
       });
-      setDialog({ mode: "edit", customer });
+      setDialog({ mode: "edit", customer: details });
     } catch (error) {
       toast.error(getErrorMessage(error, "Unable to load the customer."));
+    }
+  };
+
+  const openView = async (customer) => {
+    try {
+      const details = await customerService.getById(customer.customer_id);
+      setDialog({ mode: "view", customer: details });
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Unable to load customer profile."));
+    }
+  };
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !dialog?.customer) return;
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append("profileImage", file);
+      const res = await customerService.uploadProfileImage(
+        dialog.customer.customer_id,
+        formData,
+      );
+      toast.success("Profile photo updated successfully.");
+      setDialog((prev) => ({
+        ...prev,
+        customer: {
+          ...prev.customer,
+          profile_image: res.data?.profileImage || prev.customer.profile_image,
+          profile_image_base64: res.data?.imgData || prev.customer.profile_image_base64,
+        },
+      }));
+      invalidateCustomers();
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Unable to upload profile photo."));
+    } finally {
+      setUploadingAvatar(false);
     }
   };
 
@@ -183,7 +251,7 @@ export default function CustomerList() {
   return (
     <SectionPage
       title="Customer Management"
-      subtitle="Track customer profiles, branch assignments, and KYC status from a central view."
+      subtitle="Track customer profiles, branch assignments, eKYC status, and profile photo updates."
       actions={
         <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap" }}>
           <TextField
@@ -244,10 +312,12 @@ export default function CustomerList() {
             <Table>
               <TableHead>
                 <TableRow sx={{ bgcolor: "#F8FAFC" }}>
+                  <TableCell>Photo</TableCell>
                   <TableCell>Code</TableCell>
                   <TableCell>Name</TableCell>
                   <TableCell>Branch</TableCell>
                   <TableCell>Mobile</TableCell>
+                  <TableCell>Identity & KYC</TableCell>
                   <TableCell>Status</TableCell>
                   <TableCell>Actions</TableCell>
                 </TableRow>
@@ -255,13 +325,41 @@ export default function CustomerList() {
               <TableBody>
                 {customers.map((customer) => (
                   <TableRow key={customer.customer_id}>
+                    <TableCell>
+                      <Avatar
+                        src={getProfileImageUrl(customer)}
+                        sx={{ width: 36, height: 36, bgcolor: "#0F766E" }}
+                      >
+                        {customer.first_name?.[0]}
+                      </Avatar>
+                    </TableCell>
                     <TableCell>{customer.customer_code || "-"}</TableCell>
                     <TableCell>
-                      {`${customer.first_name || ""} ${customer.last_name || ""}`.trim() ||
-                        "-"}
+                      <Typography fontWeight={600} variant="body2">
+                        {`${customer.first_name || ""} ${customer.last_name || ""}`.trim() ||
+                          "-"}
+                      </Typography>
                     </TableCell>
                     <TableCell>{customer.branch_name || "-"}</TableCell>
                     <TableCell>{customer.mobile_number || "-"}</TableCell>
+                    <TableCell>
+                      <Stack direction="row" spacing={0.5} sx={{ flexWrap: "wrap" }}>
+                        {customer.aadhaar_number && (
+                          <Chip
+                            size="small"
+                            label="Aadhaar"
+                            color={customer.aadhaar_verified ? "success" : "default"}
+                          />
+                        )}
+                        {customer.pan_number && (
+                          <Chip
+                            size="small"
+                            label="PAN"
+                            color={customer.pan_verified ? "success" : "default"}
+                          />
+                        )}
+                      </Stack>
+                    </TableCell>
                     <TableCell>
                       <Chip
                         label={customer.status || "-"}
@@ -270,18 +368,25 @@ export default function CustomerList() {
                           customer.status === "ACTIVE"
                             ? "success"
                             : customer.status === "BLACKLISTED"
-                              ? "default"
-                              : "error"
+                            ? "default"
+                            : "error"
                         }
                       />
                     </TableCell>
                     <TableCell>
-                      <Stack
-                        direction="row"
-                        spacing={1}
-                        sx={{ flexWrap: "wrap" }}
-                      >
-                        <Button size="small" onClick={() => openEdit(customer)}>
+                      <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
+                        <Button
+                          size="small"
+                          startIcon={<VisibilityIcon />}
+                          onClick={() => openView(customer)}
+                        >
+                          View
+                        </Button>
+                        <Button
+                          size="small"
+                          startIcon={<EditIcon />}
+                          onClick={() => openEdit(customer)}
+                        >
                           Edit
                         </Button>
                         <Button
@@ -300,15 +405,6 @@ export default function CustomerList() {
                             ? "Deactivate"
                             : "Activate"}
                         </Button>
-                        <Button
-                          size="small"
-                          color="error"
-                          onClick={() =>
-                            setDialog({ mode: "delete", customer })
-                          }
-                        >
-                          Delete
-                        </Button>
                       </Stack>
                     </TableCell>
                   </TableRow>
@@ -318,6 +414,15 @@ export default function CustomerList() {
           </TableContainer>
         )}
       </Paper>
+
+      {/* Hidden File Input for Avatar Upload */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        style={{ display: "none" }}
+        accept="image/*"
+        onChange={handleAvatarChange}
+      />
 
       <Dialog
         open={Boolean(dialog)}
@@ -352,13 +457,131 @@ export default function CustomerList() {
               </Button>
             </DialogActions>
           </>
+        ) : dialog?.mode === "view" ? (
+          <>
+            <DialogTitle>Customer Profile</DialogTitle>
+            <DialogContent>
+              <Stack spacing={3} sx={{ pt: 1 }}>
+                <Stack direction="row" spacing={3} alignItems="center">
+                  <Box sx={{ position: "relative" }}>
+                    <Avatar
+                      src={getProfileImageUrl(dialog.customer)}
+                      sx={{ width: 80, height: 80, fontSize: 32, bgcolor: "#0F766E" }}
+                    >
+                      {dialog.customer?.first_name?.[0]}
+                    </Avatar>
+                    <Tooltip title="Upload Photo">
+                      <IconButton
+                        size="small"
+                        sx={{
+                          position: "absolute",
+                          bottom: 0,
+                          right: 0,
+                          bgcolor: "#ffffff",
+                          boxShadow: 1,
+                          "&:hover": { bgcolor: "#f1f5f9" },
+                        }}
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <PhotoCameraIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                  <Box>
+                    <Typography variant="h6" fontWeight={700}>
+                      {`${dialog.customer?.first_name || ""} ${dialog.customer?.last_name || ""}`}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Code: {dialog.customer?.customer_code} • Branch: {dialog.customer?.branch_name}
+                    </Typography>
+                    <Chip
+                      size="small"
+                      label={dialog.customer?.status}
+                      color={dialog.customer?.status === "ACTIVE" ? "success" : "error"}
+                      sx={{ mt: 0.5 }}
+                    />
+                  </Box>
+                </Stack>
+
+                <Divider />
+
+                <Box>
+                  <Typography variant="subtitle2" color="#64748B" gutterBottom fontWeight={700}>
+                    Personal & Demographic Details
+                  </Typography>
+                  <Stack direction="row" spacing={4} sx={{ flexWrap: "wrap" }}>
+                    <Typography variant="body2">Gender: <b>{dialog.customer?.gender || "-"}</b></Typography>
+                    <Typography variant="body2">DOB: <b>{dialog.customer?.date_of_birth?.slice(0, 10) || "-"}</b></Typography>
+                    <Typography variant="body2">Occupation: <b>{dialog.customer?.occupation || "-"}</b></Typography>
+                    <Typography variant="body2">Monthly Income: <b>{dialog.customer?.monthly_income ? `₹${dialog.customer.monthly_income}` : "-"}</b></Typography>
+                  </Stack>
+                </Box>
+
+                <Divider />
+
+                <Box>
+                  <Typography variant="subtitle2" color="#64748B" gutterBottom fontWeight={700}>
+                    Contact & Address Details
+                  </Typography>
+                  <Stack direction="row" spacing={4} sx={{ flexWrap: "wrap" }}>
+                    <Typography variant="body2">Mobile: <b>{dialog.customer?.mobile_number}</b></Typography>
+                    <Typography variant="body2">Alt Mobile: <b>{dialog.customer?.alternate_mobile || "-"}</b></Typography>
+                    <Typography variant="body2">Email: <b>{dialog.customer?.email || "-"}</b></Typography>
+                    <Typography variant="body2">Address: <b>{dialog.customer?.address}, {dialog.customer?.city}, {dialog.customer?.state} - {dialog.customer?.pincode}</b></Typography>
+                  </Stack>
+                </Box>
+
+                <Divider />
+
+                <Box>
+                  <Typography variant="subtitle2" color="#64748B" gutterBottom fontWeight={700}>
+                    Identity & eKYC (Stored in customer_kyc)
+                  </Typography>
+                  <Stack direction="row" spacing={4} sx={{ flexWrap: "wrap" }}>
+                    <Typography variant="body2">Aadhaar: <b>{dialog.customer?.aadhaar_number || "Not Provided"}</b></Typography>
+                    <Typography variant="body2">PAN: <b>{dialog.customer?.pan_number || "Not Provided"}</b></Typography>
+                    <Typography variant="body2">eKYC Status: <b>{dialog.customer?.kyc_status || "PENDING"}</b></Typography>
+                  </Stack>
+                </Box>
+              </Stack>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setDialog(null)}>Close</Button>
+              <Button
+                variant="contained"
+                startIcon={<EditIcon />}
+                onClick={() => openEdit(dialog.customer)}
+              >
+                Edit Customer Details
+              </Button>
+            </DialogActions>
+          </>
         ) : (
           <>
             <DialogTitle>
-              {dialog?.mode === "create" ? "Add Customer" : "Edit Customer"}
+              {dialog?.mode === "create" ? "Add Customer" : "Edit Customer Details"}
             </DialogTitle>
             <DialogContent>
               <Stack spacing={2} sx={{ pt: 1 }}>
+                {dialog?.mode === "edit" && (
+                  <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1 }}>
+                    <Avatar
+                      src={getProfileImageUrl(dialog.customer)}
+                      sx={{ width: 56, height: 56, bgcolor: "#0F766E" }}
+                    >
+                      {dialog.customer?.first_name?.[0]}
+                    </Avatar>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<PhotoCameraIcon />}
+                      disabled={uploadingAvatar}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      {uploadingAvatar ? "Uploading…" : "Change Photo"}
+                    </Button>
+                  </Stack>
+                )}
                 {formLoading && (
                   <Alert severity="info">Loading branches…</Alert>
                 )}
@@ -446,14 +669,14 @@ export default function CustomerList() {
                 <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
                   <TextField
                     fullWidth
-                    label="Aadhaar number"
+                    label="Aadhaar number (Stored in customer_kyc)"
                     value={form.aadhaarNumber}
                     onChange={setField("aadhaarNumber")}
                     slotProps={{ htmlInput: { maxLength: 12 } }}
                   />
                   <TextField
                     fullWidth
-                    label="PAN number"
+                    label="PAN number (Stored in customer_kyc)"
                     value={form.panNumber}
                     onChange={setField("panNumber")}
                     slotProps={{ htmlInput: { maxLength: 10 } }}

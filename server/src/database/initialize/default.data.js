@@ -383,7 +383,7 @@ export const ROLE_PERMISSIONS_MAP = {
 };
 
 export const DEFAULT_BRANCH = {
-  branch_code: "HQ001",
+  branch_code: "HQ000001",
   branch_name: "Head Office",
   phone: "9999999999",
   email: "admin@pnrgfinance.com",
@@ -393,61 +393,11 @@ export const DEFAULT_BRANCH = {
   pincode: "500001",
 };
 
-export const DEFAULT_ADMIN = {
-  employee_code: "EMP0001",
-  first_name: "System",
-  last_name: "Administrator",
-  email: "admin@pnrgfinance.com",
-  phone: "9999999999",
-  password: "Admin@123",
-};
-
 export const DEFAULT_SUPER_ADMIN = {
-  employee_code: "SUP0001",
+  employee_code: "SUP000001",
   first_name: "Super",
   last_name: "Administrator",
   email: "superadmin@pnrgfinance.com",
   phone: "9999999998",
   password: "SuperAdmin@123",
 };
-
-// Demo staff accounts let each branch-level role be tested immediately.
-// No extra demo account is created for SUPER_ADMIN, ADMIN, or CUSTOMER.
-export const DEFAULT_DEMO_USERS = [
-  {
-    role_name: "BRANCH_MANAGER",
-    employee_code: "BM0001",
-    first_name: "Branch",
-    last_name: "Manager",
-    email: "branchmanager@pnrgfinance.com",
-    phone: "9999999997",
-    password: "BranchManager@123",
-  },
-  {
-    role_name: "FIELD_OFFICER",
-    employee_code: "FO0001",
-    first_name: "Field",
-    last_name: "Officer",
-    email: "fieldofficer@pnrgfinance.com",
-    phone: "9999999996",
-    password: "FieldOfficer@123",
-  },
-  {
-    role_name: "ACCOUNTANT",
-    employee_code: "ACC0001",
-    first_name: "Accounts",
-    last_name: "Officer",
-    email: "accountant@pnrgfinance.com",
-    phone: "9999999995",
-    password: "Accountant@123",
-  },
-  {
-    role_name: "CUSTOMER",
-    employee_code: "CUST0001",
-    first_name: "Demo",
-    last_name: "Borrower",
-    email: "customer@pnrgfinance.com",
-    phone: "9999999994",
-    password: "Customer@123",
-  },
-];

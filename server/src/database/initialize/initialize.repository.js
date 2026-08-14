@@ -175,10 +175,7 @@ class InitializeRepository {
         mobile_number VARCHAR(20) NOT NULL,
         alternate_mobile VARCHAR(20),
         email VARCHAR(255),
-        aadhaar_number VARCHAR(12),
-        pan_number VARCHAR(10),
-        aadhaar_verified TINYINT(1) DEFAULT 0,
-        pan_verified TINYINT(1) DEFAULT 0,
+        profile_image VARCHAR(500) NULL,
         occupation VARCHAR(100),
         monthly_income DECIMAL(15,2),
         address TEXT,
@@ -187,6 +184,8 @@ class InitializeRepository {
         pincode VARCHAR(20),
         status ENUM('ACTIVE','INACTIVE','BLACKLISTED') DEFAULT 'ACTIVE',
         created_by INT,
+        updated_by INT NULL,
+        deleted_by INT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         deleted_at TIMESTAMP NULL,
@@ -200,14 +199,8 @@ class InitializeRepository {
         customer_id INT NOT NULL UNIQUE,
         aadhaar_number VARCHAR(12),
         pan_number VARCHAR(10),
-        aadhaar_front VARCHAR(500),
-        aadhaar_back VARCHAR(500),
-        pan_image VARCHAR(500),
-        customer_photo VARCHAR(500),
-        signature_image VARCHAR(500),
-        bank_passbook VARCHAR(500),
-        income_proof VARCHAR(500),
-        address_proof VARCHAR(500),
+        aadhaar_verified TINYINT(1) DEFAULT 0,
+        pan_verified TINYINT(1) DEFAULT 0,
         kyc_status ENUM('PENDING','VERIFIED','REJECTED') DEFAULT 'PENDING',
         verified_by INT NULL,
         verified_at TIMESTAMP NULL,
@@ -218,32 +211,7 @@ class InitializeRepository {
         FOREIGN KEY (verified_by) REFERENCES users(user_id)
       )`,
 
-      // --- CUSTOMER FAMILY ---
-      `CREATE TABLE IF NOT EXISTS customer_family (
-        family_id INT AUTO_INCREMENT PRIMARY KEY,
-        customer_id INT NOT NULL,
-        name VARCHAR(200) NOT NULL,
-        relationship ENUM('FATHER','MOTHER','SPOUSE','SON','DAUGHTER','SIBLING','OTHER') NOT NULL,
-        date_of_birth DATE,
-        occupation VARCHAR(100),
-        mobile_number VARCHAR(20),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE
-      )`,
 
-      // --- CUSTOMER NOMINEES ---
-      `CREATE TABLE IF NOT EXISTS customer_nominees (
-        nominee_id INT AUTO_INCREMENT PRIMARY KEY,
-        customer_id INT NOT NULL,
-        name VARCHAR(200) NOT NULL,
-        relationship VARCHAR(50) NOT NULL,
-        date_of_birth DATE,
-        mobile_number VARCHAR(20),
-        address TEXT,
-        percentage DECIMAL(5,2) DEFAULT 100.00,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE
-      )`,
 
       // --- CUSTOMER GROUPS ---
       `CREATE TABLE IF NOT EXISTS customer_groups (
@@ -307,17 +275,18 @@ class InitializeRepository {
         minimum_tenure INT NOT NULL,
         maximum_tenure INT NOT NULL,
         interest_rate DECIMAL(5,2) NOT NULL,
-        processing_fee_type ENUM('FLAT','PERCENTAGE') DEFAULT 'PERCENTAGE',
+        processing_fee_type VARCHAR(20) DEFAULT 'PERCENTAGE',
         processing_fee DECIMAL(15,2) DEFAULT 0,
-        insurance_fee_type ENUM('FLAT','PERCENTAGE') DEFAULT 'PERCENTAGE',
+        insurance_fee_type VARCHAR(20) DEFAULT 'PERCENTAGE',
         insurance_fee DECIMAL(15,2) DEFAULT 0,
         penalty DECIMAL(15,2) DEFAULT 0,
-        penalty_type ENUM('FLAT','PERCENTAGE') DEFAULT 'PERCENTAGE',
-        recovery_frequency ENUM('DAILY','WEEKLY','BI_WEEKLY','MONTHLY') DEFAULT 'MONTHLY',
+        penalty_type VARCHAR(20) DEFAULT 'PERCENTAGE',
+        recovery_frequency VARCHAR(50) DEFAULT 'MONTHLY',
         holiday_excluded TINYINT(1) DEFAULT 0,
         include_gst TINYINT(1) DEFAULT 0,
         status ENUM('ACTIVE','INACTIVE') DEFAULT 'ACTIVE',
         created_by INT,
+        updated_by INT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         deleted_at TIMESTAMP NULL,
@@ -359,17 +328,7 @@ class InitializeRepository {
         FOREIGN KEY (applied_by) REFERENCES users(user_id)
       )`,
 
-      // --- LOAN GUARANTORS ---
-      `CREATE TABLE IF NOT EXISTS loan_guarantors (
-        guarantor_id INT AUTO_INCREMENT PRIMARY KEY,
-        application_id INT NOT NULL,
-        customer_id INT,
-        name VARCHAR(200),
-        relationship VARCHAR(50),
-        mobile_number VARCHAR(20),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (application_id) REFERENCES loan_applications(application_id) ON DELETE CASCADE
-      )`,
+
 
       // --- LOANS ---
       `CREATE TABLE IF NOT EXISTS loans (
@@ -581,6 +540,25 @@ class InitializeRepository {
   async reconcileLegacySchema(connection) {
     try {
       const upgrades = [
+        ["branches", "updated_by INT NULL"], ["branches", "deleted_by INT NULL"],
+        ["users", "updated_by INT NULL"], ["users", "deleted_by INT NULL"],
+        ["customers", "updated_by INT NULL"], ["customers", "deleted_by INT NULL"],
+        ["customers", "profile_image VARCHAR(500) NULL"],
+        ["customer_kyc", "aadhaar_number VARCHAR(12) NULL"], ["customer_kyc", "pan_number VARCHAR(10) NULL"],
+        ["customer_kyc", "aadhaar_verified TINYINT(1) DEFAULT 0"], ["customer_kyc", "pan_verified TINYINT(1) DEFAULT 0"],
+        ["customer_groups", "updated_by INT NULL"], ["customer_groups", "deleted_by INT NULL"],
+        ["group_members", "deleted_by INT NULL"],
+        ["loan_products", "updated_by INT NULL"], ["loan_products", "deleted_by INT NULL"],
+        ["loan_applications", "created_by INT NULL"], ["loan_applications", "updated_by INT NULL"], ["loan_applications", "deleted_by INT NULL"],
+        ["loans", "updated_by INT NULL"], ["loans", "deleted_by INT NULL"],
+        ["collections", "updated_by INT NULL"], ["collections", "deleted_by INT NULL"],
+        ["tasks", "updated_by INT NULL"], ["tasks", "deleted_by INT NULL"],
+        ["expenses", "updated_by INT NULL"], ["expenses", "deleted_by INT NULL"],
+        ["income", "updated_by INT NULL"], ["income", "deleted_by INT NULL"],
+        ["employee_attendance", "updated_by INT NULL"], ["employee_attendance", "deleted_by INT NULL"],
+        ["letters", "updated_by INT NULL"], ["letters", "deleted_by INT NULL"],
+        ["employee_salaries", "created_by INT NULL"], ["employee_salaries", "updated_by INT NULL"], ["employee_salaries", "deleted_by INT NULL"],
+        ["payroll_logs", "created_by INT NULL"], ["payroll_logs", "updated_by INT NULL"], ["payroll_logs", "deleted_by INT NULL"],
         ["loan_products", "product_type VARCHAR(50) DEFAULT 'TERM_LOAN'"], ["loan_products", "interest_type VARCHAR(50) DEFAULT 'REDUCING'"],
         ["loan_products", "minimum_amount DECIMAL(15,2) NULL"], ["loan_products", "maximum_amount DECIMAL(15,2) NULL"],
         ["loan_products", "minimum_tenure INT NULL"], ["loan_products", "maximum_tenure INT NULL"],
@@ -608,11 +586,48 @@ class InitializeRepository {
         await connection.query(`ALTER TABLE loan_applications MODIFY COLUMN application_status ENUM('DRAFT','PENDING','UNDER_REVIEW','VERIFIED','APPROVED','REJECTED','DISBURSED') DEFAULT 'PENDING'`);
       } catch { /* ignore */ }
       try {
+        await connection.query(`ALTER TABLE loan_products MODIFY COLUMN processing_fee_type VARCHAR(20) DEFAULT 'PERCENTAGE'`);
+      } catch { /* ignore */ }
+      try {
+        await connection.query(`ALTER TABLE loan_products MODIFY COLUMN insurance_fee_type VARCHAR(20) DEFAULT 'PERCENTAGE'`);
+      } catch { /* ignore */ }
+      try {
+        await connection.query(`ALTER TABLE loan_products MODIFY COLUMN penalty_type VARCHAR(20) DEFAULT 'PERCENTAGE'`);
+      } catch { /* ignore */ }
+      try {
+        await connection.query(`ALTER TABLE loan_products MODIFY COLUMN recovery_frequency VARCHAR(50) DEFAULT 'MONTHLY'`);
+      } catch { /* ignore */ }
+      try {
+        await connection.query(`ALTER TABLE loan_applications MODIFY COLUMN recovery_frequency VARCHAR(50) DEFAULT 'MONTHLY'`);
+      } catch { /* ignore */ }
+      try {
         const [legacyColumns] = await connection.query(`SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'loan_products' AND COLUMN_NAME IN ('min_amount', 'max_amount', 'min_tenure', 'max_tenure')`);
         if (legacyColumns?.length === 4) {
           await connection.query(`UPDATE loan_products SET minimum_amount = COALESCE(minimum_amount, min_amount), maximum_amount = COALESCE(maximum_amount, max_amount), minimum_tenure = COALESCE(minimum_tenure, min_tenure), maximum_tenure = COALESCE(maximum_tenure, max_tenure)`);
         }
       } catch { /* ignore */ }
+
+      try {
+        await connection.query(`DROP TABLE IF EXISTS loan_guarantors`);
+        await connection.query(`DROP TABLE IF EXISTS customer_family`);
+        await connection.query(`DROP TABLE IF EXISTS customer_nominees`);
+      } catch { /* ignore */ }
+
+      const kycColsToDrop = [
+        "aadhaar_front", "aadhaar_back", "pan_image", "customer_photo",
+        "signature_image", "bank_passbook", "income_proof", "address_proof"
+      ];
+      for (const col of kycColsToDrop) {
+        try {
+          const [rows] = await connection.query(
+            `SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'customer_kyc' AND COLUMN_NAME = ?`,
+            [col]
+          );
+          if (rows.length) {
+            await connection.query(`ALTER TABLE customer_kyc DROP COLUMN ${col}`);
+          }
+        } catch { /* ignore */ }
+      }
     } catch (err) {
       console.warn("Legacy schema reconciliation skipped:", err?.message || err);
     }

@@ -1,7 +1,6 @@
 import express from "express";
 import ApiError from "../../shared/ApiError.js";
 import authenticate from "../auth/auth.middleware.js";
-import kycUpload from "../../middleware/kycUpload.middleware.js";
 import validateRequest from "../../middleware/validation.middleware.js";
 import customerPortalController from "./customerPortal.controller.js";
 import {

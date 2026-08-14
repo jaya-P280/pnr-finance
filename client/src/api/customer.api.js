@@ -13,6 +13,10 @@ export const updateCustomerStatus = (id, data) =>
   api.patch(`${ENDPOINTS.CUSTOMERS}/${id}/status`, data);
 export const deleteCustomer = (id) =>
   api.delete(`${ENDPOINTS.CUSTOMERS}/${id}`);
+export const uploadProfileImage = (id, formData) =>
+  api.post(`${ENDPOINTS.CUSTOMERS}/${id}/profile-image`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
 
 export const uploadCustomerKyc = (id, data) =>
   api.post(`${ENDPOINTS.CUSTOMERS}/${id}/kyc`, data);
@@ -22,24 +26,6 @@ export const rejectCustomerKyc = (id, data) =>
   api.patch(`${ENDPOINTS.CUSTOMERS}/${id}/kyc/reject`, data);
 export const getKycQueue = (params) =>
   api.get(`${ENDPOINTS.CUSTOMERS}/kyc/queue`, { params });
-
-export const addFamilyMember = (customerId, data) =>
-  api.post(`${ENDPOINTS.CUSTOMERS}/${customerId}/family`, data);
-export const getFamilyMembers = (customerId) =>
-  api.get(`${ENDPOINTS.CUSTOMERS}/${customerId}/family`);
-export const updateFamilyMember = (familyId, data) =>
-  api.put(`${ENDPOINTS.CUSTOMERS}/family/${familyId}`, data);
-export const deleteFamilyMember = (familyId) =>
-  api.delete(`${ENDPOINTS.CUSTOMERS}/family/${familyId}`);
-
-export const addNominee = (customerId, data) =>
-  api.post(`${ENDPOINTS.CUSTOMERS}/${customerId}/nominees`, data);
-export const getNominees = (customerId) =>
-  api.get(`${ENDPOINTS.CUSTOMERS}/${customerId}/nominees`);
-export const updateNominee = (nomineeId, data) =>
-  api.put(`${ENDPOINTS.CUSTOMERS}/nominees/${nomineeId}`, data);
-export const deleteNominee = (nomineeId) =>
-  api.delete(`${ENDPOINTS.CUSTOMERS}/nominees/${nomineeId}`);
 
 export const getCustomerProfile = (customerId) =>
   api.get(`${ENDPOINTS.CUSTOMERS}/${customerId}/profile`);

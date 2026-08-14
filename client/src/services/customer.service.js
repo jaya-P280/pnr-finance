@@ -33,6 +33,11 @@ class CustomerService {
     const response = await customerApi.deleteCustomer(id);
     return response.data;
   }
+
+  async uploadProfileImage(id, formData) {
+    const response = await customerApi.uploadProfileImage(id, formData);
+    return response.data;
+  }
 }
 
 export default new CustomerService();

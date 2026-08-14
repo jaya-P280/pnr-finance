@@ -1,16 +1,19 @@
-import customerService from "./customer.service.js";
 import ApiResponse from "../../shared/ApiResponse.js";
-import { CUSTOMER_MESSAGES } from "./customers.constants.js";
-import ApiError from "../../shared/ApiError.js";
-import { getFullImageUrl } from "../../shared/imageUrl.helper.js";
+import customerService from "./customer.service.js";
+import { getBase64Image } from "../../shared/imageUrl.helper.js";
 
 class CustomerController {
   async createCustomer(req, res, next) {
     try {
-      const result = await customerService.createCustomer(req.body, req.user);
+      const result = await customerService.createCustomer(
+        req.body,
+        req.user,
+      );
       return res
         .status(201)
-        .json(new ApiResponse(201, "Customer created successfully.", result));
+        .json(
+          new ApiResponse(201, "Customer created successfully.", result),
+        );
     } catch (error) {
       next(error);
     }
@@ -19,6 +22,12 @@ class CustomerController {
   async getCustomers(req, res, next) {
     try {
       const result = await customerService.getCustomers(req.query);
+      if (result?.customers) {
+        result.customers = result.customers.map((c) => ({
+          ...c,
+          profile_image_base64: getBase64Image(c.profile_image, "profiles"),
+        }));
+      }
       return res
         .status(200)
         .json(new ApiResponse(200, "Customers fetched successfully.", result));
@@ -32,6 +41,12 @@ class CustomerController {
       const result = await customerService.getCustomerById(
         Number(req.params.id),
       );
+      if (result) {
+        result.profile_image_base64 = getBase64Image(
+          result.profile_image,
+          "profiles",
+        );
+      }
       return res
         .status(200)
         .json(new ApiResponse(200, "Customer fetched successfully.", result));
@@ -49,7 +64,7 @@ class CustomerController {
       );
       return res
         .status(200)
-        .json(new ApiResponse(200, CUSTOMER_MESSAGES.UPDATED));
+        .json(new ApiResponse(200, "Customer updated successfully."));
     } catch (error) {
       next(error);
     }
@@ -64,7 +79,7 @@ class CustomerController {
       );
       return res
         .status(200)
-        .json(new ApiResponse(200, CUSTOMER_MESSAGES.STATUS_UPDATED));
+        .json(new ApiResponse(200, "Customer status updated successfully."));
     } catch (error) {
       next(error);
     }
@@ -75,7 +90,7 @@ class CustomerController {
       await customerService.deleteCustomer(Number(req.params.id), req.user);
       return res
         .status(200)
-        .json(new ApiResponse(200, CUSTOMER_MESSAGES.DELETED));
+        .json(new ApiResponse(200, "Customer deleted successfully."));
     } catch (error) {
       next(error);
     }
@@ -83,17 +98,15 @@ class CustomerController {
 
   async uploadCustomerKyc(req, res, next) {
     try {
-      const files = req.files;
-      console.log(req.files);
-      if (!files?.aadhaarFront && !files?.aadhaarBack && !files?.panImage) {
-        throw new ApiError(400, "Please upload at least one KYC document.");
-      }
       const result = await customerService.uploadCustomerKyc(
         Number(req.params.id),
-        files,
+        req.files,
         req.body,
         req.user,
-        { ipAddress: req.ip, userAgent: req.get("User-Agent") },
+        {
+          ipAddress: req.ip,
+          userAgent: req.get("user-agent"),
+        },
       );
       return res
         .status(200)
@@ -131,97 +144,20 @@ class CustomerController {
     }
   }
 
-  async addFamilyMember(req, res, next) {
+  async uploadProfileImage(req, res, next) {
     try {
-      await customerService.addFamilyMember(Number(req.params.id), req.body);
-      return res
-        .status(201)
-        .json(new ApiResponse(201, "Family member added successfully."));
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  async getFamilyMembers(req, res, next) {
-    try {
-      const familyMembers = await customerService.getFamilyMembers(
+      const result = await customerService.updateProfileImage(
         Number(req.params.id),
+        req.file,
+        req.user,
       );
+      const imgData = getBase64Image(result.profileImage, "profiles");
       return res.json(
-        new ApiResponse(
-          200,
-          "Family members fetched successfully.",
-          familyMembers,
-        ),
+        new ApiResponse(200, "Profile image updated successfully.", {
+          profileImage: result.profileImage,
+          imgData,
+        }),
       );
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  async updateFamilyMember(req, res, next) {
-    try {
-      await customerService.updateFamilyMember(
-        Number(req.params.familyId),
-        req.body,
-      );
-      return res.json(
-        new ApiResponse(200, "Family member updated successfully."),
-      );
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  async deleteFamilyMember(req, res, next) {
-    try {
-      await customerService.deleteFamilyMember(Number(req.params.familyId));
-      return res.json(
-        new ApiResponse(200, "Family member deleted successfully."),
-      );
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  async addNominee(req, res, next) {
-    try {
-      await customerService.addNominee(Number(req.params.id), req.body);
-      return res
-        .status(201)
-        .json(new ApiResponse(201, "Nominee added successfully."));
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  async getNominees(req, res, next) {
-    try {
-      const nominees = await customerService.getNominees(Number(req.params.id));
-      return res.json(
-        new ApiResponse(200, "Nominees fetched successfully.", nominees),
-      );
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  async updateNominee(req, res, next) {
-    try {
-      await customerService.updateNominee(
-        Number(req.params.nomineeId),
-        req.body,
-      );
-      return res.json(new ApiResponse(200, "Nominee updated successfully."));
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  async deleteNominee(req, res, next) {
-    try {
-      await customerService.deleteNominee(Number(req.params.nomineeId));
-      return res.json(new ApiResponse(200, "Nominee deleted successfully."));
     } catch (error) {
       next(error);
     }
@@ -232,24 +168,12 @@ class CustomerController {
       const profile = await customerService.getCustomerProfile(
         Number(req.params.id),
       );
-      if (profile.kyc) {
-        profile.kyc.aadhaar_front = getFullImageUrl(
-          req,
-          profile.kyc.aadhaar_front,
-          "kyc",
-        );
-        profile.kyc.aadhaar_back = getFullImageUrl(
-          req,
-          profile.kyc.aadhaar_back,
-          "kyc",
-        );
-        profile.kyc.pan_image = getFullImageUrl(
-          req,
-          profile.kyc.pan_image,
-          "kyc",
+      if (profile?.customer) {
+        profile.customer.profile_image_base64 = getBase64Image(
+          profile.customer.profile_image,
+          "profiles",
         );
       }
-      console.log(profile);
       return res.json(
         new ApiResponse(200, "Customer profile fetched successfully.", profile),
       );
@@ -257,9 +181,16 @@ class CustomerController {
       next(error);
     }
   }
+
   async getKycQueue(req, res, next) {
     try {
       const result = await customerService.getKycQueue(req.query);
+      if (result?.rows) {
+        result.rows = result.rows.map((row) => ({
+          ...row,
+          profile_image_base64: getBase64Image(row.profile_image, "profiles"),
+        }));
+      }
       return res.json(
         new ApiResponse(200, "KYC queue fetched successfully.", result),
       );

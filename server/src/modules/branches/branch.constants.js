@@ -2,7 +2,7 @@ export const BRANCH = {
 
     PREFIX: "BR",
 
-    PAD_LENGTH: 4
+    PAD_LENGTH: 6
 
 };
 

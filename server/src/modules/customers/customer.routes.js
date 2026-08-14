@@ -11,19 +11,13 @@ import {
   uploadCustomerKycValidation,
   verifyCustomerKycValidation,
   rejectCustomerKycValidation,
-  createCustomerFamilyValidation,
-  updateCustomerFamilyValidation,
-  deleteCustomerFamilyValidation,
-  createCustomerNomineeValidation,
-  updateCustomerNomineeValidation,
-  deleteCustomerNomineeValidation,
 } from "./customer.validation.js";
 
 import authMiddleware from "../auth/auth.middleware.js";
 import authorize from "../../middleware/authorize.middleware.js";
 import branchScope from "../../middleware/branchScope.middleware.js";
 import validationMiddleware from "../../middleware/validation.middleware.js";
-import kycUpload from "../../middleware/kycUpload.middleware.js";
+import profileImageUpload from "../../middleware/profileImageUpload.middleware.js";
 
 const router = express.Router();
 
@@ -73,11 +67,6 @@ router.post(
   authMiddleware,
   authorize("CUSTOMER_VIEW"),
   branchScope,
-  // KYC documents are uploaded through the customer portal only. Staff can
-  // review/verify them but cannot upload documents on a customer's behalf.
-  authorize("CUSTOMER_KYC_UPLOAD"),
-  kycUpload,
-  uploadCustomerKycValidation,
   validationMiddleware,
   customerController.uploadCustomerKyc,
 );
@@ -101,67 +90,11 @@ router.patch(
 );
 
 router.post(
-  "/:id/family",
+  "/:id/profile-image",
   authMiddleware,
   authorize("CUSTOMER_UPDATE"),
-  createCustomerFamilyValidation,
-  validationMiddleware,
-  customerController.addFamilyMember,
-);
-router.get(
-  "/:id/family",
-  authMiddleware,
-  getCustomerValidation,
-  validationMiddleware,
-  customerController.getFamilyMembers,
-);
-router.put(
-  "/family/:familyId",
-  authMiddleware,
-  authorize("CUSTOMER_UPDATE"),
-  updateCustomerFamilyValidation,
-  validationMiddleware,
-  customerController.updateFamilyMember,
-);
-router.delete(
-  "/family/:familyId",
-  authMiddleware,
-  authorize("CUSTOMER_UPDATE"),
-  deleteCustomerFamilyValidation,
-  validationMiddleware,
-  customerController.deleteFamilyMember,
-);
-
-router.post(
-  "/:id/nominees",
-  authMiddleware,
-  authorize("CUSTOMER_UPDATE"),
-  createCustomerNomineeValidation,
-  validationMiddleware,
-  customerController.addNominee,
-);
-router.get(
-  "/:id/nominees",
-  authMiddleware,
-  getCustomerValidation,
-  validationMiddleware,
-  customerController.getNominees,
-);
-router.put(
-  "/nominees/:nomineeId",
-  authMiddleware,
-  authorize("CUSTOMER_UPDATE"),
-  updateCustomerNomineeValidation,
-  validationMiddleware,
-  customerController.updateNominee,
-);
-router.delete(
-  "/nominees/:nomineeId",
-  authMiddleware,
-  authorize("CUSTOMER_UPDATE"),
-  deleteCustomerNomineeValidation,
-  validationMiddleware,
-  customerController.deleteNominee,
+  profileImageUpload,
+  customerController.uploadProfileImage,
 );
 
 router.get(
