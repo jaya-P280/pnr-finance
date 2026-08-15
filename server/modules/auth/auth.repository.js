@@ -271,8 +271,8 @@ class AuthRepository {
   async createCustomerRecord(data) {
     const [result] = await pool.execute(
       `INSERT INTO customers
-       (customer_code, branch_id, first_name, last_name, mobile_number, email, aadhaar_number, pan_number, status, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?)`,
+       (customer_code, branch_id, first_name, last_name, mobile_number, email, status, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', ?)`,
       [
         data.customerCode,
         data.branchId,
@@ -280,8 +280,6 @@ class AuthRepository {
         data.lastName || null,
         data.mobileNumber || "0000000000",
         data.email,
-        data.aadhaarNumber || null,
-        data.panNumber ? data.panNumber.toUpperCase() : null,
         data.createdBy || null,
       ],
     );
