@@ -165,12 +165,25 @@ class AuthRepository {
     return rows.map((row) => row.permission_name);
   }
 
-async findDefaultCustomerRole() {
-  const [rows] = await pool.execute(
-    `SELECT role_id FROM roles WHERE role_name = 'CUSTOMER' LIMIT 1`,
-  );
-  return rows[0] || null;
-}
+  async findDefaultCustomerRole() {
+    const [rows] = await pool.execute(
+      `SELECT role_id FROM roles WHERE role_name = 'CUSTOMER' LIMIT 1`,
+    );
+    if (rows[0]) return rows[0];
+
+    try {
+      const [insertResult] = await pool.execute(
+        `INSERT INTO roles (role_name, role_description, is_system, status)
+         VALUES ('CUSTOMER', 'Self-service borrower customer portal', 1, 'ACTIVE')`,
+      );
+      return { role_id: insertResult.insertId };
+    } catch {
+      const [retryRows] = await pool.execute(
+        `SELECT role_id FROM roles WHERE role_name = 'CUSTOMER' LIMIT 1`,
+      );
+      return retryRows[0] || null;
+    }
+  }
 
   async getLastEmployeeCode() {
     const [rows] = await pool.execute(
@@ -183,7 +196,20 @@ async findDefaultCustomerRole() {
     const [rows] = await pool.execute(
       `SELECT branch_id FROM branches WHERE status = 'ACTIVE' LIMIT 1`,
     );
-    return rows[0] || null;
+    if (rows[0]) return rows[0];
+
+    try {
+      const [insertResult] = await pool.execute(
+        `INSERT INTO branches (branch_code, branch_name, phone, email, address, city, state, pincode, status)
+         VALUES ('HQ000001', 'Head Office', '9999999999', 'admin@pnrgfinance.com', 'Head Office', 'Hyderabad', 'Telangana', '500001', 'ACTIVE')`,
+      );
+      return { branch_id: insertResult.insertId };
+    } catch {
+      const [retryRows] = await pool.execute(
+        `SELECT branch_id FROM branches WHERE status = 'ACTIVE' LIMIT 1`,
+      );
+      return retryRows[0] || null;
+    }
   }
 
   async createUser(data) {
