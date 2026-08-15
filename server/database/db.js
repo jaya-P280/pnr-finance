@@ -50,12 +50,18 @@ export async function connectDatabase() {
   if (mysqlPool && isMysqlConnected) return mysqlPool;
 
   try {
+    const isSslNeeded =
+      env.DB.SSL ||
+      process.env.DB_SSL === "true" ||
+      process.env.MYSQL_SSL === "true" ||
+      (typeof env.DB.URL === "string" && env.DB.URL.includes("ssl"));
+
     const config = env.DB.URL || {
-      host: env.DB.HOST,
-      port: env.DB.PORT,
-      user: env.DB.USER,
-      password: env.DB.PASSWORD,
-      database: env.DB.NAME,
+      host: env.DB.HOST || "localhost",
+      port: env.DB.PORT || 3306,
+      user: env.DB.USER || "root",
+      password: env.DB.PASSWORD || "",
+      database: env.DB.NAME || "pnrg_finance",
       waitForConnections: true,
       connectionLimit: env.DB.CONNECTION_LIMIT || 20,
       queueLimit: 0,
@@ -63,7 +69,7 @@ export async function connectDatabase() {
       keepAliveInitialDelay: 0,
       charset: "utf8mb4",
       decimalNumbers: true,
-      ssl: env.DB.SSL ? { rejectUnauthorized: false } : undefined,
+      ssl: isSslNeeded ? { rejectUnauthorized: false } : undefined,
     };
 
     mysqlPool = mysql.createPool(config);
@@ -76,9 +82,14 @@ export async function connectDatabase() {
     logger.info("MySQL Database Connected Successfully");
     return mysqlPool;
   } catch (err) {
-    logger.error(
-      "Failed to connect to MySQL: " + (err?.code || err?.message || err)
-    );
+    const errorMsg = err?.message || String(err);
+    const errorCode = err?.code ? ` [Code: ${err.code}]` : "";
+    logger.error(`Failed to connect to MySQL: ${errorMsg}${errorCode}`);
+    if (err?.stack) {
+      logger.error(err.stack);
+    }
+    logger.error("Please verify database environment variables in Render Dashboard (Environment tab):");
+    logger.error("DB_HOST (or MYSQLHOST), DB_USER (or MYSQLUSER), DB_PASSWORD (or MYSQLPASSWORD), DB_NAME (or MYSQLDATABASE), or DATABASE_URL");
     process.exit(1);
   }
 }

@@ -18,11 +18,13 @@ const env = {
 
     DB: {
         URL: dbUrl || null,
-        HOST: process.env.DB_HOST || process.env.MYSQLHOST || null,
+        HOST: process.env.DB_HOST || process.env.MYSQLHOST || "localhost",
         PORT: process.env.DB_PORT ? Number(process.env.DB_PORT) : (process.env.MYSQLPORT ? Number(process.env.MYSQLPORT) : 3306),
-        NAME: process.env.DB_NAME || process.env.MYSQLDATABASE || null,
-        USER: (!process.env.DB_USER || process.env.DB_USER === "DB_USER") ? (process.env.MYSQLUSER || "avnadmin") : process.env.DB_USER,
+        NAME: process.env.DB_NAME || process.env.MYSQLDATABASE || "pnrg_finance",
+        USER: process.env.DB_USER || process.env.MYSQLUSER || "root",
         PASSWORD: process.env.DB_PASSWORD || process.env.MYSQLPASSWORD || "",
+        SSL: process.env.DB_SSL === "true" || process.env.MYSQL_SSL === "true",
+        CONNECTION_LIMIT: process.env.DB_CONNECTION_LIMIT ? Number(process.env.DB_CONNECTION_LIMIT) : 20,
     },
 
     JWT: {
