@@ -60,6 +60,12 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.email.trim() && !form.mobileNumber.trim())
+      return toast.error("Please provide either an Email address or Mobile Phone number.");
+    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()))
+      return toast.error("Please enter a valid Email address.");
+    if (form.mobileNumber.trim() && !/^\+?\d{10,15}$/.test(form.mobileNumber.trim().replace(/\s+/g, "")))
+      return toast.error("Please enter a valid 10-digit Mobile Phone number.");
     if (form.password !== form.confirmPassword)
       return toast.error("Passwords do not match.");
     if (form.password.length < 6)
@@ -74,11 +80,11 @@ export default function Register() {
     setLoading(true);
     try {
       await authService.register({
-        firstName: form.firstName,
-        lastName: form.lastName,
-        email: form.email,
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
+        email: form.email.trim() || undefined,
         password: form.password,
-        mobileNumber: form.mobileNumber,
+        mobileNumber: form.mobileNumber.trim() || undefined,
         aadhaarNumber: form.aadhaarNumber.trim() || undefined,
         panNumber: form.panNumber.trim().toUpperCase() || undefined,
         role: form.role,
@@ -247,7 +253,7 @@ export default function Register() {
 
             <form onSubmit={handleSubmit}>
               <Grid container spacing={3}>
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
                     required
@@ -274,7 +280,7 @@ export default function Register() {
                   />
                 </Grid>
 
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
                     label="Last Name"
@@ -300,12 +306,13 @@ export default function Register() {
                   />
                 </Grid>
 
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
-                    required
                     type="email"
                     label="Email Address"
+                    placeholder="name@example.com"
+                    helperText="Required if Mobile Phone is not provided"
                     value={form.email}
                     onChange={handleChange("email")}
                     slotProps={{
@@ -328,11 +335,12 @@ export default function Register() {
                   />
                 </Grid>
 
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
                     label="Mobile Phone"
-                    placeholder="+91 98765 43210"
+                    placeholder="9876543210"
+                    helperText="10-digit phone number"
                     value={form.mobileNumber}
                     onChange={handleChange("mobileNumber")}
                     slotProps={{
@@ -355,7 +363,7 @@ export default function Register() {
                   />
                 </Grid>
 
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
                     label="Aadhaar Number (12 Digits)"
@@ -382,7 +390,7 @@ export default function Register() {
                   />
                 </Grid>
 
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
                     label="PAN Number (10 Chars)"
@@ -409,7 +417,7 @@ export default function Register() {
                   />
                 </Grid>
 
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
                     required
@@ -444,7 +452,7 @@ export default function Register() {
                   />
                 </Grid>
 
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
                     required
@@ -472,7 +480,7 @@ export default function Register() {
                   />
                 </Grid>
 
-                <Grid size={12}>
+                <Grid item xs={12}>
                   <FormControlLabel
                     control={
                       <Checkbox
@@ -489,7 +497,7 @@ export default function Register() {
                   />
                 </Grid>
 
-                <Grid size={12}>
+                <Grid item xs={12}>
                   <Button
                     type="submit"
                     variant="contained"

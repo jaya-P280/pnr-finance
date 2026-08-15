@@ -1,6 +1,7 @@
 import ApiError from "../../shared/ApiError.js";
 import CodeGenerator from "../../shared/codeGenerator.helper.js";
 import PaginationHelper from "../../shared/pagination.helper.js";
+import smsService from "../../shared/sms.service.js";
 
 import loanRepository from "./loans.repository.js";
 
@@ -601,6 +602,77 @@ class LoanService {
       await loanRepository.rollback(connection);
       throw error;
     }
+  }
+
+  async getRepaymentSchedule(loanId) {
+    return await loanRepository.getRepaymentScheduleByLoanId(loanId);
+  }
+
+  async sendEmiReminderSms(scheduleId) {
+    const item = await loanRepository.getScheduleItemById(scheduleId);
+    if (!item) {
+      throw new ApiError(404, "EMI Schedule installment item not found.");
+    }
+
+    const customerName = `${item.first_name || ""} ${item.last_name || ""}`.trim() || "Borrower";
+    const smsMessage = smsService.generateEmiReminderText({
+      customerName,
+      loanNumber: item.loan_number,
+      emiAmount: item.emi_amount,
+      dueDate: item.due_date,
+      installmentNo: item.installment_number,
+    });
+
+    const result = await smsService.sendSms({
+      mobileNumber: item.mobile_number,
+      message: smsMessage,
+    });
+
+    return {
+      scheduleId,
+      recipient: item.mobile_number,
+      customerName,
+      loanNumber: item.loan_number,
+      installmentNo: item.installment_number,
+      emiAmount: item.emi_amount,
+      dueDate: item.due_date,
+      smsText: smsMessage,
+      smsResult: result,
+    };
+  }
+
+  async sendBatchUpcomingEmiReminders(daysAhead = 3) {
+    const upcomingItems = await loanRepository.getUpcomingDueSchedules(daysAhead);
+    const results = [];
+
+    for (const item of upcomingItems) {
+      const customerName = `${item.first_name || ""} ${item.last_name || ""}`.trim() || "Borrower";
+      const smsMessage = smsService.generateEmiReminderText({
+        customerName,
+        loanNumber: item.loan_number,
+        emiAmount: item.emi_amount,
+        dueDate: item.due_date,
+        installmentNo: item.installment_number,
+      });
+
+      const res = await smsService.sendSms({
+        mobileNumber: item.mobile_number,
+        message: smsMessage,
+      });
+
+      results.push({
+        scheduleId: item.schedule_id,
+        loanNumber: item.loan_number,
+        recipient: item.mobile_number,
+        status: res.success ? "SENT" : "FAILED",
+      });
+    }
+
+    return {
+      totalRemindersSent: results.length,
+      daysAhead,
+      results,
+    };
   }
 
 }

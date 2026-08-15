@@ -85,8 +85,8 @@ export function AuthProvider({ children }) {
   }, [getToken, getRefreshToken, onTokenRefresh]);
 
   const login = useCallback(
-    async ({ email, password }) => {
-      const authResult = await authService.login({ email, password });
+    async (credentials) => {
+      const authResult = await authService.login(credentials);
       saveSession(authResult, authResult.user);
       return authResult;
     },

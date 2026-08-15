@@ -45,6 +45,8 @@ Thumbs.db
 *~
 .DS_Store
 Thumbs.db
+.agents
+.github/
 
 # Testing
 coverage/

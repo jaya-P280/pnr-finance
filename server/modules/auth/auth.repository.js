@@ -9,6 +9,7 @@ class AuthRepository {
           u.first_name,
           u.last_name,
           u.email,
+          u.mobile_number,
           u.password_hash,
           u.branch_id,
           u.role_id,
@@ -26,6 +27,38 @@ class AuthRepository {
     );
     return rows[0];
   }
+
+  async findUserByIdentifier(identifier) {
+    const rawStr = identifier ? String(identifier).trim() : "";
+    const cleanMobile = rawStr.replace(/\D/g, "").slice(-10);
+    const isMobile = cleanMobile.length === 10;
+
+    const [rows] = await pool.execute(
+      `SELECT 
+          u.user_id,
+          u.employee_code,
+          u.first_name,
+          u.last_name,
+          u.email,
+          u.mobile_number,
+          u.password_hash,
+          u.branch_id,
+          u.role_id,
+          r.role_name,
+          b.branch_name,
+          b.branch_code,
+          u.profile_image,
+          u.status                          
+       FROM users u
+       INNER JOIN roles r ON r.role_id = u.role_id
+       LEFT JOIN branches b ON b.branch_id = u.branch_id
+       WHERE (LOWER(u.email) = LOWER(?) OR u.mobile_number = ? ${isMobile ? "OR u.mobile_number LIKE ?" : ""})
+         AND u.deleted_at IS NULL`,
+      isMobile ? [rawStr.toLowerCase(), rawStr, `%${cleanMobile}`] : [rawStr.toLowerCase(), rawStr],
+    );
+    return rows[0];
+  }
+
 
   async findUserById(UserId) {
     const [rows] = await pool.execute(

@@ -192,6 +192,35 @@ class LoanController {
     }
   }
 
+  async getRepaymentSchedule(req, res, next) {
+    try {
+      const schedule = await loanService.getRepaymentSchedule(req.params.id);
+      return res.json(new ApiResponse(200, "Repayment schedule retrieved successfully", schedule));
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async sendEmiReminderSms(req, res, next) {
+    try {
+      const scheduleId = req.params.scheduleId || req.body.scheduleId;
+      const result = await loanService.sendEmiReminderSms(scheduleId);
+      return res.json(new ApiResponse(200, "EMI reminder SMS sent successfully", result));
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async sendBatchUpcomingEmiReminders(req, res, next) {
+    try {
+      const daysAhead = req.query.daysAhead || req.body.daysAhead || 3;
+      const result = await loanService.sendBatchUpcomingEmiReminders(Number(daysAhead));
+      return res.json(new ApiResponse(200, "Batch EMI SMS reminders process executed", result));
+    } catch (error) {
+      next(error);
+    }
+  }
+
 }
 
 export default new LoanController();

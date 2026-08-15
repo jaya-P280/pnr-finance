@@ -24,7 +24,7 @@ import {
   Email as EmailIcon,
 } from "@mui/icons-material";
 import toast from "react-hot-toast";
-import useAuth from "../../hooks/useAuth";
+import useAuth from "../../../hooks/useAuth";
 
 export default function Login() {
   const { login } = useAuth();
@@ -34,7 +34,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 
-  const from = location.state?.from?.pathname || "/dashboard";
+  const from = location.state?.from?.pathname || "/";
 
   const {
     register,
@@ -42,7 +42,7 @@ export default function Login() {
     formState: { errors },
   } = useForm({
     defaultValues: {
-      email: "",
+      identifier: "",
       password: "",
     },
   });
@@ -50,12 +50,16 @@ export default function Login() {
   const onSubmit = async (values) => {
     setLoading(true);
     try {
-      await login(values);
+      await login({
+        identifier: values.identifier,
+        email: values.identifier,
+        password: values.password,
+      });
       toast.success("Welcome back! Signed in successfully.");
       navigate(from, { replace: true });
     } catch (error) {
       const message =
-        error?.response?.data?.message || error?.message || "Invalid email or password.";
+        error?.response?.data?.message || error?.message || "Invalid credentials.";
       toast.error(message);
     } finally {
       setLoading(false);
@@ -89,7 +93,9 @@ export default function Login() {
         <Grid container sx={{ width: "100%" }}>
           {/* Left Hero Side Banner */}
           <Grid
-            size={{ xs: 12, md: 5 }}
+            item
+            xs={12}
+            md={5}
             sx={{
               background: "linear-gradient(135deg, #0F766E 0%, #0D9488 60%, #115E59 100%)",
               color: "#FFFFFF",
@@ -189,7 +195,9 @@ export default function Login() {
 
           {/* Right Form Side */}
           <Grid
-            size={{ xs: 12, md: 7 }}
+            item
+            xs={12}
+            md={7}
             sx={{
               p: { xs: 4, sm: 5, md: 6 },
               display: "flex",
@@ -203,7 +211,7 @@ export default function Login() {
                 Sign In to Your Account
               </Typography>
               <Typography variant="body2" sx={{ color: "#64748B" }}>
-                Enter your registered email and password to access the portal.
+                Enter your registered email address or mobile number to access the portal.
               </Typography>
             </Box>
 
@@ -211,17 +219,18 @@ export default function Login() {
               <Stack spacing={3}>
                 <TextField
                   fullWidth
-                  label="Email Address"
-                  type="email"
-                  placeholder="name@pnrgfinance.com"
-                  autoComplete="email"
-                  error={!!errors.email}
-                  helperText={errors.email?.message}
-                  {...register("email", {
-                    required: "Email is required",
-                    pattern: {
-                      value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                      message: "Enter a valid email address",
+                  label="Email or Mobile Number"
+                  placeholder="name@pnrgfinance.com or 9876543210"
+                  autoComplete="username"
+                  error={!!errors.identifier}
+                  helperText={errors.identifier?.message}
+                  {...register("identifier", {
+                    required: "Email address or Mobile number is required",
+                    validate: (val) => {
+                      const trimmed = val ? val.trim() : "";
+                      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+                      const isMobile = /^\+?\d{10,15}$/.test(trimmed.replace(/\s+/g, ""));
+                      return isEmail || isMobile || "Enter a valid email address or 10-digit mobile number";
                     },
                   })}
                   slotProps={{

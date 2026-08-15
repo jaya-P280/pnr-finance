@@ -5,9 +5,9 @@ import ProtectedRoute from "./ProtectedRoute";
 import PermissionGuard from "./PermissionGuard";
 import PublicRoute from "./PublicRoute";
 
-import Login from "../lib/pages/auth/Login";
+import Login from "../pages/auth/Login";
 import PasswordSetup from "../lib/pages/auth/PasswordSetup";
-import Register from "../lib/pages/auth/Register";
+import Register from "../pages/auth/Register";
 import BranchList from "../lib/pages/branches/BranchList";
 import Collections from "../lib/pages/collections/Collections";
 import CustomerDocuments from "../lib/pages/customer-documents/CustomerDocuments";

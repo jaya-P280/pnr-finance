@@ -6,17 +6,19 @@ import ApiError from "../../shared/ApiError.js";
 import auditService from "../audit/audit.service.js";
 
 class AuthService {
-  async login(email, password, metadata = {}) {
-    const cleanEmail = email ? String(email).trim().toLowerCase() : "";
+  async login(identifier, password, metadata = {}) {
+    const cleanIdentifier = identifier ? String(identifier).trim() : "";
     const cleanPassword = password ? String(password).trim() : "";
 
-    const user = await authRepository.findUserByEmail(cleanEmail);
-    if (!user) throw new ApiError(401, "Invalid email or password");
+    if (!cleanIdentifier) throw new ApiError(400, "Email address or Mobile number is required.");
+
+    const user = await authRepository.findUserByIdentifier(cleanIdentifier);
+    if (!user) throw new ApiError(401, "Invalid email/mobile number or password.");
     if (user.status !== "ACTIVE") throw new ApiError(403, "Your account is inactive or suspended. Please contact administrator.");
 
     const permissions = await authRepository.getUserPermissions(user.user_id);
     const matched = await passwordService.compare(cleanPassword, user.password_hash);
-    if (!matched) throw new ApiError(401, "Invalid email or password");
+    if (!matched) throw new ApiError(401, "Invalid email/mobile number or password.");
 
     const tokenPayload = { ...user, permissions };
     const accessToken = tokenService.generateAccessToken(tokenPayload);
@@ -42,9 +44,22 @@ class AuthService {
   }
 
   async register(data) {
-    const cleanEmail = data.email ? String(data.email).trim().toLowerCase() : "";
-    const existing = await authRepository.findUserByEmail(cleanEmail);
-    if (existing) throw new ApiError(409, "Email already registered.");
+    let cleanEmail = data.email ? String(data.email).trim().toLowerCase() : "";
+    const cleanMobile = data.mobileNumber ? String(data.mobileNumber).trim() : "";
+
+    if (!cleanEmail && !cleanMobile) {
+      throw new ApiError(400, "Please provide an Email address or Mobile number.");
+    }
+
+    if (!cleanEmail && cleanMobile) {
+      const sanitizedMobile = cleanMobile.replace(/\D/g, "").slice(-10);
+      cleanEmail = `${sanitizedMobile}@pnrgfinance.local`;
+    }
+
+    if (cleanEmail) {
+      const existing = await authRepository.findUserByEmail(cleanEmail);
+      if (existing) throw new ApiError(409, "Email address is already registered.");
+    }
 
     // All registered users via public portal receive the CUSTOMER role
     const role = await authRepository.findDefaultCustomerRole();

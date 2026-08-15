@@ -58,4 +58,6 @@ export const customerPortalApi = {
     api.post(`${customerPortal}/kyc/digilocker`, data),
   verifyPanKyc: (data) =>
     api.post(`${customerPortal}/kyc/pan`, data),
+  sendEmiReminderSms: (loanId, scheduleId) =>
+    api.post(`${ENDPOINTS.LOANS}/${loanId}/schedule/${scheduleId}/send-sms`),
 };

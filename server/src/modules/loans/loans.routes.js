@@ -96,13 +96,25 @@ router.patch(
   loanController.defaultLoan
 );
 
-// Customer loan application route
-router.post(
-  "/apply",
+router.get(
+  "/:id/schedule",
   authenticate,
-  authorize("LOAN_APPLICATION_CREATE"),
-  loanController.applyForLoan
+  authorize("LOAN_VIEW"),
+  loanController.getRepaymentSchedule
 );
 
+router.post(
+  "/:id/schedule/:scheduleId/send-sms",
+  authenticate,
+  authorize("LOAN_VIEW"),
+  loanController.sendEmiReminderSms
+);
+
+router.post(
+  "/send-upcoming-emi-reminders",
+  authenticate,
+  authorize("LOAN_VIEW"),
+  loanController.sendBatchUpcomingEmiReminders
+);
 
 export default router;

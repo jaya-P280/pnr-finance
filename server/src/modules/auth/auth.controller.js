@@ -7,8 +7,9 @@ import { getFullImageUrl } from "../../shared/imageUrl.helper.js";
 
 class AuthController {
   login = asyncHandler(async (req, res) => {
-    const { email, password } = req.body;
-    const data = await authService.login(email, password, {
+    const { identifier, email, mobileNumber, password } = req.body;
+    const targetIdentifier = identifier || email || mobileNumber;
+    const data = await authService.login(targetIdentifier, password, {
       ipAddress: req.ip,
       userAgent: req.get("User-Agent"),
     });

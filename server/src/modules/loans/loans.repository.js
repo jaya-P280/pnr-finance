@@ -435,6 +435,86 @@ class LoanRepository {
       [updatedBy, id],
     );
   }
+
+  async getRepaymentScheduleByLoanId(loanId) {
+    const [rows] = await db.query(
+      `
+      SELECT
+        rs.schedule_id,
+        rs.loan_id,
+        rs.installment_number,
+        rs.due_date,
+        rs.principal_amount,
+        rs.interest_amount,
+        rs.emi_amount,
+        rs.status,
+        c.first_name,
+        c.last_name,
+        c.mobile_number,
+        l.loan_number
+      FROM repayment_schedules rs
+      INNER JOIN loans l ON l.loan_id = rs.loan_id
+      INNER JOIN customers c ON c.customer_id = l.customer_id
+      WHERE rs.loan_id = ?
+      ORDER BY rs.installment_number ASC
+      `,
+      [loanId]
+    );
+    return rows;
+  }
+
+  async getScheduleItemById(scheduleId) {
+    const [rows] = await db.query(
+      `
+      SELECT
+        rs.schedule_id,
+        rs.loan_id,
+        rs.installment_number,
+        rs.due_date,
+        rs.principal_amount,
+        rs.interest_amount,
+        rs.emi_amount,
+        rs.status,
+        c.first_name,
+        c.last_name,
+        c.mobile_number,
+        l.loan_number
+      FROM repayment_schedules rs
+      INNER JOIN loans l ON l.loan_id = rs.loan_id
+      INNER JOIN customers c ON c.customer_id = l.customer_id
+      WHERE rs.schedule_id = ?
+      `,
+      [scheduleId]
+    );
+    return rows[0] || null;
+  }
+
+  async getUpcomingDueSchedules(daysAhead = 3) {
+    const [rows] = await db.query(
+      `
+      SELECT
+        rs.schedule_id,
+        rs.loan_id,
+        rs.installment_number,
+        rs.due_date,
+        rs.emi_amount,
+        rs.status,
+        c.first_name,
+        c.last_name,
+        c.mobile_number,
+        l.loan_number
+      FROM repayment_schedules rs
+      INNER JOIN loans l ON l.loan_id = rs.loan_id
+      INNER JOIN customers c ON c.customer_id = l.customer_id
+      WHERE rs.status = 'PENDING'
+        AND DATE(rs.due_date) <= DATE_ADD(CURDATE(), INTERVAL ? DAY)
+        AND DATE(rs.due_date) >= CURDATE()
+      ORDER BY rs.due_date ASC
+      `,
+      [daysAhead]
+    );
+    return rows;
+  }
 }
 
 export default new LoanRepository();

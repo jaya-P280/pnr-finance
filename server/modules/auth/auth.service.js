@@ -8,17 +8,19 @@ import attendanceRepository from "../attendance/attendance.repository.js";
 import logger from "../../config/logger.js";
 
 class AuthService {
-  async login(email, password, metadata = {}) {
-    const cleanEmail = email ? String(email).trim().toLowerCase() : "";
+  async login(identifier, password, metadata = {}) {
+    const cleanIdentifier = identifier ? String(identifier).trim() : "";
     const cleanPassword = password ? String(password).trim() : "";
 
-    const user = await authRepository.findUserByEmail(cleanEmail);
-    if (!user) throw new ApiError(401, "Invalid email or password");
+    if (!cleanIdentifier) throw new ApiError(400, "Email address or Mobile number is required.");
+
+    const user = await authRepository.findUserByIdentifier(cleanIdentifier);
+    if (!user) throw new ApiError(401, "Invalid email/mobile number or password.");
     if (user.status !== "ACTIVE") throw new ApiError(403, "Your account is inactive or suspended. Please contact administrator.");
 
     const permissions = await authRepository.getUserPermissions(user.user_id);
     const matched = await passwordService.compare(cleanPassword, user.password_hash);
-    if (!matched) throw new ApiError(401, "Invalid email or password");
+    if (!matched) throw new ApiError(401, "Invalid email/mobile number or password.");
 
     const tokenPayload = { ...user, permissions };
     const accessToken = tokenService.generateAccessToken(tokenPayload);
@@ -67,14 +69,26 @@ class AuthService {
   }
 
   async register(data, metadata = {}) {
-    const cleanEmail = data.email ? String(data.email).trim().toLowerCase() : "";
+    let cleanEmail = data.email ? String(data.email).trim().toLowerCase() : "";
     const cleanMobile = data.mobileNumber ? String(data.mobileNumber).trim() : "";
     const cleanAadhaar = data.aadhaarNumber ? String(data.aadhaarNumber).trim() : null;
     const cleanPan = data.panNumber ? String(data.panNumber).trim().toUpperCase() : null;
 
+    if (!cleanEmail && !cleanMobile) {
+      throw new ApiError(400, "Please provide an Email address or Mobile number.");
+    }
+
+    // Auto-generate a clean placeholder email if user registers with mobile only
+    if (!cleanEmail && cleanMobile) {
+      const sanitizedMobile = cleanMobile.replace(/\D/g, "").slice(-10);
+      cleanEmail = `${sanitizedMobile}@pnrgfinance.local`;
+    }
+
     // 1. Check duplicate Email
-    const existingUser = await authRepository.findUserByEmail(cleanEmail);
-    if (existingUser) throw new ApiError(409, "Email address is already registered.");
+    if (cleanEmail) {
+      const existingUser = await authRepository.findUserByEmail(cleanEmail);
+      if (existingUser) throw new ApiError(409, "Email address is already registered.");
+    }
 
     // 2. Check duplicate Mobile
     if (cleanMobile) {

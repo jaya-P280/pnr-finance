@@ -1,19 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { customerPortalApi } from "../../api/customer.api";
 import toast from "react-hot-toast";
 import {
   ArrowBack as ArrowLeft,
-  CalendarMonth as Calendar,
   CheckCircle,
-  AccessTime as Clock,
-  CreditCard,
   Download,
   ReceiptLong,
-  Payment,
-  Shield,
-  MonetizationOn,
-  Percent,
+  Sms as SmsIcon,
 } from "@mui/icons-material";
 
 export default function RepaymentSchedule() {
@@ -23,6 +17,7 @@ export default function RepaymentSchedule() {
   const [schedule, setSchedule] = useState([]);
   const [loading, setLoading] = useState(true);
   const [payingEmiId, setPayingEmiId] = useState(null);
+  const [sendingSmsId, setSendingSmsId] = useState(null);
 
   useEffect(() => {
     fetchSchedule();
@@ -62,12 +57,24 @@ export default function RepaymentSchedule() {
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       toast.success(`Payment of ₹${Number(emiItem.amount || loan?.emiAmount || 0).toLocaleString("en-IN")} successful!`);
-      // refresh schedule
       fetchSchedule();
     } catch (err) {
       toast.error("Payment failed. Please try again.");
     } finally {
       setPayingEmiId(null);
+    }
+  };
+
+  const handleSendSmsReminder = async (item) => {
+    const scheduleId = item.id || item.schedule_id || item.scheduleId;
+    setSendingSmsId(scheduleId || item.installmentNumber);
+    try {
+      await customerPortalApi.sendEmiReminderSms(loanId, scheduleId || 1);
+      toast.success("SMS EMI due reminder sent to borrower!");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to send SMS reminder");
+    } finally {
+      setSendingSmsId(null);
     }
   };
 
@@ -177,13 +184,14 @@ export default function RepaymentSchedule() {
                   <th className="py-3.5 px-6">Principal</th>
                   <th className="py-3.5 px-6">Interest</th>
                   <th className="py-3.5 px-6">Status</th>
-                  <th className="py-3.5 px-6 text-right">Action</th>
+                  <th className="py-3.5 px-6 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">
                 {schedule.map((item, idx) => {
                   const badge = getEmiStatusBadge(item.status);
                   const isPaying = payingEmiId === (item.id || item.installmentNumber);
+                  const isSendingSms = sendingSmsId === (item.id || item.schedule_id || item.installmentNumber);
 
                   return (
                     <tr key={idx} className="hover:bg-slate-50/60 transition-colors">
@@ -206,19 +214,33 @@ export default function RepaymentSchedule() {
                         </span>
                       </td>
                       <td className="py-4 px-6 text-right">
-                        {item.status?.toLowerCase() === "paid" ? (
-                          <span className="text-emerald-600 font-bold inline-flex items-center gap-1 text-[11px]">
-                            <CheckCircle className="w-3.5 h-3.5" /> Paid
-                          </span>
-                        ) : (
-                          <button
-                            onClick={() => handlePayEmi(item)}
-                            disabled={isPaying}
-                            className="px-3 py-1.5 bg-teal-700 hover:bg-teal-800 text-white font-semibold text-xs rounded-lg shadow-xs transition-all"
-                          >
-                            {isPaying ? "Processing..." : "Pay EMI"}
-                          </button>
-                        )}
+                        <div className="flex items-center justify-end gap-2">
+                          {item.status?.toLowerCase() !== "paid" && (
+                            <button
+                              onClick={() => handleSendSmsReminder(item)}
+                              disabled={isSendingSms}
+                              title="Send SMS EMI Reminder to Borrower"
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-xs rounded-lg border border-blue-200 transition-all"
+                            >
+                              <SmsIcon className="w-3.5 h-3.5" />
+                              {isSendingSms ? "Sending..." : "SMS Reminder"}
+                            </button>
+                          )}
+
+                          {item.status?.toLowerCase() === "paid" ? (
+                            <span className="text-emerald-600 font-bold inline-flex items-center gap-1 text-[11px]">
+                              <CheckCircle className="w-3.5 h-3.5" /> Paid
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handlePayEmi(item)}
+                              disabled={isPaying}
+                              className="px-3 py-1.5 bg-teal-700 hover:bg-teal-800 text-white font-semibold text-xs rounded-lg shadow-xs transition-all"
+                            >
+                              {isPaying ? "Processing..." : "Pay EMI"}
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );

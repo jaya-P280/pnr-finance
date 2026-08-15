@@ -7,14 +7,9 @@ import {
   TextField,
   Typography,
   Stack,
-  Alert,
   CircularProgress,
   InputAdornment,
   IconButton,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Container,
   Grid,
   Checkbox,
@@ -22,9 +17,6 @@ import {
   Chip,
 } from "@mui/material";
 import {
-  Visibility,
-  VisibilityOff,
-  PersonAdd as RegisterIcon,
   AccountBalance as BrandIcon,
   Person as PersonIcon,
   Email as EmailIcon,
@@ -33,8 +25,10 @@ import {
   Badge as BadgeIcon,
   CheckCircle as CheckCircleIcon,
   Security as SecurityIcon,
+  Visibility,
+  VisibilityOff,
 } from "@mui/icons-material";
-import authService from "../../services/auth.service";
+import authService from "../../../services/auth.service";
 import toast from "react-hot-toast";
 
 export default function Register() {
@@ -50,6 +44,8 @@ export default function Register() {
     password: "",
     confirmPassword: "",
     mobileNumber: "",
+    aadhaarNumber: "",
+    panNumber: "",
     role: "CUSTOMER",
   });
 
@@ -58,21 +54,33 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.email.trim() && !form.mobileNumber.trim())
+      return toast.error("Please provide either an Email address or Mobile Phone number.");
+    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()))
+      return toast.error("Please enter a valid Email address.");
+    if (form.mobileNumber.trim() && !/^\+?\d{10,15}$/.test(form.mobileNumber.trim().replace(/\s+/g, "")))
+      return toast.error("Please enter a valid 10-digit Mobile Phone number.");
     if (form.password !== form.confirmPassword)
       return toast.error("Passwords do not match.");
     if (form.password.length < 6)
       return toast.error("Password must be at least 6 characters.");
     if (!termsAccepted)
       return toast.error("Please accept terms and conditions.");
+    if (form.aadhaarNumber && !/^\d{12}$/.test(form.aadhaarNumber.trim()))
+      return toast.error("Aadhaar Number must be exactly 12 digits.");
+    if (form.panNumber && !/^[A-Za-z]{5}\d{4}[A-Za-z]{1}$/.test(form.panNumber.trim()))
+      return toast.error("PAN Number format is invalid (e.g. ABCDE1234F).");
 
     setLoading(true);
     try {
       await authService.register({
-        firstName: form.firstName,
-        lastName: form.lastName,
-        email: form.email,
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
+        email: form.email.trim() || undefined,
         password: form.password,
-        mobileNumber: form.mobileNumber,
+        mobileNumber: form.mobileNumber.trim() || undefined,
+        aadhaarNumber: form.aadhaarNumber.trim() || undefined,
+        panNumber: form.panNumber.trim().toUpperCase() || undefined,
         role: form.role,
       });
       setSuccess(true);
@@ -127,7 +135,7 @@ export default function Register() {
             Registration Successful!
           </Typography>
           <Typography variant="body2" color="#64748B" sx={{ mb: 3 }}>
-            Your customer account for <strong>{form.email}</strong> has been created. You can now log into your Customer Portal to view and apply for loans.
+            Your customer account has been created. You can now log into your Customer Portal to view and apply for loans.
           </Typography>
 
           <Button
@@ -239,7 +247,7 @@ export default function Register() {
 
             <form onSubmit={handleSubmit}>
               <Grid container spacing={3}>
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
                     required
@@ -266,7 +274,7 @@ export default function Register() {
                   />
                 </Grid>
 
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
                     label="Last Name"
@@ -292,12 +300,13 @@ export default function Register() {
                   />
                 </Grid>
 
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
-                    required
                     type="email"
                     label="Email Address"
+                    placeholder="name@example.com"
+                    helperText="Required if Mobile Phone is not provided"
                     value={form.email}
                     onChange={handleChange("email")}
                     slotProps={{
@@ -320,11 +329,12 @@ export default function Register() {
                   />
                 </Grid>
 
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
                     label="Mobile Phone"
-                    placeholder="+91 98765 43210"
+                    placeholder="9876543210"
+                    helperText="10-digit phone number"
                     value={form.mobileNumber}
                     onChange={handleChange("mobileNumber")}
                     slotProps={{
@@ -347,7 +357,61 @@ export default function Register() {
                   />
                 </Grid>
 
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Aadhaar Number (12 Digits)"
+                    placeholder="1234 5678 9012"
+                    value={form.aadhaarNumber}
+                    onChange={handleChange("aadhaarNumber")}
+                    slotProps={{
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <BadgeIcon sx={{ color: "#0F766E", fontSize: 20 }} />
+                          </InputAdornment>
+                        ),
+                      },
+                    }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: 2.5,
+                        "& fieldset": { borderColor: "#CBD5E1" },
+                        "&:hover fieldset": { borderColor: "#0F766E" },
+                        "&.Mui-focused fieldset": { borderColor: "#0F766E", borderWidth: 2 },
+                      },
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="PAN Number (10 Chars)"
+                    placeholder="ABCDE1234F"
+                    value={form.panNumber}
+                    onChange={handleChange("panNumber")}
+                    slotProps={{
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <BadgeIcon sx={{ color: "#0F766E", fontSize: 20 }} />
+                          </InputAdornment>
+                        ),
+                      },
+                    }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: 2.5,
+                        "& fieldset": { borderColor: "#CBD5E1" },
+                        "&:hover fieldset": { borderColor: "#0F766E" },
+                        "&.Mui-focused fieldset": { borderColor: "#0F766E", borderWidth: 2 },
+                      },
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
                     required
@@ -382,7 +446,7 @@ export default function Register() {
                   />
                 </Grid>
 
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
                     required
@@ -410,7 +474,7 @@ export default function Register() {
                   />
                 </Grid>
 
-                <Grid size={12}>
+                <Grid item xs={12}>
                   <FormControlLabel
                     control={
                       <Checkbox
@@ -427,7 +491,7 @@ export default function Register() {
                   />
                 </Grid>
 
-                <Grid size={12}>
+                <Grid item xs={12}>
                   <Button
                     type="submit"
                     variant="contained"
