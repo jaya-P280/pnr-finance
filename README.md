@@ -7,13 +7,14 @@
 [![MySQL](https://img.shields.io/badge/MySQL-v8.0-4479A1?style=flat-square&logo=mysql)](https://www.mysql.com/)
 [![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-v4.0-06B6D4?style=flat-square&logo=tailwindcss)](https://tailwindcss.com/)
 [![MUI](https://img.shields.io/badge/MUI-v6.4-007FFF?style=flat-square&logo=mui)](https://mui.com/)
+[![SMS Gateway](https://img.shields.io/badge/SMS-Fast2SMS-FF6B6B?style=flat-square)](https://www.fast2sms.com/)
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg?style=flat-square)](LICENSE)
 
 ---
 
 ## 📌 Overview
 
-**PNRG Finance** is a full-stack, enterprise-grade Microfinance and Loan Management System designed to streamline financial operations, loan origination, repayment tracking, customer management, group lending, and field collections. 
+**PNRG Finance** is a full-stack, enterprise-grade Microfinance and Loan Management System designed to streamline financial operations, loan origination, repayment tracking, customer management, group lending (SHG), field collection schedules, and automated SMS notifications. 
 
 Built with a modular monorepo architecture, PNRG Finance couples a modern React frontend (styled with MUI and Tailwind CSS) with a high-performance Express.js backend powered by MySQL.
 
@@ -23,7 +24,7 @@ Built with a modular monorepo architecture, PNRG Finance couples a modern React 
 
 ### 🏢 Branch & Access Control
 - **Multi-Branch Operations**: Manage multiple branches, assign staff, and track location-specific performance.
-- **Granular RBAC**: Role-Based Access Control supporting customizable user roles and permissions.
+- **Granular RBAC**: Role-Based Access Control supporting customizable user roles and permissions (Admin, Branch Manager, Field Agent, Accountant).
 
 ### 👤 Customer & KYC Management
 - **Customer Profiles**: Comprehensive borrower profiles including personal details, employment, and income details.
@@ -41,6 +42,10 @@ Built with a modular monorepo architecture, PNRG Finance couples a modern React 
 ### 🤝 Group & Microfinance Lending (SHG)
 - **Self-Help Group (SHG) Support**: Group creation, joint liability group loans, and group repayment collection tracking.
 
+### 📱 SMS Notifications & Reminders
+- **Automated Customer SMS**: Send EMI due date reminders, payment confirmation alerts, and loan status updates via Fast2SMS gateway.
+- **Sandbox Mode**: Built-in simulation mode for development and testing environments when API keys are not active.
+
 ### 💰 Collections & Field Management
 - **Daily / Weekly Collections**: Collection sheet generation for field agents.
 - **Agent Performance**: Tracking collection efficiency and agent assignments.
@@ -49,9 +54,9 @@ Built with a modular monorepo architecture, PNRG Finance couples a modern React 
 - **Financial Accounting**: Expense tracking, revenue logging, and financial health dashboards.
 - **Attendance & Payroll**: Employee attendance logging and salary distribution management.
 
-### 📜 Customer Portal & Document Generation
-- **Borrower Self-Service Portal**: Customer dashboard to view loan status, EMI schedules, and transaction history.
-- **Letter Generation**: Automatic generation of loan sanction letters, agreement docs, and collection notice letters.
+### 📜 Borrower Self-Service Portal
+- **Customer Portal**: Dedicated borrower portal for customers to check active loans, inspect EMI repayment schedules, view payment history, and manage profiles.
+- **Document Generation**: Automatic generation of loan sanction letters, agreement docs, and collection notice letters.
 - **Reports & Analytics**: Visual charts and exports (using Recharts) for business reporting.
 
 ### 🛡️ Security & Auditing
@@ -76,6 +81,7 @@ Built with a modular monorepo architecture, PNRG Finance couples a modern React 
 - **Runtime & Framework**: Node.js (ES Modules), Express.js
 - **Database**: MySQL 8.0+ via `mysql2/promise` (connection pooling with query fallbacks)
 - **Authentication**: JWT (`jsonwebtoken`), Password Hashing (`bcryptjs`)
+- **Notifications & SMS**: Fast2SMS API (`axios`) with developer sandbox fallback
 - **File Uploads**: Multer
 - **Mailing**: Nodemailer
 - **Logging & Security**: Winston, Morgan, Helmet, Express Rate Limit, HPP, XSS Clean
@@ -91,10 +97,10 @@ pnrg-finance/
 │   ├── src/
 │   │   ├── api/                # API client & endpoints setup
 │   │   ├── components/         # Reusable UI components
-│   │   ├── context/            # React context providers
+│   │   ├── context/            # React context providers (AuthContext)
 │   │   ├── hooks/              # Custom React hooks
 │   │   ├── layouts/            # Dashboard & Auth layout wrappers
-│   │   ├── pages/              # Application views/routes (Loans, EMI, HR, etc.)
+│   │   ├── pages/              # Application views/routes (Loans, EMI, HR, Customer Portal, etc.)
 │   │   ├── services/           # Service abstractions
 │   │   ├── theme/              # MUI theme configuration
 │   │   └── utils/              # Helper utilities
@@ -123,6 +129,7 @@ pnrg-finance/
 │   │   ├── reports/
 │   │   ├── salaries/
 │   │   └── users/
+│   ├── shared/                 # Shared backend services (SMS service, etc.)
 │   ├── routes/                 # Express API routes
 │   ├── uploads/                # File upload destination directory
 │   ├── app.js                  # Express app initialization
@@ -140,7 +147,7 @@ pnrg-finance/
 Ensure you have the following installed on your machine:
 - **Node.js**: `v18.0.0` or higher
 - **npm**: `v9.0.0` or higher
-- **MySQL Database**: `v8.0` or higher (local or cloud instance like Aiven, AWS RDS, etc.)
+- **MySQL Database**: `v8.0` or higher (local instance or cloud like Aiven, AWS RDS)
 
 ---
 
@@ -149,7 +156,7 @@ Ensure you have the following installed on your machine:
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/pnrg-finance.git
+git clone https://github.com/jaya-P280/pnr-finance.git
 cd pnrg-finance
 ```
 
@@ -165,7 +172,7 @@ npm install
 
 #### Server Configuration (`/server/.env`)
 
-Create a `.env` file inside the `server/` directory (or copy from `.env.example`):
+Create a `.env` file inside the `server/` directory:
 
 ```env
 MODE_ENV=development
@@ -184,6 +191,9 @@ JWT_ACCESS_SECRET=your_jwt_access_secret_key
 JWT_REFRESH_SECRET=your_jwt_refresh_secret_key
 JWT_ACCESS_EXPIRES=15m
 JWT_REFRESH_EXPIRES=7d
+
+# SMS Configuration (Fast2SMS / Gateway)
+SMS_API_KEY=your_fast2sms_api_key
 
 # Logging & Mail
 LOG_LEVEL=info
@@ -251,7 +261,7 @@ All backend endpoints are prefixed with `/api/v1`.
 
 | Module | Base Path | Description |
 | :--- | :--- | :--- |
-| **Auth** | `/api/v1/auth` | User login, refresh token, logout, profile |
+| **Auth** | `/api/v1/auth` | User & customer login, refresh token, logout, profile |
 | **Users & Roles** | `/api/v1/users`, `/api/v1/roles` | User accounts and role permission assignments |
 | **Branches** | `/api/v1/branches` | Branch CRUD and assignment |
 | **Customers** | `/api/v1/customers` | Customer onboarding, KYC documents |
@@ -270,7 +280,7 @@ All backend endpoints are prefixed with `/api/v1`.
 
 ## 👤 Author
 
-- **Palem Jaya Prakash Goud**
+- **Palem Jaya Prakash Goud** ([@jaya-P280](https://github.com/jaya-P280))
 
 ---
 
