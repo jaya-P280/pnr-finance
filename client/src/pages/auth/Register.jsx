@@ -50,8 +50,6 @@ export default function Register() {
     password: "",
     confirmPassword: "",
     mobileNumber: "",
-    aadhaarNumber: "",
-    panNumber: "",
     role: "CUSTOMER",
   });
 
@@ -72,10 +70,6 @@ export default function Register() {
       return toast.error("Password must be at least 6 characters.");
     if (!termsAccepted)
       return toast.error("Please accept terms and conditions.");
-    if (form.aadhaarNumber && !/^\d{12}$/.test(form.aadhaarNumber.trim()))
-      return toast.error("Aadhaar Number must be exactly 12 digits.");
-    if (form.panNumber && !/^[A-Za-z]{5}\d{4}[A-Za-z]{1}$/.test(form.panNumber.trim()))
-      return toast.error("PAN Number format is invalid (e.g. ABCDE1234F).");
 
     setLoading(true);
     try {
@@ -85,8 +79,6 @@ export default function Register() {
         email: form.email.trim() || undefined,
         password: form.password,
         mobileNumber: form.mobileNumber.trim() || undefined,
-        aadhaarNumber: form.aadhaarNumber.trim() || undefined,
-        panNumber: form.panNumber.trim().toUpperCase() || undefined,
         role: form.role,
       });
       setSuccess(true);
@@ -363,59 +355,6 @@ export default function Register() {
                   />
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Aadhaar Number (12 Digits)"
-                    placeholder="1234 5678 9012"
-                    value={form.aadhaarNumber}
-                    onChange={handleChange("aadhaarNumber")}
-                    slotProps={{
-                      input: {
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <BadgeIcon sx={{ color: "#0F766E", fontSize: 20 }} />
-                          </InputAdornment>
-                        ),
-                      },
-                    }}
-                    sx={{
-                      "& .MuiOutlinedInput-root": {
-                        borderRadius: 2.5,
-                        "& fieldset": { borderColor: "#CBD5E1" },
-                        "&:hover fieldset": { borderColor: "#0F766E" },
-                        "&.Mui-focused fieldset": { borderColor: "#0F766E", borderWidth: 2 },
-                      },
-                    }}
-                  />
-                </Grid>
-
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="PAN Number (10 Chars)"
-                    placeholder="ABCDE1234F"
-                    value={form.panNumber}
-                    onChange={handleChange("panNumber")}
-                    slotProps={{
-                      input: {
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <BadgeIcon sx={{ color: "#0F766E", fontSize: 20 }} />
-                          </InputAdornment>
-                        ),
-                      },
-                    }}
-                    sx={{
-                      "& .MuiOutlinedInput-root": {
-                        borderRadius: 2.5,
-                        "& fieldset": { borderColor: "#CBD5E1" },
-                        "&:hover fieldset": { borderColor: "#0F766E" },
-                        "&.Mui-focused fieldset": { borderColor: "#0F766E", borderWidth: 2 },
-                      },
-                    }}
-                  />
-                </Grid>
 
                 <Grid item xs={12} sm={6}>
                   <TextField

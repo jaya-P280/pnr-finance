@@ -29,8 +29,6 @@ export const registerValidation = [
     return true;
   }),
   body("password").isLength({ min: 6 }).withMessage("Password must be at least 6 characters."),
-  body("aadhaarNumber").optional({ nullable: true, checkFalsy: true }).matches(/^\d{12}$/).withMessage("Aadhaar must be a 12-digit number."),
-  body("panNumber").optional({ nullable: true, checkFalsy: true }).matches(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/).withMessage("Invalid PAN number format (e.g., ABCDE1234F)."),
   body("branchId").optional().isInt({ min: 1 }),
 ];
 

@@ -71,8 +71,6 @@ class AuthService {
   async register(data, metadata = {}) {
     let cleanEmail = data.email ? String(data.email).trim().toLowerCase() : "";
     const cleanMobile = data.mobileNumber ? String(data.mobileNumber).trim() : "";
-    const cleanAadhaar = data.aadhaarNumber ? String(data.aadhaarNumber).trim() : null;
-    const cleanPan = data.panNumber ? String(data.panNumber).trim().toUpperCase() : null;
 
     if (!cleanEmail && !cleanMobile) {
       throw new ApiError(400, "Please provide an Email address or Mobile number.");
@@ -96,22 +94,6 @@ class AuthService {
       const existingCustMobile = await authRepository.findCustomerByMobile(cleanMobile);
       if (existingUserMobile || existingCustMobile) {
         throw new ApiError(409, "Mobile number is already registered.");
-      }
-    }
-
-    // 3. Check duplicate Aadhaar
-    if (cleanAadhaar) {
-      const existingAadhaar = await authRepository.findCustomerByAadhaar(cleanAadhaar);
-      if (existingAadhaar) {
-        throw new ApiError(409, "Aadhaar number is already registered.");
-      }
-    }
-
-    // 4. Check duplicate PAN
-    if (cleanPan) {
-      const existingPan = await authRepository.findCustomerByPan(cleanPan);
-      if (existingPan) {
-        throw new ApiError(409, "PAN number is already registered.");
       }
     }
 
@@ -152,8 +134,6 @@ class AuthService {
       lastName: data.lastName || null,
       mobileNumber: cleanMobile || "0000000000",
       email: cleanEmail,
-      aadhaarNumber: cleanAadhaar,
-      panNumber: cleanPan,
       createdBy: userId,
     });
 
