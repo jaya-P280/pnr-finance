@@ -50,14 +50,26 @@ export async function connectDatabase() {
   if (mysqlPool && isMysqlConnected) return mysqlPool;
 
   try {
+    const host = env.DB.HOST || "localhost";
+    const isCloudHost =
+      host !== "localhost" &&
+      host !== "127.0.0.1" &&
+      host !== "::1";
+
     const isSslNeeded =
-      env.DB.SSL ||
-      process.env.DB_SSL === "true" ||
-      process.env.MYSQL_SSL === "true" ||
-      (typeof env.DB.URL === "string" && env.DB.URL.includes("ssl"));
+      process.env.DB_SSL !== "false" &&
+      (
+        env.DB.SSL ||
+        process.env.DB_SSL === "true" ||
+        process.env.MYSQL_SSL === "true" ||
+        (typeof env.DB.URL === "string" && env.DB.URL.includes("ssl")) ||
+        isCloudHost ||
+        !!process.env.RENDER ||
+        process.env.NODE_ENV === "production"
+      );
 
     const config = env.DB.URL || {
-      host: env.DB.HOST || "localhost",
+      host,
       port: env.DB.PORT || 3306,
       user: env.DB.USER || "root",
       password: env.DB.PASSWORD || "",
@@ -69,7 +81,7 @@ export async function connectDatabase() {
       keepAliveInitialDelay: 0,
       charset: "utf8mb4",
       decimalNumbers: true,
-      ssl: isSslNeeded ? { rejectUnauthorized: false } : undefined,
+      ssl: isSslNeeded ? { minVersion: "TLSv1.2", rejectUnauthorized: false } : undefined,
     };
 
     mysqlPool = mysql.createPool(config);
