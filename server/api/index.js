@@ -1,25 +1,38 @@
 import app from "../app.js";
 import { connectDatabase } from "../database/db.js";
-import { initializeDatabase } from "../database/initialize/initialize.runner.js";
 import logger from "../config/logger.js";
 
-let isInitialized = false;
+let dbPromise = null;
 
-async function init() {
-  if (!isInitialized) {
-    try {
-      await connectDatabase();
-      initializeDatabase().catch((err) => {
-        logger.error("Database schema init warning: " + (err?.message || err));
-      });
-      isInitialized = true;
-    } catch (error) {
-      logger.error("Database connection failed in serverless function: " + (error?.stack || error));
+function initializeDatabaseConnection() {
+    if (!dbPromise) {
+        dbPromise = connectDatabase().catch((error) => {
+            dbPromise = null;
+
+            logger.error(
+                `Database connection failed: ${error?.stack || error}`
+            );
+
+            throw error;
+        });
     }
-  }
+
+    return dbPromise;
 }
 
 export default async function handler(req, res) {
-  await init();
-  return app(req, res);
+    try {
+        await initializeDatabaseConnection();
+
+        return app(req, res);
+    } catch (error) {
+        logger.error(
+            `Serverless request failed: ${error?.stack || error}`
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: "Database connection failed",
+        });
+    }
 }
