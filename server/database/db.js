@@ -100,9 +100,12 @@ export async function connectDatabase() {
     if (err?.stack) {
       logger.error(err.stack);
     }
-    logger.error("Please verify database environment variables in Render Dashboard (Environment tab):");
+    logger.error("Please verify database environment variables:");
     logger.error("DB_HOST (or MYSQLHOST), DB_USER (or MYSQLUSER), DB_PASSWORD (or MYSQLPASSWORD), DB_NAME (or MYSQLDATABASE), or DATABASE_URL");
-    process.exit(1);
+    if (!process.env.VERCEL) {
+      process.exit(1);
+    }
+    throw err;
   }
 }
 
