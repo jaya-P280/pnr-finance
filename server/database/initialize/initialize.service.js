@@ -379,7 +379,7 @@ class InitializeService {
         ];
         for (const exp of sampleExpenses) {
           await connection.execute(
-            `INSERT INTO expenses (expense_number, category, amount, payment_method, expense_date, paid_to, branch_id, voucher_ref, description, created_by)
+            `INSERT INTO expenses (expense_number, category, amount, payment_method, expense_date, paid_to, branch_id, receipt_ref, description, created_by)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
             exp
           );

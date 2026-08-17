@@ -4,8 +4,18 @@ import path from "path";
 import multer from "multer";
 import ApiError from "../shared/ApiError.js";
 
-const uploadDirectory = path.join(process.cwd(), "uploads", "profiles");
-fs.mkdirSync(uploadDirectory, { recursive: true });
+const isVercel = Boolean(process.env.VERCEL);
+const uploadDirectory = isVercel
+  ? path.join("/tmp", "uploads", "profiles")
+  : path.join(process.cwd(), "uploads", "profiles");
+
+try {
+  if (!fs.existsSync(uploadDirectory)) {
+    fs.mkdirSync(uploadDirectory, { recursive: true });
+  }
+} catch {
+  // Ignore directory creation errors in read-only environment
+}
 
 const storage = multer.diskStorage({
   destination: uploadDirectory,
