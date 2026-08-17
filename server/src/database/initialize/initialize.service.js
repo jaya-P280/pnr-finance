@@ -235,20 +235,46 @@ class InitializeService {
       const [custCount] = await connection.execute(`SELECT COUNT(*) AS total FROM customers`);
       if (custCount[0]?.total === 0) {
         const sampleCustomers = [
-          ["CUST000001", branchId, "Rajesh", "Kumar", "MALE", "1988-05-12", "9876543210", "9876543211", "rajesh.kumar@example.com", "123456789012", "ABCDE1234F", "Farmer", 25000, "Village Road, Plot 12", "Hyderabad", "Telangana", "500001", 1],
-          ["CUST000002", branchId, "Priya", "Sharma", "FEMALE", "1992-08-20", "9876543220", "9876543221", "priya.sharma@example.com", "234567890123", "BCDEF2345G", "Small Business", 30000, "Market Yard, Shop 4", "Hyderabad", "Telangana", "500002", 1],
-          ["CUST000003", branchId, "Amit", "Patel", "MALE", "1990-11-15", "9876543230", "9876543231", "amit.patel@example.com", "345678901234", "CDEFG3456H", "Trader", 45000, "Station Road, Shop 10", "Hyderabad", "Telangana", "500003", 1],
-          ["CUST000004", branchId, "Sunita", "Devi", "FEMALE", "1985-03-25", "9876543240", "9876543241", "sunita.devi@example.com", "456789012345", "DEFGH4567I", "Tailoring", 20000, "Gandhi Nagar", "Hyderabad", "Telangana", "500004", 1],
-          ["CUST000005", branchId, "Ramesh", "Verma", "MALE", "1994-07-08", "9876543250", "9876543251", "ramesh.verma@example.com", "567890123456", "EFGHI5678J", "Dairy Farming", 35000, "Subhash Nagar", "Hyderabad", "Telangana", "500005", 1]
+          {
+            code: "CUST000001", branchId, firstName: "Rajesh", lastName: "Kumar", gender: "MALE", dob: "1988-05-12",
+            mobile: "9876543210", altMobile: "9876543211", email: "rajesh.kumar@example.com", aadhaar: "123456789012", pan: "ABCDE1234F",
+            occupation: "Farmer", income: 25000, address: "Village Road, Plot 12", city: "Hyderabad", state: "Telangana", pincode: "500001"
+          },
+          {
+            code: "CUST000002", branchId, firstName: "Priya", lastName: "Sharma", gender: "FEMALE", dob: "1992-08-20",
+            mobile: "9876543220", altMobile: "9876543221", email: "priya.sharma@example.com", aadhaar: "234567890123", pan: "BCDEF2345G",
+            occupation: "Small Business", income: 30000, address: "Market Yard, Shop 4", city: "Hyderabad", state: "Telangana", pincode: "500002"
+          },
+          {
+            code: "CUST000003", branchId, firstName: "Amit", lastName: "Patel", gender: "MALE", dob: "1990-11-15",
+            mobile: "9876543230", altMobile: "9876543231", email: "amit.patel@example.com", aadhaar: "345678901234", pan: "CDEFG3456H",
+            occupation: "Trader", income: 45000, address: "Station Road, Shop 10", city: "Hyderabad", state: "Telangana", pincode: "500003"
+          },
+          {
+            code: "CUST000004", branchId, firstName: "Sunita", lastName: "Devi", gender: "FEMALE", dob: "1985-03-25",
+            mobile: "9876543240", altMobile: "9876543241", email: "sunita.devi@example.com", aadhaar: "456789012345", pan: "DEFGH4567I",
+            occupation: "Tailoring", income: 20000, address: "Gandhi Nagar", city: "Hyderabad", state: "Telangana", pincode: "500004"
+          },
+          {
+            code: "CUST000005", branchId, firstName: "Ramesh", lastName: "Verma", gender: "MALE", dob: "1994-07-08",
+            mobile: "9876543250", altMobile: "9876543251", email: "ramesh.verma@example.com", aadhaar: "567890123456", pan: "EFGHI5678J",
+            occupation: "Dairy Farming", income: 35000, address: "Subhash Nagar", city: "Hyderabad", state: "Telangana", pincode: "500005"
+          }
         ];
         for (const c of sampleCustomers) {
+          const [res] = await connection.execute(
+            `INSERT INTO customers (customer_code, branch_id, first_name, last_name, gender, date_of_birth, mobile_number, alternate_mobile, email, occupation, monthly_income, address, city, state, pincode, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+            [c.code, c.branchId, c.firstName, c.lastName, c.gender, c.dob, c.mobile, c.altMobile, c.email, c.occupation, c.income, c.address, c.city, c.state, c.pincode]
+          );
+          const cId = res.insertId;
           await connection.execute(
-            `INSERT INTO customers (customer_code, branch_id, first_name, last_name, gender, date_of_birth, mobile_number, alternate_mobile, email, aadhaar_number, pan_number, occupation, monthly_income, address, city, state, pincode, created_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            c
+            `INSERT INTO customer_kyc (customer_id, aadhaar_number, pan_number, aadhaar_verified, pan_verified, kyc_status, remarks)
+             VALUES (?, ?, ?, 1, 1, 'VERIFIED', 'Verified during sample seeding')`,
+            [cId, c.aadhaar, c.pan]
           );
         }
-        logger.info("Sample Customers seeded");
+        logger.info("Sample Customers seeded with 6-digit codes and KYC records");
       }
 
       // --- Seed Sample Customer Groups & Group Members if empty ---
