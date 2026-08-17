@@ -246,7 +246,7 @@ class AuthRepository {
   async findCustomerByAadhaar(aadhaar) {
     if (!aadhaar) return null;
     const [rows] = await pool.execute(
-      `SELECT customer_id FROM customers WHERE aadhaar_number = ? AND deleted_at IS NULL LIMIT 1`,
+      `SELECT customer_id FROM customer_kyc WHERE aadhaar_number = ? LIMIT 1`,
       [aadhaar],
     );
     return rows[0] || null;
@@ -255,7 +255,7 @@ class AuthRepository {
   async findCustomerByPan(pan) {
     if (!pan) return null;
     const [rows] = await pool.execute(
-      `SELECT customer_id FROM customers WHERE UPPER(pan_number) = UPPER(?) AND deleted_at IS NULL LIMIT 1`,
+      `SELECT customer_id FROM customer_kyc WHERE UPPER(pan_number) = UPPER(?) LIMIT 1`,
       [pan],
     );
     return rows[0] || null;

@@ -126,37 +126,78 @@ class InitializeService {
         logger.info("Head Office exists");
       }
 
-      // --- Create Default Admin ---
-      logger.info("Checking default super admin...");
-      const existingSuperAdmin = await repository.findAdmin(
-        connection,
-        DEFAULT_SUPER_ADMIN.email,
-      );
-
-      if (!existingSuperAdmin) {
-        const superAdminRoleId = roleMap["SUPER_ADMIN"];
-        const passwordHash = await bcrypt.hash(DEFAULT_SUPER_ADMIN.password, 12);
-
-        await repository.createAdmin(connection, {
-          branch_id: branchId,
-          role_id: superAdminRoleId,
+      // --- Create Default Super Admin & Staff Users ---
+      logger.info("Checking default super admin and sample staff users...");
+      const sampleUsers = [
+        {
           employee_code: DEFAULT_SUPER_ADMIN.employee_code,
           first_name: DEFAULT_SUPER_ADMIN.first_name,
           last_name: DEFAULT_SUPER_ADMIN.last_name,
           email: DEFAULT_SUPER_ADMIN.email,
           phone: DEFAULT_SUPER_ADMIN.phone,
-          password_hash: passwordHash,
-        });
+          password: DEFAULT_SUPER_ADMIN.password,
+          role_name: "SUPER_ADMIN",
+        },
+        {
+          employee_code: "EMP0001",
+          first_name: "System",
+          last_name: "Admin",
+          email: "admin@pnrgfinance.com",
+          phone: "9999999991",
+          password: "Admin@123",
+          role_name: "ADMIN",
+        },
+        {
+          employee_code: "EMP0002",
+          first_name: "Branch",
+          last_name: "Manager",
+          email: "bm@pnrgfinance.com",
+          phone: "9999999992",
+          password: "Manager@123",
+          role_name: "BRANCH_MANAGER",
+        },
+        {
+          employee_code: "EMP0003",
+          first_name: "Field",
+          last_name: "Officer",
+          email: "fo@pnrgfinance.com",
+          phone: "9999999993",
+          password: "Officer@123",
+          role_name: "FIELD_OFFICER",
+        },
+        {
+          employee_code: "EMP0004",
+          first_name: "Senior",
+          last_name: "Accountant",
+          email: "accountant@pnrgfinance.com",
+          phone: "9999999994",
+          password: "Accountant@123",
+          role_name: "ACCOUNTANT",
+        },
+      ];
 
-        logger.info("Default Super Admin created (superadmin@pnrgfinance.com)");
-      } else {
-        const superAdminRoleId = roleMap["SUPER_ADMIN"];
-        const passwordHash = await bcrypt.hash(DEFAULT_SUPER_ADMIN.password, 12);
-        await connection.execute(
-          `UPDATE users SET role_id = ?, password_hash = ? WHERE user_id = ?`,
-          [superAdminRoleId, passwordHash, existingSuperAdmin.user_id]
-        );
-        logger.info("Default Super Admin existing record verified and updated");
+      for (const uData of sampleUsers) {
+        const existingU = await repository.findAdmin(connection, uData.email);
+        const uRoleId = roleMap[uData.role_name];
+        const uHash = await bcrypt.hash(uData.password, 12);
+        if (!existingU && uRoleId) {
+          await repository.createAdmin(connection, {
+            branch_id: branchId,
+            role_id: uRoleId,
+            employee_code: uData.employee_code,
+            first_name: uData.first_name,
+            last_name: uData.last_name,
+            email: uData.email,
+            phone: uData.phone,
+            password_hash: uHash,
+          });
+          logger.info(`Sample User verified/created: ${uData.email} (${uData.role_name})`);
+        } else if (existingU && uRoleId) {
+          await connection.execute(
+            `UPDATE users SET role_id = ?, password_hash = ? WHERE user_id = ?`,
+            [uRoleId, uHash, existingU.user_id]
+          );
+        }
       }
 
       // --- Seed Initial Financial Records (Expenses & Income) ---

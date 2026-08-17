@@ -375,11 +375,11 @@ class CustomerPortalRepository {
   async getKycStatus(customerId) {
     const [rows] = await pool.execute(
       `SELECT
-         c.aadhaar_number AS aadhaarNumber,
-         c.pan_number AS panNumber,
-         c.aadhaar_verified AS aadhaarVerified,
-         c.pan_verified AS panVerified,
-         COALESCE(ck.kyc_status, CASE WHEN c.aadhaar_verified = 1 THEN 'VERIFIED' ELSE 'PENDING' END) AS status,
+         ck.aadhaar_number AS aadhaarNumber,
+         ck.pan_number AS panNumber,
+         COALESCE(ck.aadhaar_verified, 0) AS aadhaarVerified,
+         COALESCE(ck.pan_verified, 0) AS panVerified,
+         COALESCE(ck.kyc_status, 'PENDING') AS status,
          ck.verified_at AS verifiedAt,
          ck.remarks
        FROM customers c
@@ -393,16 +393,13 @@ class CustomerPortalRepository {
   }
 
   async updateDigiLockerKyc(customerId, { aadhaarNumber, digilockerRefId }) {
-    await pool.execute(
-      `UPDATE customers SET aadhaar_number = ?, aadhaar_verified = 1, updated_at = CURRENT_TIMESTAMP WHERE customer_id = ?`,
-      [aadhaarNumber, customerId],
-    );
     const remarks = `Verified via DigiLocker e-KYC (Ref: ${digilockerRefId || "DGL-" + Date.now()})`;
     await pool.execute(
-      `INSERT INTO customer_kyc (customer_id, aadhaar_number, kyc_status, verified_at, remarks)
-       VALUES (?, ?, 'VERIFIED', CURRENT_TIMESTAMP, ?)
+      `INSERT INTO customer_kyc (customer_id, aadhaar_number, aadhaar_verified, kyc_status, verified_at, remarks)
+       VALUES (?, ?, 1, 'VERIFIED', CURRENT_TIMESTAMP, ?)
        ON DUPLICATE KEY UPDATE 
          aadhaar_number = VALUES(aadhaar_number),
+         aadhaar_verified = 1,
          kyc_status = 'VERIFIED',
          verified_at = CURRENT_TIMESTAMP,
          remarks = VALUES(remarks)`,
@@ -413,14 +410,11 @@ class CustomerPortalRepository {
 
   async updatePanKyc(customerId, { panNumber }) {
     await pool.execute(
-      `UPDATE customers SET pan_number = ?, pan_verified = 1, updated_at = CURRENT_TIMESTAMP WHERE customer_id = ?`,
-      [panNumber, customerId],
-    );
-    await pool.execute(
-      `INSERT INTO customer_kyc (customer_id, pan_number, remarks)
-       VALUES (?, ?, 'Verified PAN via NSDL Check')
+      `INSERT INTO customer_kyc (customer_id, pan_number, pan_verified, remarks)
+       VALUES (?, ?, 1, 'Verified PAN via NSDL Check')
        ON DUPLICATE KEY UPDATE
-         pan_number = VALUES(pan_number)`,
+         pan_number = VALUES(pan_number),
+         pan_verified = 1`,
       [customerId, panNumber],
     );
     return { success: true, panNumber, panVerified: true };
