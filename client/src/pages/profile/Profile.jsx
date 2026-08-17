@@ -12,6 +12,10 @@ import {
   Typography,
   Card,
   CardContent,
+  Switch,
+  FormControlLabel,
+  IconButton,
+  InputAdornment,
 } from "@mui/material";
 import {
   Person as PersonIcon,
@@ -23,6 +27,10 @@ import {
   Edit as EditIcon,
   Save as SaveIcon,
   Cancel as CancelIcon,
+  Lock as LockIcon,
+  Visibility,
+  VisibilityOff,
+  Notifications as NotifIcon,
 } from "@mui/icons-material";
 import toast from "react-hot-toast";
 import useAuth from "../../hooks/useAuth";
@@ -32,7 +40,9 @@ export default function Profile() {
   const { user, setUser } = useAuth();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
 
+  // Profile Edit State
   const firstName = user?.firstName || user?.first_name || "";
   const lastName = user?.lastName || user?.last_name || "";
   const [form, setForm] = useState({
@@ -41,13 +51,30 @@ export default function Profile() {
     mobileNumber: user?.mobileNumber || user?.phone || user?.mobile_number || "",
   });
 
+  // Password State
+  const [passwords, setPasswords] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  // Preferences State
+  const [notifications, setNotifications] = useState({
+    email: true,
+    sms: true,
+    push: true,
+  });
+
   const displayName = `${form.firstName} ${form.lastName}`.trim() || user?.email || "User";
   const initials =
     `${form.firstName[0] || ""}${form.lastName[0] || ""}`.toUpperCase() ||
     user?.email?.[0]?.toUpperCase() ||
     "U";
 
-  const save = async () => {
+  const saveProfile = async () => {
     if (!form.firstName.trim()) return toast.error("First name is required.");
     setSaving(true);
     try {
@@ -62,45 +89,98 @@ export default function Profile() {
     }
   };
 
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (!passwords.currentPassword) return toast.error("Please enter your current password.");
+    if (!passwords.newPassword) return toast.error("Please enter a new password.");
+    if (passwords.newPassword !== passwords.confirmPassword) {
+      return toast.error("New passwords do not match.");
+    }
+    if (passwords.newPassword.length < 6) {
+      return toast.error("New password must be at least 6 characters.");
+    }
+
+    setSavingPassword(true);
+    try {
+      await authService.changePassword({
+        currentPassword: passwords.currentPassword,
+        newPassword: passwords.newPassword,
+      });
+      toast.success("Password changed successfully!");
+      setPasswords({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to change password.");
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
   return (
-    <Box sx={{ maxWidth: 800, mx: "auto", my: 4, px: 2 }}>
-      {/* HEADER CARD */}
-      <Card sx={{ borderRadius: 3, mb: 3, background: "linear-gradient(135deg, #0F766E 0%, #0D9488 100%)", color: "#FFFFFF" }}>
-        <CardContent sx={{ p: 4 }}>
+    <Box sx={{ maxWidth: 900, mx: "auto", my: 3, px: 2 }}>
+      {/* 1. HERO GRADIENT HEADER */}
+      <Card
+        sx={{
+          borderRadius: 4,
+          mb: 3,
+          background: "linear-gradient(135deg, #0F766E 0%, #0D9488 50%, #0284C7 100%)",
+          color: "#FFFFFF",
+          boxShadow: "0 10px 30px rgba(15, 118, 110, 0.2)",
+        }}
+      >
+        <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ alignItems: "center" }}>
             <Avatar
               src={user?.profileImage || user?.profile_image || ""}
               alt={displayName}
               sx={{
-                width: 90,
-                height: 90,
-                fontSize: "2.2rem",
+                width: 96,
+                height: 96,
+                fontSize: "2.4rem",
                 bgcolor: "#FFFFFF",
                 color: "#0F766E",
-                fontWeight: 700,
-                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                fontWeight: 800,
+                boxShadow: "0 6px 16px rgba(0,0,0,0.18)",
+                border: "3px solid rgba(255, 255, 255, 0.4)",
               }}
             >
               {initials}
             </Avatar>
 
             <Box sx={{ textAlign: { xs: "center", sm: "left" }, flexGrow: 1 }}>
-              <Stack direction="row" spacing={1} sx={{ justifyContent: { xs: "center", sm: "flex-start" }, alignItems: "center" }}>
-                <Typography variant="h5" fontWeight={700}>
+              <Stack direction="row" spacing={1.5} sx={{ justifyContent: { xs: "center", sm: "flex-start" }, alignItems: "center", mb: 0.5 }}>
+                <Typography variant="h4" fontWeight={800} letterSpacing="-0.5px">
                   {displayName}
                 </Typography>
                 <Chip
                   label={user?.role_name || user?.role || "STAFF"}
                   size="small"
-                  sx={{ bgcolor: "rgba(255,255,255,0.2)", color: "#FFFFFF", fontWeight: 700, fontSize: "0.75rem" }}
+                  sx={{
+                    bgcolor: "rgba(255,255,255,0.22)",
+                    color: "#FFFFFF",
+                    fontWeight: 800,
+                    fontSize: "0.75rem",
+                    backdropFilter: "blur(4px)",
+                    border: "1px solid rgba(255,255,255,0.3)",
+                  }}
                 />
               </Stack>
-              <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
-                Employee Code: {user?.employee_code || user?.employeeCode || "EMP-1001"}
+
+              <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
+                {user?.email || "staff@pnrfinance.com"}
               </Typography>
-              <Typography variant="caption" sx={{ opacity: 0.8, display: "block", mt: 0.5 }}>
-                Branch: {user?.branch_name || user?.branchName || "Head Office Branch"}
-              </Typography>
+
+              <Stack direction="row" spacing={2} sx={{ mt: 1.5, justifyContent: { xs: "center", sm: "flex-start" }, flexWrap: "wrap", gap: 1 }}>
+                <Chip
+                  size="small"
+                  label={`Emp Code: ${user?.employee_code || user?.employeeCode || "EMP-1001"}`}
+                  sx={{ bgcolor: "rgba(0,0,0,0.15)", color: "#E0F2FE", fontWeight: 700, fontSize: "0.75rem" }}
+                />
+                <Chip
+                  size="small"
+                  label={`Branch: ${user?.branch_name || user?.branchName || "Head Office"}`}
+                  sx={{ bgcolor: "rgba(0,0,0,0.15)", color: "#E0F2FE", fontWeight: 700, fontSize: "0.75rem" }}
+                />
+              </Stack>
             </Box>
 
             <Button
@@ -112,26 +192,33 @@ export default function Profile() {
                 bgcolor: editing ? "#EF4444" : "#FFFFFF",
                 color: editing ? "#FFFFFF" : "#0F766E",
                 fontWeight: 700,
+                borderRadius: 2.5,
+                px: 3,
+                py: 1,
+                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                 "&:hover": { bgcolor: editing ? "#DC2626" : "#F8FAFC" },
               }}
             >
-              {editing ? "Cancel" : "Edit Profile"}
+              {editing ? "Cancel Edit" : "Edit Profile"}
             </Button>
           </Stack>
         </CardContent>
       </Card>
 
-      {/* DETAILS CARD */}
-      <Paper sx={{ p: 3.5, borderRadius: 3, boxShadow: "0 2px 10px rgba(0,0,0,0.04)" }}>
-        <Typography variant="h6" fontWeight={700} sx={{ color: "#0F172A", mb: 2 }}>
-          Account & Contact Details
+      {/* 2. ACCOUNT & CONTACT DETAILS CARD */}
+      <Paper sx={{ p: 3.5, mb: 3, borderRadius: 3.5, border: "1px solid #E2E8F0", boxShadow: "0 2px 10px rgba(0,0,0,0.03)" }}>
+        <Typography variant="h6" fontWeight={700} sx={{ color: "#0F172A", mb: 0.5 }}>
+          Personal & Account Information
+        </Typography>
+        <Typography variant="body2" color="#64748B" sx={{ mb: 2.5 }}>
+          Your verified employee credentials and contact parameters.
         </Typography>
         <Divider sx={{ mb: 3 }} />
 
         {editing ? (
           <Stack spacing={2.5}>
-            <Grid container spacing={2}>
-              <Grid xs={12} sm={6}>
+            <Grid container spacing={2.5}>
+              <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
                   size="small"
@@ -139,35 +226,55 @@ export default function Profile() {
                   value={form.firstName}
                   onChange={(e) => setForm({ ...form, firstName: e.target.value })}
                   required
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2.5, bgcolor: "#F8FAFC" } }}
                 />
               </Grid>
-              <Grid xs={12} sm={6}>
+              <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
                   size="small"
                   label="Last Name"
                   value={form.lastName}
                   onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2.5, bgcolor: "#F8FAFC" } }}
                 />
               </Grid>
-              <Grid xs={12} sm={6}>
+              <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
                   size="small"
                   label="Mobile Number"
                   value={form.mobileNumber}
                   onChange={(e) => setForm({ ...form, mobileNumber: e.target.value })}
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2.5, bgcolor: "#F8FAFC" } }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Email Address (Read-Only)"
+                  value={user?.email || ""}
+                  disabled
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2.5, bgcolor: "#F1F5F9" } }}
                 />
               </Grid>
             </Grid>
 
-            <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
+            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}>
+              <Button variant="outlined" onClick={() => setEditing(false)} sx={{ borderRadius: 2 }}>
+                Cancel
+              </Button>
               <Button
                 variant="contained"
                 startIcon={<SaveIcon />}
-                onClick={save}
+                onClick={saveProfile}
                 disabled={saving}
-                sx={{ bgcolor: "#0F766E", "&:hover": { bgcolor: "#0D9488" } }}
+                sx={{ bgcolor: "#0F766E", "&:hover": { bgcolor: "#0D9488" }, borderRadius: 2, px: 3, fontWeight: 700 }}
               >
                 {saving ? "Saving..." : "Save Changes"}
               </Button>
@@ -175,67 +282,260 @@ export default function Profile() {
           </Stack>
         ) : (
           <Grid container spacing={3}>
-            <Grid xs={12} sm={6}>
-              <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-                <PersonIcon sx={{ color: "#0F766E" }} />
+            <Grid item xs={12} sm={6}>
+              <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+                <Box sx={{ p: 1.25, borderRadius: 2, bgcolor: "#F0FDF4", color: "#0F766E", display: "flex" }}>
+                  <PersonIcon />
+                </Box>
                 <Box>
-                  <Typography variant="caption" color="text.secondary">Full Name</Typography>
-                  <Typography variant="body1" fontWeight={600}>{displayName}</Typography>
+                  <Typography variant="caption" color="text.secondary" fontWeight={600}>Full Name</Typography>
+                  <Typography variant="body1" fontWeight={700} color="#0F172A">{displayName}</Typography>
                 </Box>
               </Stack>
             </Grid>
 
-            <Grid xs={12} sm={6}>
-              <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-                <EmailIcon sx={{ color: "#0F766E" }} />
+            <Grid item xs={12} sm={6}>
+              <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+                <Box sx={{ p: 1.25, borderRadius: 2, bgcolor: "#E0F2FE", color: "#0284C7", display: "flex" }}>
+                  <EmailIcon />
+                </Box>
                 <Box>
-                  <Typography variant="caption" color="text.secondary">Email Address</Typography>
-                  <Typography variant="body1" fontWeight={600}>{user?.email || "-"}</Typography>
+                  <Typography variant="caption" color="text.secondary" fontWeight={600}>Email Address</Typography>
+                  <Typography variant="body1" fontWeight={700} color="#0F172A">{user?.email || "-"}</Typography>
                 </Box>
               </Stack>
             </Grid>
 
-            <Grid xs={12} sm={6}>
-              <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-                <PhoneIcon sx={{ color: "#0F766E" }} />
+            <Grid item xs={12} sm={6}>
+              <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+                <Box sx={{ p: 1.25, borderRadius: 2, bgcolor: "#FEF3C7", color: "#B45309", display: "flex" }}>
+                  <PhoneIcon />
+                </Box>
                 <Box>
-                  <Typography variant="caption" color="text.secondary">Mobile Phone</Typography>
-                  <Typography variant="body1" fontWeight={600}>{form.mobileNumber || user?.phone || "-"}</Typography>
+                  <Typography variant="caption" color="text.secondary" fontWeight={600}>Mobile Phone</Typography>
+                  <Typography variant="body1" fontWeight={700} color="#0F172A">{form.mobileNumber || user?.phone || "+91 9876543210"}</Typography>
                 </Box>
               </Stack>
             </Grid>
 
-            <Grid xs={12} sm={6}>
-              <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-                <BadgeIcon sx={{ color: "#0F766E" }} />
+            <Grid item xs={12} sm={6}>
+              <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+                <Box sx={{ p: 1.25, borderRadius: 2, bgcolor: "#F3E8FF", color: "#7C3AED", display: "flex" }}>
+                  <BadgeIcon />
+                </Box>
                 <Box>
-                  <Typography variant="caption" color="text.secondary">Assigned Role</Typography>
-                  <Typography variant="body1" fontWeight={600}>{user?.role_name || user?.role || "Staff Member"}</Typography>
+                  <Typography variant="caption" color="text.secondary" fontWeight={600}>Assigned System Role</Typography>
+                  <Typography variant="body1" fontWeight={700} color="#0F172A">{user?.role_name || user?.role || "Staff Member"}</Typography>
                 </Box>
               </Stack>
             </Grid>
 
-            <Grid xs={12} sm={6}>
-              <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-                <BranchIcon sx={{ color: "#0F766E" }} />
+            <Grid item xs={12} sm={6}>
+              <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+                <Box sx={{ p: 1.25, borderRadius: 2, bgcolor: "#CCFBF1", color: "#0D9488", display: "flex" }}>
+                  <BranchIcon />
+                </Box>
                 <Box>
-                  <Typography variant="caption" color="text.secondary">Branch Name</Typography>
-                  <Typography variant="body1" fontWeight={600}>{user?.branch_name || "Head Office"}</Typography>
+                  <Typography variant="caption" color="text.secondary" fontWeight={600}>Branch Location</Typography>
+                  <Typography variant="body1" fontWeight={700} color="#0F172A">{user?.branch_name || "Head Office Branch"}</Typography>
                 </Box>
               </Stack>
             </Grid>
 
-            <Grid xs={12} sm={6}>
-              <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-                <SecurityIcon sx={{ color: "#0F766E" }} />
+            <Grid item xs={12} sm={6}>
+              <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+                <Box sx={{ p: 1.25, borderRadius: 2, bgcolor: "#ECFDF5", color: "#059669", display: "flex" }}>
+                  <SecurityIcon />
+                </Box>
                 <Box>
-                  <Typography variant="caption" color="text.secondary">Account Status</Typography>
-                  <Typography variant="body1" fontWeight={600} color="#059669">ACTIVE & VERIFIED</Typography>
+                  <Typography variant="caption" color="text.secondary" fontWeight={600}>Account Status</Typography>
+                  <Typography variant="body1" fontWeight={800} color="#059669">ACTIVE & VERIFIED</Typography>
                 </Box>
               </Stack>
             </Grid>
           </Grid>
         )}
+      </Paper>
+
+      {/* 3. SECURITY & CHANGE PASSWORD CARD */}
+      <Paper sx={{ p: 3.5, mb: 3, borderRadius: 3.5, border: "1px solid #E2E8F0", boxShadow: "0 2px 10px rgba(0,0,0,0.03)" }}>
+        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 0.5 }}>
+          <LockIcon sx={{ color: "#0F766E" }} />
+          <Typography variant="h6" fontWeight={700} sx={{ color: "#0F172A" }}>
+            Security & Change Password
+          </Typography>
+        </Stack>
+        <Typography variant="body2" color="#64748B" sx={{ mb: 2.5 }}>
+          Update your account password to maintain system access security.
+        </Typography>
+        <Divider sx={{ mb: 3 }} />
+
+        <Box component="form" onSubmit={handleChangePassword}>
+          <Grid container spacing={2.5}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                size="small"
+                type={showCurrent ? "text" : "password"}
+                label="Current Password"
+                placeholder="Enter current password"
+                value={passwords.currentPassword}
+                onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })}
+                InputLabelProps={{ shrink: true }}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton size="small" onClick={() => setShowCurrent(!showCurrent)}>
+                        {showCurrent ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2.5, bgcolor: "#F8FAFC" } }}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                size="small"
+                type={showNew ? "text" : "password"}
+                label="New Password"
+                placeholder="At least 6 characters"
+                value={passwords.newPassword}
+                onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
+                InputLabelProps={{ shrink: true }}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton size="small" onClick={() => setShowNew(!showNew)}>
+                        {showNew ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2.5, bgcolor: "#F8FAFC" } }}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                size="small"
+                type={showConfirm ? "text" : "password"}
+                label="Confirm New Password"
+                placeholder="Repeat new password"
+                value={passwords.confirmPassword}
+                onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
+                InputLabelProps={{ shrink: true }}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton size="small" onClick={() => setShowConfirm(!showConfirm)}>
+                        {showConfirm ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2.5, bgcolor: "#F8FAFC" } }}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6} sx={{ display: "flex", alignItems: "center" }}>
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={savingPassword}
+                sx={{
+                  bgcolor: "#0F766E",
+                  "&:hover": { bgcolor: "#0D9488" },
+                  borderRadius: 2.5,
+                  px: 3.5,
+                  py: 1,
+                  fontWeight: 700,
+                }}
+              >
+                {savingPassword ? "Updating Password..." : "Update Password"}
+              </Button>
+            </Grid>
+          </Grid>
+        </Box>
+      </Paper>
+
+      {/* 4. PREFERENCES & NOTIFICATION SETTINGS CARD */}
+      <Paper sx={{ p: 3.5, borderRadius: 3.5, border: "1px solid #E2E8F0", boxShadow: "0 2px 10px rgba(0,0,0,0.03)" }}>
+        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 0.5 }}>
+          <NotifIcon sx={{ color: "#0F766E" }} />
+          <Typography variant="h6" fontWeight={700} sx={{ color: "#0F172A" }}>
+            Notification Preferences
+          </Typography>
+        </Stack>
+        <Typography variant="body2" color="#64748B" sx={{ mb: 2.5 }}>
+          Configure operational alerts and message dispatch notifications.
+        </Typography>
+        <Divider sx={{ mb: 3 }} />
+
+        <Grid container spacing={3}>
+          <Grid item xs={12} sm={4}>
+            <Paper elevation={0} sx={{ p: 2, border: "1px solid #E2E8F0", borderRadius: 3, bgcolor: "#F8FAFC" }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={notifications.email}
+                    onChange={(e) => setNotifications({ ...notifications, email: e.target.checked })}
+                    color="primary"
+                  />
+                }
+                label={
+                  <Box>
+                    <Typography variant="subtitle2" fontWeight={700}>Email Alerts</Typography>
+                    <Typography variant="caption" color="text.secondary">Daily digests & audit receipts</Typography>
+                  </Box>
+                }
+              />
+            </Paper>
+          </Grid>
+
+          <Grid item xs={12} sm={4}>
+            <Paper elevation={0} sx={{ p: 2, border: "1px solid #E2E8F0", borderRadius: 3, bgcolor: "#F8FAFC" }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={notifications.sms}
+                    onChange={(e) => setNotifications({ ...notifications, sms: e.target.checked })}
+                    color="primary"
+                  />
+                }
+                label={
+                  <Box>
+                    <Typography variant="subtitle2" fontWeight={700}>SMS Broadcasts</Typography>
+                    <Typography variant="caption" color="text.secondary">Immediate OTP & Loan alerts</Typography>
+                  </Box>
+                }
+              />
+            </Paper>
+          </Grid>
+
+          <Grid item xs={12} sm={4}>
+            <Paper elevation={0} sx={{ p: 2, border: "1px solid #E2E8F0", borderRadius: 3, bgcolor: "#F8FAFC" }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={notifications.push}
+                    onChange={(e) => setNotifications({ ...notifications, push: e.target.checked })}
+                    color="primary"
+                  />
+                }
+                label={
+                  <Box>
+                    <Typography variant="subtitle2" fontWeight={700}>Push Notifications</Typography>
+                    <Typography variant="caption" color="text.secondary">Real-time mobile & browser alerts</Typography>
+                  </Box>
+                }
+              />
+            </Paper>
+          </Grid>
+        </Grid>
       </Paper>
     </Box>
   );

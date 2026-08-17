@@ -6,45 +6,50 @@ import PermissionGuard from "./PermissionGuard";
 import PublicRoute from "./PublicRoute";
 
 import Login from "../pages/auth/Login";
-import PasswordSetup from "../lib/pages/auth/PasswordSetup";
+import PasswordSetup from "../pages/auth/PasswordSetup";
 import Register from "../pages/auth/Register";
-import BranchList from "../lib/pages/branches/BranchList";
-import Collections from "../lib/pages/collections/Collections";
-import CustomerDocuments from "../lib/pages/customer-documents/CustomerDocuments";
-import ApplyLoan from "../lib/pages/customer-portal/ApplyLoan";
-import CustomerDashboard from "../lib/pages/customer-portal/CustomerDashboard";
-import EKycVerification from "../lib/pages/customer-portal/EKycVerification";
-import LoanApplicationDetail from "../lib/pages/customer-portal/LoanApplicationDetail";
-import MyLoanApplications from "../lib/pages/customer-portal/MyLoanApplications";
-import MyLoans from "../lib/pages/customer-portal/MyLoans";
-import RepaymentSchedule from "../lib/pages/customer-portal/RepaymentSchedule";
-import CustomerList from "../lib/pages/customers/CustomersList";
+import BranchList from "../pages/branches/BranchList";
+import Collections from "../pages/collections/Collections";
+import CustomerDocuments from "../pages/customer-documents/CustomerDocuments";
+import ApplyLoan from "../pages/customer-portal/ApplyLoan";
+import CustomerDashboard from "../pages/customer-portal/CustomerDashboard";
+import EKycVerification from "../pages/customer-portal/EKycVerification";
+import LoanApplicationDetail from "../pages/customer-portal/LoanApplicationDetail";
+import MyLoanApplications from "../pages/customer-portal/MyLoanApplications";
+import MyLoans from "../pages/customer-portal/MyLoans";
+import RepaymentSchedule from "../pages/customer-portal/RepaymentSchedule";
+import CustomerList from "../pages/customers/CustomersList";
 import Dashboard from "../pages/dashboard/Dashboard";
-import CashBook from "../lib/pages/finance/CashBook";
-import Expenses from "../lib/pages/finance/Expenses";
-import Income from "../lib/pages/finance/Income";
-import Groups from "../lib/pages/groups/Groups";
-import LoanApplications from "../lib/pages/loan-applications/LoanApplications";
-import LoanProducts from "../lib/pages/loan-products/LoanProducts";
-import Loans from "../lib/pages/loans/Loans";
-import Permissions from "../lib/pages/permissions/Permissions";
-import Profile from "../lib/pages/profile/Profile";
-import CollectionReports from "../lib/pages/reports/CollectionReports";
-import CustomerReports from "../lib/pages/reports/CustomerReports";
-import LoanReports from "../lib/pages/reports/LoanReports";
-import Roles from "../lib/pages/roles/Roles";
-import UnifiedSettings from "../lib/pages/settings/UnifiedSettings";
-import Tasks from "../lib/pages/tasks/Tasks";
+import CashBook from "../pages/finance/CashBook";
+import Expenses from "../pages/finance/Expenses";
+import Income from "../pages/finance/Income";
+import Groups from "../pages/groups/Groups";
+import LoanApplications from "../pages/loan-applications/LoanApplications";
+import LoanProducts from "../pages/loan-products/LoanProducts";
+import Loans from "../pages/loans/Loans";
+import Permissions from "../pages/permissions/Permissions";
+import Profile from "../pages/profile/Profile";
+import CollectionReports from "../pages/reports/CollectionReports";
+import CustomerReports from "../pages/reports/CustomerReports";
+import LoanReports from "../pages/reports/LoanReports";
+import Roles from "../pages/roles/Roles";
+import UnifiedSettings from "../pages/settings/UnifiedSettings";
+import Tasks from "../pages/tasks/Tasks";
 import UsersList from "../pages/users/UsersList";
 import AuditLogs from "../pages/audit/AuditLogs";
 import Forbidden from "../pages/Forbidden";
 import Attendance from "../pages/attendance/Attendance";
 import Letters from "../pages/letters/Letters";
 import SalaryManagement from "../pages/salary/SalaryManagement";
+import Home from "../pages/home/Home";
 
 export default function AppRoutes() {
   return (
     <Routes>
+      {/* Public Home & Landing Pages */}
+      <Route path="/" element={<Home />} />
+      <Route path="/home" element={<Home />} />
+
       <Route element={<PublicRoute />}>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -180,7 +185,7 @@ export default function AppRoutes() {
         </Route>
       </Route>
 
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

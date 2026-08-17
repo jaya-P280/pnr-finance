@@ -67,9 +67,9 @@ class AuthService {
 
     const lastUser = await authRepository.getLastEmployeeCode();
     const employeeCode = CodeGenerator.generate(
-      "CUST",
+      "EMP",
       lastUser?.employee_code,
-      4,
+      6,
     );
 
     const branch = await authRepository.getDefaultBranch();
@@ -90,7 +90,7 @@ class AuthService {
 
     // Automatically populate customers table so registered customers appear in ERP
     const lastCust = await authRepository.getLastCustomerCode();
-    const customerCode = CodeGenerator.generate("CUST", lastCust?.customer_code, 4);
+    const customerCode = CodeGenerator.generate("CUST", lastCust?.customer_code, 6);
     await authRepository.createCustomerRecord({
       customerCode,
       branchId: branchId || 1,

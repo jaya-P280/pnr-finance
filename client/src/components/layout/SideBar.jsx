@@ -9,7 +9,7 @@ import {
   ListItemText,
   Collapse,
 } from "@mui/material";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useMemo, useState } from "react";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -22,6 +22,7 @@ import { DRAWER_WIDTH } from "../constants/layout.constants";
 
 export default function Sidebar({ mobile, onClose, open, onToggleSidebar }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const activePath = location.pathname;
   const { user } = useAuth();
   const roleName = user?.role_name || user?.role || "FIELD_OFFICER";
@@ -90,7 +91,13 @@ export default function Sidebar({ mobile, onClose, open, onToggleSidebar }) {
           bgcolor: "#090D16",
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+        <Box
+          onClick={() => {
+            navigate("/");
+            if (mobile) onClose();
+          }}
+          sx={{ display: "flex", alignItems: "center", gap: 1.5, cursor: "pointer" }}
+        >
           <Box
             sx={{
               width: 38,

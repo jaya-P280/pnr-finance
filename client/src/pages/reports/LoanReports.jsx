@@ -95,7 +95,7 @@ export default function LoanReports() {
             variant="outlined"
             startIcon={<RefreshIcon />}
             onClick={() => refetch()}
-            sx={{ borderColor: "#0F766E", color: "#0F766E", fontWeight: 600 }}
+            sx={{ borderColor: "#0F766E", color: "#0F766E", fontWeight: 600, borderRadius: 2 }}
           >
             Refresh
           </Button>
@@ -103,7 +103,7 @@ export default function LoanReports() {
             variant="contained"
             startIcon={<DownloadIcon />}
             onClick={handleExportCSV}
-            sx={{ backgroundColor: "#0F766E", "&:hover": { backgroundColor: "#0D9488" } }}
+            sx={{ backgroundColor: "#0F766E", "&:hover": { backgroundColor: "#0D9488" }, borderRadius: 2 }}
           >
             Export CSV
           </Button>
@@ -112,11 +112,11 @@ export default function LoanReports() {
     >
       {/* KPI METRICS */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 3, borderLeft: "4px solid #0F766E" }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ borderRadius: 3, borderLeft: "4px solid #0F766E", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
             <CardContent sx={{ p: 2.5 }}>
-              <Typography variant="body2" color="text.secondary">
-                Total Loans Count
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                TOTAL LOANS COUNT
               </Typography>
               <Typography variant="h5" fontWeight={700} color="#0F766E" sx={{ mt: 0.5 }}>
                 {pagination.total || reports.length}
@@ -125,11 +125,11 @@ export default function LoanReports() {
           </Card>
         </Grid>
 
-        <Grid xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 3, borderLeft: "4px solid #10B981" }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ borderRadius: 3, borderLeft: "4px solid #10B981", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
             <CardContent sx={{ p: 2.5 }}>
-              <Typography variant="body2" color="text.secondary">
-                Total Disbursed
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                TOTAL DISBURSED
               </Typography>
               <Typography variant="h5" fontWeight={700} color="#10B981" sx={{ mt: 0.5 }}>
                 {formatCurrency(totalDisbursed)}
@@ -138,11 +138,11 @@ export default function LoanReports() {
           </Card>
         </Grid>
 
-        <Grid xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 3, borderLeft: "4px solid #F59E0B" }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ borderRadius: 3, borderLeft: "4px solid #F59E0B", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
             <CardContent sx={{ p: 2.5 }}>
-              <Typography variant="body2" color="text.secondary">
-                Total Outstanding
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                TOTAL OUTSTANDING
               </Typography>
               <Typography variant="h5" fontWeight={700} color="#F59E0B" sx={{ mt: 0.5 }}>
                 {formatCurrency(totalOutstanding || recoveryData?.outstanding_amount)}
@@ -151,11 +151,11 @@ export default function LoanReports() {
           </Card>
         </Grid>
 
-        <Grid xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 3, borderLeft: "4px solid #EF4444" }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ borderRadius: 3, borderLeft: "4px solid #EF4444", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
             <CardContent sx={{ p: 2.5 }}>
-              <Typography variant="body2" color="text.secondary">
-                Overdue Portfolio
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                OVERDUE PORTFOLIO
               </Typography>
               <Typography variant="h5" fontWeight={700} color="#EF4444" sx={{ mt: 0.5 }}>
                 {formatCurrency(recoveryData?.overdue_amount || 0)}
@@ -166,15 +166,16 @@ export default function LoanReports() {
       </Grid>
 
       {/* FILTER BAR */}
-      <Paper sx={{ p: 2, mb: 3, borderRadius: 3 }}>
-        <Grid container spacing={2}  sx={{ alignItems: "center" }}>
-          <Grid xs={12} sm={4}>
+      <Paper sx={{ p: 2.5, mb: 3, borderRadius: 3, border: "1px solid #E2E8F0" }}>
+        <Grid container spacing={2.5} alignItems="center">
+          <Grid item xs={12} sm={4}>
             <FormControl fullWidth size="small">
-              <InputLabel>Loan Status</InputLabel>
+              <InputLabel shrink>Loan Status</InputLabel>
               <Select
                 value={status}
                 label="Loan Status"
                 onChange={(e) => setStatus(e.target.value)}
+                sx={{ borderRadius: 2.5, bgcolor: "#F8FAFC" }}
               >
                 <MenuItem value="all">All Statuses</MenuItem>
                 <MenuItem value="ACTIVE">ACTIVE</MenuItem>
@@ -184,7 +185,7 @@ export default function LoanReports() {
               </Select>
             </FormControl>
           </Grid>
-          <Grid xs={12} sm={4}>
+          <Grid item xs={12} sm={4}>
             <TextField
               fullWidth
               size="small"
@@ -192,10 +193,13 @@ export default function LoanReports() {
               label="From Date"
               value={fromDate}
               onChange={(e) => setFromDate(e.target.value)}
-              slotProps={{ inputLabel: { shrink: true } }}
+              InputLabelProps={{ shrink: true }}
+              sx={{
+                "& .MuiOutlinedInput-root": { borderRadius: 2.5, bgcolor: "#F8FAFC" },
+              }}
             />
           </Grid>
-          <Grid xs={12} sm={4}>
+          <Grid item xs={12} sm={4}>
             <TextField
               fullWidth
               size="small"
@@ -203,7 +207,10 @@ export default function LoanReports() {
               label="To Date"
               value={toDate}
               onChange={(e) => setToDate(e.target.value)}
-              slotProps={{ inputLabel: { shrink: true } }}
+              InputLabelProps={{ shrink: true }}
+              sx={{
+                "& .MuiOutlinedInput-root": { borderRadius: 2.5, bgcolor: "#F8FAFC" },
+              }}
             />
           </Grid>
         </Grid>
@@ -215,7 +222,7 @@ export default function LoanReports() {
           <CircularProgress sx={{ color: "#0F766E" }} />
         </Box>
       ) : (
-        <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+        <TableContainer component={Paper} sx={{ borderRadius: 3, border: "1px solid #E2E8F0", boxShadow: "none" }}>
           <Table>
             <TableHead sx={{ backgroundColor: "#F8FAFC" }}>
               <TableRow>
@@ -238,10 +245,10 @@ export default function LoanReports() {
               ) : (
                 reports.map((row) => (
                   <TableRow key={row.loan_id} hover>
-                    <TableCell sx={{ fontWeight: 600, color: "#0F766E" }}>
+                    <TableCell sx={{ fontWeight: 700, color: "#0F766E" }}>
                       {row.loan_number}
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 500 }}>{row.customer_name}</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>{row.customer_name}</TableCell>
                     <TableCell>{row.product_name}</TableCell>
                     <TableCell>{row.branch_name}</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 600 }}>

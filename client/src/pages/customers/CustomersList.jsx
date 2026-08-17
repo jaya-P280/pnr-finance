@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Alert,
@@ -12,16 +13,19 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
+  Grid,
   IconButton,
   MenuItem,
   Paper,
   Stack,
+  Tab,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  Tabs,
   TextField,
   Typography,
   Tooltip,
@@ -32,11 +36,15 @@ import {
   PhotoCamera as PhotoCameraIcon,
   Edit as EditIcon,
   Visibility as VisibilityIcon,
+  MonetizationOn as MonetizationOnIcon,
+  Lock as LockIcon,
+  VerifiedUser as VerifiedUserIcon,
 } from "@mui/icons-material";
 import toast from "react-hot-toast";
 import SectionPage from "../../components/layout/SectionPage";
 import branchService from "../../services/branch.service";
 import customerService from "../../services/customer.service";
+import useAuth from "../../hooks/useAuth";
 
 const emptyForm = {
   branchId: "",
@@ -97,6 +105,9 @@ const cleanPayload = (form) => {
 };
 
 export default function CustomerList() {
+  const navigate = useNavigate();
+  const { user, hasPermission } = useAuth();
+  const [activeTab, setActiveTab] = useState(0);
   const [search, setSearch] = useState("");
   const [dialog, setDialog] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -104,6 +115,14 @@ export default function CustomerList() {
   const fileInputRef = useRef(null);
 
   const queryClient = useQueryClient();
+
+  // Permission check for viewing all org customer accounts (active & closed)
+  const canViewOrgAccounts =
+    hasPermission("CUSTOMER_VIEW") ||
+    hasPermission("CUSTOMER.VIEW") ||
+    ["SUPER_ADMIN", "ADMIN", "BRANCH_MANAGER"].includes(
+      user?.role_name?.toUpperCase() || user?.role?.toUpperCase() || ""
+    );
 
   const customersQuery = useQuery({
     queryKey: ["customers", search],
@@ -165,6 +184,10 @@ export default function CustomerList() {
   const openCreate = () => {
     setForm(emptyForm);
     setDialog({ mode: "create" });
+  };
+
+  const handleApplyOnBehalf = (customerId) => {
+    navigate(`/loan-applications?customerId=${customerId}&applyOnBehalf=true`);
   };
 
   const openEdit = async (customer) => {
@@ -250,28 +273,32 @@ export default function CustomerList() {
 
   return (
     <SectionPage
-      title="Customer Management"
-      subtitle="Track customer profiles, branch assignments, eKYC status, and profile photo updates."
+      title="Customer & Account Operations"
+      subtitle="Manage customer profiles, staff loan application on customer behalf, and organization-wide account views."
       actions={
         <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap" }}>
           <TextField
             size="small"
-            placeholder="Search customers by name or mobile..."
+            placeholder="Search customer name, code or mobile..."
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             onKeyDown={(event) =>
               event.key === "Enter" && customersQuery.refetch()
             }
-            slotProps={{
-              input: {
-                startAdornment: <SearchIcon sx={{ mr: 1, color: "#94A3B8" }} />,
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 2.5,
+                bgcolor: "#FFFFFF",
               },
+            }}
+            InputProps={{
+              startAdornment: <SearchIcon sx={{ mr: 1, color: "#0F766E" }} />,
             }}
           />
           <Button
             variant="contained"
             onClick={() => customersQuery.refetch()}
-            sx={{ bgcolor: "#0F766E" }}
+            sx={{ bgcolor: "#0F766E", borderRadius: 2 }}
           >
             Search
           </Button>
@@ -279,141 +306,276 @@ export default function CustomerList() {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={openCreate}
+            sx={{ borderRadius: 2 }}
           >
             Add Customer
           </Button>
         </Stack>
       }
     >
-      <Paper
-        elevation={0}
-        sx={{
-          border: "1px solid #E2E8F0",
-          borderRadius: 3,
-          overflow: "hidden",
-        }}
-      >
-        {customersQuery.isLoading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", p: 6 }}>
-            <CircularProgress />
-          </Box>
-        ) : customersQuery.isError ? (
-          <Box sx={{ p: 6 }}>
-            <Alert severity="error">
-              Unable to load customers. Please try again.
-            </Alert>
-          </Box>
-        ) : customers.length === 0 ? (
-          <Box sx={{ p: 6, textAlign: "center" }}>
-            <Typography color="#64748B">No customers found.</Typography>
-          </Box>
-        ) : (
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ bgcolor: "#F8FAFC" }}>
-                  <TableCell>Photo</TableCell>
-                  <TableCell>Code</TableCell>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Branch</TableCell>
-                  <TableCell>Mobile</TableCell>
-                  <TableCell>Identity & KYC</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {customers.map((customer) => (
-                  <TableRow key={customer.customer_id}>
-                    <TableCell>
-                      <Avatar
-                        src={getProfileImageUrl(customer)}
-                        sx={{ width: 36, height: 36, bgcolor: "#0F766E" }}
-                      >
-                        {customer.first_name?.[0]}
-                      </Avatar>
-                    </TableCell>
-                    <TableCell>{customer.customer_code || "-"}</TableCell>
-                    <TableCell>
-                      <Typography fontWeight={600} variant="body2">
-                        {`${customer.first_name || ""} ${customer.last_name || ""}`.trim() ||
-                          "-"}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>{customer.branch_name || "-"}</TableCell>
-                    <TableCell>{customer.mobile_number || "-"}</TableCell>
-                    <TableCell>
-                      <Stack direction="row" spacing={0.5} sx={{ flexWrap: "wrap" }}>
-                        {customer.aadhaar_number && (
-                          <Chip
-                            size="small"
-                            label="Aadhaar"
-                            color={customer.aadhaar_verified ? "success" : "default"}
-                          />
-                        )}
-                        {customer.pan_number && (
-                          <Chip
-                            size="small"
-                            label="PAN"
-                            color={customer.pan_verified ? "success" : "default"}
-                          />
-                        )}
-                      </Stack>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={customer.status || "-"}
-                        size="small"
-                        color={
-                          customer.status === "ACTIVE"
-                            ? "success"
-                            : customer.status === "BLACKLISTED"
-                            ? "default"
-                            : "error"
-                        }
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
-                        <Button
-                          size="small"
-                          startIcon={<VisibilityIcon />}
-                          onClick={() => openView(customer)}
-                        >
-                          View
-                        </Button>
-                        <Button
-                          size="small"
-                          startIcon={<EditIcon />}
-                          onClick={() => openEdit(customer)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          size="small"
-                          onClick={() =>
-                            changeStatus.mutate({
-                              id: customer.customer_id,
-                              status:
-                                customer.status === "ACTIVE"
-                                  ? "INACTIVE"
-                                  : "ACTIVE",
-                            })
-                          }
-                        >
-                          {customer.status === "ACTIVE"
-                            ? "Deactivate"
-                            : "Activate"}
-                        </Button>
-                      </Stack>
-                    </TableCell>
+      {/* Navigation Tabs */}
+      <Box sx={{ borderBottom: "2px solid #E2E8F0", mb: 3 }}>
+        <Tabs
+          value={activeTab}
+          onChange={(e, val) => setActiveTab(val)}
+          sx={{
+            "& .MuiTab-root": {
+              textTransform: "none",
+              fontWeight: 700,
+              fontSize: "0.95rem",
+              mr: 3,
+              color: "#64748B",
+            },
+            "& .Mui-selected": { color: "#0F766E" },
+            "& .MuiTabs-indicator": { backgroundColor: "#0F766E", height: 3 },
+          }}
+        >
+          <Tab label="Customer Directory & Profiles" />
+          <Tab
+            label={
+              <Stack direction="row" spacing={1} alignItems="center">
+                <span>Org Customer Accounts Overview</span>
+                {canViewOrgAccounts ? (
+                  <Chip size="small" label="Access Granted" color="success" sx={{ height: 20, fontSize: "0.65rem", fontWeight: 700 }} />
+                ) : (
+                  <Chip size="small" icon={<LockIcon sx={{ fontSize: "12px !important" }} />} label="Restricted" color="error" sx={{ height: 20, fontSize: "0.65rem", fontWeight: 700 }} />
+                )}
+              </Stack>
+            }
+          />
+        </Tabs>
+      </Box>
+
+      {/* TAB 0: STANDARD CUSTOMER DIRECTORY */}
+      {activeTab === 0 && (
+        <Paper
+          elevation={0}
+          sx={{
+            border: "1px solid #E2E8F0",
+            borderRadius: 3,
+            overflow: "hidden",
+          }}
+        >
+          {customersQuery.isLoading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", p: 6 }}>
+              <CircularProgress sx={{ color: "#0F766E" }} />
+            </Box>
+          ) : customersQuery.isError ? (
+            <Box sx={{ p: 6 }}>
+              <Alert severity="error">
+                Unable to load customers. Please try again.
+              </Alert>
+            </Box>
+          ) : customers.length === 0 ? (
+            <Box sx={{ p: 6, textAlign: "center" }}>
+              <Typography color="#64748B">No customers found.</Typography>
+            </Box>
+          ) : (
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ bgcolor: "#F8FAFC" }}>
+                    <TableCell>Photo</TableCell>
+                    <TableCell>Code</TableCell>
+                    <TableCell>Name</TableCell>
+                    <TableCell>Branch</TableCell>
+                    <TableCell>Mobile</TableCell>
+                    <TableCell>Identity & KYC</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell align="right">Actions</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </Paper>
+                </TableHead>
+                <TableBody>
+                  {customers.map((customer) => (
+                    <TableRow key={customer.customer_id} sx={{ "&:hover": { bgcolor: "#F8FAFC" } }}>
+                      <TableCell>
+                        <Avatar
+                          src={getProfileImageUrl(customer)}
+                          sx={{ width: 36, height: 36, bgcolor: "#0F766E" }}
+                        >
+                          {customer.first_name?.[0]}
+                        </Avatar>
+                      </TableCell>
+                      <TableCell>
+                        <Typography fontWeight={700} color="#0F766E" variant="body2">
+                          {customer.customer_code || "-"}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography fontWeight={600} variant="body2">
+                          {`${customer.first_name || ""} ${customer.last_name || ""}`.trim() || "-"}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>{customer.branch_name || "-"}</TableCell>
+                      <TableCell>{customer.mobile_number || "-"}</TableCell>
+                      <TableCell>
+                        <Stack direction="row" spacing={0.5} sx={{ flexWrap: "wrap" }}>
+                          {customer.aadhaar_number && (
+                            <Chip size="small" label="Aadhaar" color={customer.aadhaar_verified ? "success" : "default"} />
+                          )}
+                          {customer.pan_number && (
+                            <Chip size="small" label="PAN" color={customer.pan_verified ? "success" : "default"} />
+                          )}
+                        </Stack>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={customer.status || "-"}
+                          size="small"
+                          color={customer.status === "ACTIVE" ? "success" : customer.status === "BLACKLISTED" ? "default" : "error"}
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        <Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end", flexWrap: "wrap" }}>
+                          <Tooltip title="Apply for Loan on Customer's Behalf (Server Down fallback)">
+                            <Button
+                              size="small"
+                              variant="contained"
+                              color="secondary"
+                              startIcon={<MonetizationOnIcon />}
+                              onClick={() => handleApplyOnBehalf(customer.customer_id)}
+                              sx={{
+                                bg: "#7C3AED",
+                                "&:hover": { bgcolor: "#6D28D9" },
+                                fontSize: "0.75rem",
+                                fontWeight: 700,
+                                textTransform: "none",
+                              }}
+                            >
+                              Apply Loan
+                            </Button>
+                          </Tooltip>
+                          <Button size="small" startIcon={<VisibilityIcon />} onClick={() => openView(customer)}>
+                            View
+                          </Button>
+                          <Button size="small" startIcon={<EditIcon />} onClick={() => openEdit(customer)}>
+                            Edit
+                          </Button>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </Paper>
+      )}
+
+      {/* TAB 1: ORGANIZATION CUSTOMER ACCOUNTS OVERVIEW (PERMISSION GATED) */}
+      {activeTab === 1 && (
+        <>
+          {!canViewOrgAccounts ? (
+            <Paper elevation={0} sx={{ p: 6, border: "1px solid #FCA5A5", borderRadius: 3, bgcolor: "#FEF2F2", textAlign: "center" }}>
+              <LockIcon sx={{ fontSize: 48, color: "#DC2626", mb: 1 }} />
+              <Typography variant="h6" color="#991B1B" fontWeight={700} gutterBottom>
+                Access Restricted: Customer View Permission Required
+              </Typography>
+              <Typography variant="body2" color="#7F1D1D" sx={{ maxWidth: 600, mx: "auto" }}>
+                Viewing organization-wide active and closed customer accounts requires <b>CUSTOMER_VIEW</b> permission authority. Please contact your system administrator if you require access.
+              </Typography>
+            </Paper>
+          ) : (
+            <Paper elevation={0} sx={{ border: "1px solid #E2E8F0", borderRadius: 3, overflow: "hidden" }}>
+              <Box sx={{ p: 2.5, bgcolor: "#F8FAFC", borderBottom: "1px solid #E2E8F0" }}>
+                <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
+                  <Box>
+                    <Typography variant="subtitle1" fontWeight={800} color="#0F172A">
+                      Organization Customer Accounts & Loans Portfolio
+                    </Typography>
+                    <Typography variant="caption" color="#64748B">
+                      Comprehensive audit of active loans, closed accounts, and customer statuses across all branches.
+                    </Typography>
+                  </Box>
+                  <Chip
+                    icon={<VerifiedUserIcon />}
+                    label="CUSTOMER_VIEW Granted"
+                    color="success"
+                    size="small"
+                    sx={{ fontWeight: 700 }}
+                  />
+                </Stack>
+              </Box>
+
+              {customersQuery.isLoading ? (
+                <Box sx={{ display: "flex", justifyContent: "center", p: 6 }}>
+                  <CircularProgress sx={{ color: "#0F766E" }} />
+                </Box>
+              ) : (
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow sx={{ bgcolor: "#F1F5F9" }}>
+                        <TableCell sx={{ fontWeight: 700 }}>Customer Code & Name</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Branch</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Mobile Number</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Active Accounts</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Closed Accounts</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Account Status</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700 }}>Staff Action</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {customers.map((c) => (
+                        <TableRow key={`org-acct-${c.customer_id}`} sx={{ "&:hover": { bgcolor: "#F0F9FF" } }}>
+                          <TableCell>
+                            <Typography fontWeight={700} color="#0F766E" variant="body2">
+                              {c.customer_code || `CUST-${c.customer_id}`}
+                            </Typography>
+                            <Typography fontWeight={600} variant="body2" color="#0F172A">
+                              {`${c.first_name || ""} ${c.last_name || ""}`}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>{c.branch_name || "Head Office"}</TableCell>
+                          <TableCell>{c.mobile_number || "-"}</TableCell>
+                          <TableCell>
+                            <Chip
+                              label={`${c.active_loans_count || 1} Active Loan`}
+                              size="small"
+                              sx={{ bgcolor: "#DCFCE7", color: "#15803D", fontWeight: 700 }}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={`${c.closed_loans_count || 0} Closed`}
+                              size="small"
+                              sx={{ bgcolor: "#F1F5F9", color: "#64748B", fontWeight: 600 }}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={c.status === "ACTIVE" ? "ACTIVE IN ORG" : c.status}
+                              size="small"
+                              color={c.status === "ACTIVE" ? "success" : "default"}
+                              sx={{ fontWeight: 700 }}
+                            />
+                          </TableCell>
+                          <TableCell align="right">
+                            <Button
+                              size="small"
+                              variant="contained"
+                              startIcon={<MonetizationOnIcon />}
+                              onClick={() => handleApplyOnBehalf(c.customer_id)}
+                              sx={{
+                                background: "linear-gradient(135deg, #0F766E 0%, #0D655E 100%)",
+                                textTransform: "none",
+                                fontWeight: 700,
+                                borderRadius: 2,
+                              }}
+                            >
+                              Apply Loan (Behalf)
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </Paper>
+          )}
+        </>
+      )}
 
       {/* Hidden File Input for Avatar Upload */}
       <input

@@ -205,7 +205,10 @@ export default function Header({ open, mobile, onToggleSidebar }) {
             <MenuIcon />
           </IconButton>
           {(!open || mobile) && (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box
+              onClick={() => navigate("/")}
+              sx={{ display: "flex", alignItems: "center", gap: 1, cursor: "pointer" }}
+            >
               <Box>
                 <Typography variant="h6" fontWeight={800} sx={{ color: "#0F766E", letterSpacing: "-0.5px", lineHeight: 1.1 }}>
                   PNRG Finance

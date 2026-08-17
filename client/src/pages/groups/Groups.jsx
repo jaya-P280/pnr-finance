@@ -422,14 +422,15 @@ export default function Groups() {
           border: "1px solid #E2E8F0",
           borderRadius: 3,
           bgcolor: "#FFFFFF",
+          boxShadow: "0 2px 10px rgba(0,0,0,0.02)",
         }}
       >
-        <Grid container spacing={2} sx={{ alignItems: "center" }}>
-          <Grid size={{ xs: 12, sm: 4, md: 4 }}>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} sm={12} md={5}>
             <TextField
               fullWidth
               size="small"
-              placeholder="Search by group name or code..."
+              placeholder="Search by group name, code or location..."
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -437,39 +438,43 @@ export default function Groups() {
               }}
               sx={{
                 "& .MuiOutlinedInput-root": {
-                  borderRadius: 2,
+                  borderRadius: 2.5,
+                  bgcolor: "#F8FAFC",
                   "&.Mui-focused fieldset": { borderColor: "#0F766E" },
                 },
               }}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <SearchIcon sx={{ mr: 1, color: "#94A3B8" }} />
-                  ),
-                },
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ mr: 1, color: "#0F766E" }} />,
+                endAdornment: search ? (
+                  <IconButton size="small" onClick={() => setSearch("")}>
+                    <ClearIcon fontSize="small" />
+                  </IconButton>
+                ) : null,
               }}
             />
           </Grid>
 
-          <Grid size={{ xs: 12, sm: 4, md: 3 }}>
+          <Grid item xs={12} sm={6} md={3}>
             <TextField
               select
               fullWidth
               size="small"
-              label="Filter by Branch"
+              label="Branch"
               value={branchFilter}
               onChange={(e) => {
                 setBranchFilter(e.target.value);
                 setPage(0);
               }}
+              InputLabelProps={{ shrink: true }}
               sx={{
                 "& .MuiOutlinedInput-root": {
-                  borderRadius: 2,
+                  borderRadius: 2.5,
+                  bgcolor: "#F8FAFC",
                   "&.Mui-focused fieldset": { borderColor: "#0F766E" },
                 },
               }}
             >
-              <MenuItem value="">All Branches</MenuItem>
+              <MenuItem value="">All Branches (Default)</MenuItem>
               {branches.map((b) => (
                 <MenuItem key={b.branch_id} value={b.branch_id}>
                   {b.branch_name}
@@ -478,20 +483,22 @@ export default function Groups() {
             </TextField>
           </Grid>
 
-          <Grid size={{ xs: 12, sm: 4, md: 3 }}>
+          <Grid item xs={12} sm={6} md={2.5}>
             <TextField
               select
               fullWidth
               size="small"
-              label="Filter by Status"
+              label="Status"
               value={statusFilter}
               onChange={(e) => {
                 setStatusFilter(e.target.value);
                 setPage(0);
               }}
+              InputLabelProps={{ shrink: true }}
               sx={{
                 "& .MuiOutlinedInput-root": {
-                  borderRadius: 2,
+                  borderRadius: 2.5,
+                  bgcolor: "#F8FAFC",
                   "&.Mui-focused fieldset": { borderColor: "#0F766E" },
                 },
               }}
@@ -504,18 +511,27 @@ export default function Groups() {
           </Grid>
 
           {(search || branchFilter || statusFilter) && (
-            <Grid size={{ xs: 12, md: 2 }}>
+            <Grid item xs={12} md={1.5} sx={{ display: "flex", justifyContent: "flex-end" }}>
               <Button
                 size="small"
+                variant="outlined"
+                startIcon={<ClearIcon />}
                 onClick={() => {
                   setSearch("");
                   setBranchFilter("");
                   setStatusFilter("");
                   setPage(0);
                 }}
-                sx={{ color: "#0F766E", fontWeight: 600 }}
+                sx={{
+                  color: "#0F766E",
+                  borderColor: "#0F766E",
+                  borderRadius: 2,
+                  fontWeight: 600,
+                  textTransform: "none",
+                  py: 0.8,
+                }}
               >
-                Clear Filters
+                Clear
               </Button>
             </Grid>
           )}

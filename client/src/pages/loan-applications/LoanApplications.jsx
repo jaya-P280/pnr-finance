@@ -68,7 +68,10 @@ const toPayload = (form) => {
   return payload;
 };
 
+import { useSearchParams } from "react-router-dom";
+
 export default function LoanApplications() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const roleName = user?.role_name || user?.role;
   const canCreate = ["SUPER_ADMIN", "ADMIN", "BRANCH_MANAGER", "FIELD_OFFICER", "CUSTOMER"].includes(roleName);
@@ -76,8 +79,14 @@ export default function LoanApplications() {
   const canApprove = ["SUPER_ADMIN", "ADMIN", "BRANCH_MANAGER"].includes(roleName);
   const canDisburse = ["SUPER_ADMIN", "ADMIN", "FIELD_OFFICER"].includes(roleName);
   const [search, setSearch] = useState("");
-  const [dialog, setDialog] = useState(null);
-  const [form, setForm] = useState(emptyForm);
+
+  const preselectedCustomerId = searchParams.get("customerId");
+  const [dialog, setDialog] = useState(
+    preselectedCustomerId ? { mode: "create" } : null
+  );
+  const [form, setForm] = useState(
+    preselectedCustomerId ? { ...emptyForm, customerId: String(preselectedCustomerId) } : emptyForm
+  );
   const [approveAmount, setApproveAmount] = useState("");
   const [rejectReason, setRejectReason] = useState("");
   const queryClient = useQueryClient();

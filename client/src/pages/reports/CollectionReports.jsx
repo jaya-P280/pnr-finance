@@ -83,7 +83,7 @@ export default function CollectionReports() {
             variant="outlined"
             startIcon={<RefreshIcon />}
             onClick={() => refetch()}
-            sx={{ borderColor: "#0F766E", color: "#0F766E", fontWeight: 600 }}
+            sx={{ borderColor: "#0F766E", color: "#0F766E", fontWeight: 600, borderRadius: 2 }}
           >
             Refresh
           </Button>
@@ -91,7 +91,7 @@ export default function CollectionReports() {
             variant="contained"
             startIcon={<DownloadIcon />}
             onClick={handleExportCSV}
-            sx={{ backgroundColor: "#0F766E", "&:hover": { backgroundColor: "#0D9488" } }}
+            sx={{ backgroundColor: "#0F766E", "&:hover": { backgroundColor: "#0D9488" }, borderRadius: 2 }}
           >
             Export CSV
           </Button>
@@ -100,11 +100,11 @@ export default function CollectionReports() {
     >
       {/* KPI METRICS */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid xs={12} sm={6} md={4}>
-          <Card sx={{ borderRadius: 3, borderLeft: "4px solid #10B981" }}>
+        <Grid item xs={12} sm={6} md={4}>
+          <Card sx={{ borderRadius: 3, borderLeft: "4px solid #10B981", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
             <CardContent sx={{ p: 2.5 }}>
-              <Typography variant="body2" color="text.secondary">
-                Total Collections Sum
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                TOTAL COLLECTIONS SUM
               </Typography>
               <Typography variant="h5" fontWeight={700} color="#10B981" sx={{ mt: 0.5 }}>
                 {formatCurrency(totalCollected)}
@@ -113,11 +113,11 @@ export default function CollectionReports() {
           </Card>
         </Grid>
 
-        <Grid xs={12} sm={6} md={4}>
-          <Card sx={{ borderRadius: 3, borderLeft: "4px solid #0F766E" }}>
+        <Grid item xs={12} sm={6} md={4}>
+          <Card sx={{ borderRadius: 3, borderLeft: "4px solid #0F766E", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
             <CardContent sx={{ p: 2.5 }}>
-              <Typography variant="body2" color="text.secondary">
-                Total Receipts Issued
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                TOTAL RECEIPTS ISSUED
               </Typography>
               <Typography variant="h5" fontWeight={700} color="#0F766E" sx={{ mt: 0.5 }}>
                 {pagination.total || reports.length} Receipts
@@ -126,11 +126,11 @@ export default function CollectionReports() {
           </Card>
         </Grid>
 
-        <Grid xs={12} sm={6} md={4}>
-          <Card sx={{ borderRadius: 3, borderLeft: "4px solid #F59E0B" }}>
+        <Grid item xs={12} sm={6} md={4}>
+          <Card sx={{ borderRadius: 3, borderLeft: "4px solid #F59E0B", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
             <CardContent sx={{ p: 2.5 }}>
-              <Typography variant="body2" color="text.secondary">
-                Penalty Collections
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                PENALTY COLLECTIONS
               </Typography>
               <Typography variant="h5" fontWeight={700} color="#F59E0B" sx={{ mt: 0.5 }}>
                 {formatCurrency(totalPenalties)}
@@ -141,9 +141,9 @@ export default function CollectionReports() {
       </Grid>
 
       {/* FILTER BAR */}
-      <Paper sx={{ p: 2, mb: 3, borderRadius: 3 }}>
-        <Grid container spacing={2}  sx={{ alignItems: "center" }}>
-          <Grid xs={12} sm={6}>
+      <Paper sx={{ p: 2.5, mb: 3, borderRadius: 3, border: "1px solid #E2E8F0" }}>
+        <Grid container spacing={2.5} alignItems="center">
+          <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
               size="small"
@@ -151,10 +151,13 @@ export default function CollectionReports() {
               label="From Date"
               value={fromDate}
               onChange={(e) => setFromDate(e.target.value)}
-              slotProps={{ inputLabel: { shrink: true } }}
+              InputLabelProps={{ shrink: true }}
+              sx={{
+                "& .MuiOutlinedInput-root": { borderRadius: 2.5, bgcolor: "#F8FAFC" },
+              }}
             />
           </Grid>
-          <Grid xs={12} sm={6}>
+          <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
               size="small"
@@ -162,7 +165,10 @@ export default function CollectionReports() {
               label="To Date"
               value={toDate}
               onChange={(e) => setToDate(e.target.value)}
-              slotProps={{ inputLabel: { shrink: true } }}
+              InputLabelProps={{ shrink: true }}
+              sx={{
+                "& .MuiOutlinedInput-root": { borderRadius: 2.5, bgcolor: "#F8FAFC" },
+              }}
             />
           </Grid>
         </Grid>
@@ -174,7 +180,7 @@ export default function CollectionReports() {
           <CircularProgress sx={{ color: "#0F766E" }} />
         </Box>
       ) : (
-        <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+        <TableContainer component={Paper} sx={{ borderRadius: 3, border: "1px solid #E2E8F0", boxShadow: "none" }}>
           <Table>
             <TableHead sx={{ backgroundColor: "#F8FAFC" }}>
               <TableRow>
@@ -197,10 +203,10 @@ export default function CollectionReports() {
               ) : (
                 reports.map((row) => (
                   <TableRow key={row.collection_id} hover>
-                    <TableCell sx={{ fontWeight: 600, color: "#0F766E" }}>
+                    <TableCell sx={{ fontWeight: 700, color: "#0F766E" }}>
                       {row.receipt_number}
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 500 }}>{row.customer_name}</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>{row.customer_name}</TableCell>
                     <TableCell>{row.branch_name}</TableCell>
                     <TableCell>
                       {new Date(row.collection_date).toLocaleDateString("en-IN", {

@@ -148,8 +148,27 @@ export default function Letters() {
   });
 
   // Helper to find employee object
-  const getEmp = (empId) => employees.find((e) => Number(e.user_id || e.userId) === Number(empId));
+  const getEmp = (empId) => {
+    if (!empId) return null;
+    return (
+      employees.find(
+        (e) =>
+          String(e.user_id || e.userId || e.id || e.employee_id || "") === String(empId) ||
+          String(e.employee_code || e.employeeCode || "") === String(empId)
+      ) || null
+    );
+  };
+
   const getBranch = (bId) => branches.find((b) => Number(b.branch_id || b.branchId) === Number(bId));
+
+  const getEmpName = (emp) => {
+    if (!emp) return "Employee Name";
+    const name = `${emp.first_name || emp.firstName || ""} ${emp.last_name || emp.lastName || ""}`.trim();
+    if (name) return name;
+    if (emp.name) return emp.name;
+    if (emp.email) return emp.email.split("@")[0];
+    return "Employee Name";
+  };
 
   // Helper to filter staff employees by role and branch
   const getFilteredEmployees = (selectedBranchId) => {
@@ -174,13 +193,13 @@ export default function Letters() {
     }
     const emp = getEmp(offerState.employeeId);
     const branch = getBranch(offerState.branchId);
-    const empName = `${emp?.first_name || ""} ${emp?.last_name || ""}`.trim() || "Employee Name";
+    const empName = getEmpName(emp);
 
     const letterData = {
       type: "OFFER LETTER",
-      letterNumber: `PNRG/HR/OFFER/${new Date().getFullYear()}/${emp?.user_id || 101}`,
+      letterNumber: `PNRG/HR/OFFER/${new Date().getFullYear()}/${emp?.user_id || emp?.id || 101}`,
       employeeName: empName,
-      employeeCode: emp?.employee_code || "EMP-101",
+      employeeCode: emp?.employee_code || emp?.employeeCode || "EMP-101",
       branchName: branch?.branch_name || "Head Office",
       date: new Date().toISOString().split("T")[0],
       managerName: offerState.managerName,
@@ -238,7 +257,7 @@ We welcome you to PNRG Finance and look forward to a successful and mutually rew
     }
     const emp = getEmp(expState.employeeId);
     const branch = getBranch(expState.branchId);
-    const empName = `${emp?.first_name || ""} ${emp?.last_name || ""}`.trim() || "Employee Name";
+    const empName = getEmpName(emp);
 
     const letterData = {
       type: "EXPERIENCE LETTER",
@@ -295,7 +314,7 @@ We express our sincere appreciation for their valuable services and contribution
     }
     const emp = getEmp(relState.employeeId);
     const branch = getBranch(relState.branchId);
-    const empName = `${emp?.first_name || ""} ${emp?.last_name || ""}`.trim() || "Employee Name";
+    const empName = getEmpName(emp);
 
     const letterData = {
       type: "RELIEVING LETTER",
@@ -351,7 +370,7 @@ We thank you for your service and wish you all the best in your future career un
     }
     const emp = getEmp(confState.employeeId);
     const branch = getBranch(confState.branchId);
-    const empName = `${emp?.first_name || ""} ${emp?.last_name || ""}`.trim() || "Employee Name";
+    const empName = getEmpName(emp);
 
     const letterData = {
       type: "CONFIRMATION LETTER",
@@ -461,31 +480,51 @@ We congratulate you on your confirmation and look forward to a long and successf
           <Tab label="Print Employee Letters" />
           <Tab label="Custom Document Editor" />
         </Tabs>
-      </Box>
-
-      {/* TAB 0: PRINT EMPLOYEE LETTERS (Exact 4 Cards Layout as in Screenshot) */}
+      </Box>      {/* TAB 0: PRINT EMPLOYEE LETTERS */}
       {activeTab === 0 && (
         <Grid container spacing={3}>
           {/* 1. OFFER LETTER CARD */}
           <Grid item xs={12} sm={6} md={3}>
             <Card
               sx={{
-                borderRadius: 5,
-                p: 1.5,
-                boxShadow: "0 10px 30px rgba(0, 0, 0, 0.05)",
-                border: "1px solid #F1F5F9",
+                borderRadius: 4,
+                overflow: "hidden",
+                boxShadow: "0 10px 25px rgba(15, 118, 110, 0.08)",
+                border: "1px solid #E2E8F0",
                 height: "100%",
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
+                transition: "all 0.3s ease",
+                "&:hover": {
+                  boxShadow: "0 14px 35px rgba(0, 136, 204, 0.18)",
+                  transform: "translateY(-4px)",
+                },
               }}
             >
-              <CardContent sx={{ p: 2 }}>
-                <Typography variant="subtitle1" fontWeight={800} sx={{ mb: 2.5, color: "#0F172A" }}>
-                  OFFER LETTER
-                </Typography>
+              <Box
+                sx={{
+                  background: "linear-gradient(135deg, #0088CC 0%, #005599 100%)",
+                  p: 2.5,
+                  color: "#FFFFFF",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.5,
+                }}
+              >
+                <DescriptionIcon sx={{ fontSize: 28, opacity: 0.9 }} />
+                <Box>
+                  <Typography variant="subtitle1" fontWeight={800} letterSpacing={0.5}>
+                    OFFER LETTER
+                  </Typography>
+                  <Typography variant="caption" sx={{ opacity: 0.85, display: "block" }}>
+                    Employment offer & CTC terms
+                  </Typography>
+                </Box>
+              </Box>
 
-                <Stack spacing={2.2}>
+              <CardContent sx={{ p: 2.5, flexGrow: 1 }}>
+                <Stack spacing={2.5}>
                   <TextField
                     select
                     fullWidth
@@ -493,7 +532,10 @@ We congratulate you on your confirmation and look forward to a long and successf
                     label="BRANCH *"
                     value={offerState.branchId}
                     onChange={(e) => setOfferState({ ...offerState, branchId: e.target.value, employeeId: "" })}
-                    sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
+                    InputLabelProps={{ shrink: true }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": { borderRadius: 2.5, bgcolor: "#F8FAFC" },
+                    }}
                   >
                     {branches.length === 0 ? (
                       <MenuItem disabled value="">
@@ -515,7 +557,10 @@ We congratulate you on your confirmation and look forward to a long and successf
                     label="EMPLOYEE ID *"
                     value={offerState.employeeId}
                     onChange={(e) => setOfferState({ ...offerState, employeeId: e.target.value })}
-                    sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
+                    InputLabelProps={{ shrink: true }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": { borderRadius: 2.5, bgcolor: "#F8FAFC" },
+                    }}
                   >
                     {(() => {
                       const list = getFilteredEmployees(offerState.branchId);
@@ -540,7 +585,10 @@ We congratulate you on your confirmation and look forward to a long and successf
                     label="NAME OF REPORTING MANAGER"
                     value={offerState.managerName}
                     onChange={(e) => setOfferState({ ...offerState, managerName: e.target.value })}
-                    sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
+                    InputLabelProps={{ shrink: true }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": { borderRadius: 2.5, bgcolor: "#F8FAFC" },
+                    }}
                   />
 
                   <TextField
@@ -549,24 +597,28 @@ We congratulate you on your confirmation and look forward to a long and successf
                     label="ANNUAL CTC *"
                     value={offerState.annualCtc}
                     onChange={(e) => setOfferState({ ...offerState, annualCtc: e.target.value })}
-                    sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
+                    InputLabelProps={{ shrink: true }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": { borderRadius: 2.5, bgcolor: "#F8FAFC" },
+                    }}
                   />
                 </Stack>
               </CardContent>
 
-              <Box sx={{ p: 2 }}>
+              <Box sx={{ p: 2.5, pt: 0 }}>
                 <Button
                   fullWidth
                   variant="contained"
+                  startIcon={<DescriptionIcon />}
                   onClick={handleGenerateOffer}
                   sx={{
-                    bgcolor: "#0088CC",
-                    "&:hover": { bgcolor: "#0077BB" },
-                    borderRadius: 8,
+                    background: "linear-gradient(135deg, #0088CC 0%, #0066AA 100%)",
+                    "&:hover": { background: "linear-gradient(135deg, #0077BB 0%, #005599 100%)" },
+                    borderRadius: 3,
                     py: 1.2,
                     fontWeight: 700,
                     textTransform: "none",
-                    boxShadow: "0 4px 12px rgba(0, 136, 204, 0.3)",
+                    boxShadow: "0 4px 14px rgba(0, 136, 204, 0.35)",
                   }}
                 >
                   Create Offer Letter
@@ -579,22 +631,44 @@ We congratulate you on your confirmation and look forward to a long and successf
           <Grid item xs={12} sm={6} md={3}>
             <Card
               sx={{
-                borderRadius: 5,
-                p: 1.5,
-                boxShadow: "0 10px 30px rgba(0, 0, 0, 0.05)",
-                border: "1px solid #F1F5F9",
+                borderRadius: 4,
+                overflow: "hidden",
+                boxShadow: "0 10px 25px rgba(15, 118, 110, 0.08)",
+                border: "1px solid #E2E8F0",
                 height: "100%",
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
+                transition: "all 0.3s ease",
+                "&:hover": {
+                  boxShadow: "0 14px 35px rgba(15, 118, 110, 0.18)",
+                  transform: "translateY(-4px)",
+                },
               }}
             >
-              <CardContent sx={{ p: 2 }}>
-                <Typography variant="subtitle1" fontWeight={800} sx={{ mb: 2.5, color: "#0F172A" }}>
-                  EXPERIENCE LETTER
-                </Typography>
+              <Box
+                sx={{
+                  background: "linear-gradient(135deg, #0F766E 0%, #115E59 100%)",
+                  p: 2.5,
+                  color: "#FFFFFF",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.5,
+                }}
+              >
+                <DescriptionIcon sx={{ fontSize: 28, opacity: 0.9 }} />
+                <Box>
+                  <Typography variant="subtitle1" fontWeight={800} letterSpacing={0.5}>
+                    EXPERIENCE LETTER
+                  </Typography>
+                  <Typography variant="caption" sx={{ opacity: 0.85, display: "block" }}>
+                    Service experience certificate
+                  </Typography>
+                </Box>
+              </Box>
 
-                <Stack spacing={2.2}>
+              <CardContent sx={{ p: 2.5, flexGrow: 1 }}>
+                <Stack spacing={2.5}>
                   <TextField
                     select
                     fullWidth
@@ -602,7 +676,10 @@ We congratulate you on your confirmation and look forward to a long and successf
                     label="BRANCH *"
                     value={expState.branchId}
                     onChange={(e) => setExpState({ ...expState, branchId: e.target.value, employeeId: "" })}
-                    sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
+                    InputLabelProps={{ shrink: true }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": { borderRadius: 2.5, bgcolor: "#F8FAFC" },
+                    }}
                   >
                     {branches.length === 0 ? (
                       <MenuItem disabled value="">
@@ -624,7 +701,10 @@ We congratulate you on your confirmation and look forward to a long and successf
                     label="EMPLOYEE ID *"
                     value={expState.employeeId}
                     onChange={(e) => setExpState({ ...expState, employeeId: e.target.value })}
-                    sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
+                    InputLabelProps={{ shrink: true }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": { borderRadius: 2.5, bgcolor: "#F8FAFC" },
+                    }}
                   >
                     {(() => {
                       const list = getFilteredEmployees(expState.branchId);
@@ -651,7 +731,9 @@ We congratulate you on your confirmation and look forward to a long and successf
                     value={expState.startDate}
                     onChange={(e) => setExpState({ ...expState, startDate: e.target.value })}
                     InputLabelProps={{ shrink: true }}
-                    sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": { borderRadius: 2.5, bgcolor: "#F8FAFC" },
+                    }}
                   />
 
                   <TextField
@@ -662,24 +744,27 @@ We congratulate you on your confirmation and look forward to a long and successf
                     value={expState.endDate}
                     onChange={(e) => setExpState({ ...expState, endDate: e.target.value })}
                     InputLabelProps={{ shrink: true }}
-                    sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": { borderRadius: 2.5, bgcolor: "#F8FAFC" },
+                    }}
                   />
                 </Stack>
               </CardContent>
 
-              <Box sx={{ p: 2 }}>
+              <Box sx={{ p: 2.5, pt: 0 }}>
                 <Button
                   fullWidth
                   variant="contained"
+                  startIcon={<DescriptionIcon />}
                   onClick={handleGenerateExperience}
                   sx={{
-                    bgcolor: "#0088CC",
-                    "&:hover": { bgcolor: "#0077BB" },
-                    borderRadius: 8,
+                    background: "linear-gradient(135deg, #0F766E 0%, #0D655E 100%)",
+                    "&:hover": { background: "linear-gradient(135deg, #115E59 0%, #0F766E 100%)" },
+                    borderRadius: 3,
                     py: 1.2,
                     fontWeight: 700,
                     textTransform: "none",
-                    boxShadow: "0 4px 12px rgba(0, 136, 204, 0.3)",
+                    boxShadow: "0 4px 14px rgba(15, 118, 110, 0.35)",
                   }}
                 >
                   Create Experience Letter
@@ -692,22 +777,44 @@ We congratulate you on your confirmation and look forward to a long and successf
           <Grid item xs={12} sm={6} md={3}>
             <Card
               sx={{
-                borderRadius: 5,
-                p: 1.5,
-                boxShadow: "0 10px 30px rgba(0, 0, 0, 0.05)",
-                border: "1px solid #F1F5F9",
+                borderRadius: 4,
+                overflow: "hidden",
+                boxShadow: "0 10px 25px rgba(217, 119, 6, 0.08)",
+                border: "1px solid #E2E8F0",
                 height: "100%",
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
+                transition: "all 0.3s ease",
+                "&:hover": {
+                  boxShadow: "0 14px 35px rgba(217, 119, 6, 0.18)",
+                  transform: "translateY(-4px)",
+                },
               }}
             >
-              <CardContent sx={{ p: 2 }}>
-                <Typography variant="subtitle1" fontWeight={800} sx={{ mb: 2.5, color: "#0F172A" }}>
-                  RELIEVING LETTER
-                </Typography>
+              <Box
+                sx={{
+                  background: "linear-gradient(135deg, #D97706 0%, #B45309 100%)",
+                  p: 2.5,
+                  color: "#FFFFFF",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.5,
+                }}
+              >
+                <DescriptionIcon sx={{ fontSize: 28, opacity: 0.9 }} />
+                <Box>
+                  <Typography variant="subtitle1" fontWeight={800} letterSpacing={0.5}>
+                    RELIEVING LETTER
+                  </Typography>
+                  <Typography variant="caption" sx={{ opacity: 0.85, display: "block" }}>
+                    Resignation discharge order
+                  </Typography>
+                </Box>
+              </Box>
 
-                <Stack spacing={2.2}>
+              <CardContent sx={{ p: 2.5, flexGrow: 1 }}>
+                <Stack spacing={2.5}>
                   <TextField
                     select
                     fullWidth
@@ -715,7 +822,10 @@ We congratulate you on your confirmation and look forward to a long and successf
                     label="BRANCH *"
                     value={relState.branchId}
                     onChange={(e) => setRelState({ ...relState, branchId: e.target.value, employeeId: "" })}
-                    sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
+                    InputLabelProps={{ shrink: true }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": { borderRadius: 2.5, bgcolor: "#F8FAFC" },
+                    }}
                   >
                     {branches.length === 0 ? (
                       <MenuItem disabled value="">
@@ -737,7 +847,10 @@ We congratulate you on your confirmation and look forward to a long and successf
                     label="EMPLOYEE ID *"
                     value={relState.employeeId}
                     onChange={(e) => setRelState({ ...relState, employeeId: e.target.value })}
-                    sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
+                    InputLabelProps={{ shrink: true }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": { borderRadius: 2.5, bgcolor: "#F8FAFC" },
+                    }}
                   >
                     {(() => {
                       const list = getFilteredEmployees(relState.branchId);
@@ -764,7 +877,9 @@ We congratulate you on your confirmation and look forward to a long and successf
                     value={relState.resignationDate}
                     onChange={(e) => setRelState({ ...relState, resignationDate: e.target.value })}
                     InputLabelProps={{ shrink: true }}
-                    sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": { borderRadius: 2.5, bgcolor: "#F8FAFC" },
+                    }}
                   />
 
                   <TextField
@@ -775,24 +890,27 @@ We congratulate you on your confirmation and look forward to a long and successf
                     value={relState.lastDay}
                     onChange={(e) => setRelState({ ...relState, lastDay: e.target.value })}
                     InputLabelProps={{ shrink: true }}
-                    sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": { borderRadius: 2.5, bgcolor: "#F8FAFC" },
+                    }}
                   />
                 </Stack>
               </CardContent>
 
-              <Box sx={{ p: 2 }}>
+              <Box sx={{ p: 2.5, pt: 0 }}>
                 <Button
                   fullWidth
                   variant="contained"
+                  startIcon={<DescriptionIcon />}
                   onClick={handleGenerateRelieving}
                   sx={{
-                    bgcolor: "#0088CC",
-                    "&:hover": { bgcolor: "#0077BB" },
-                    borderRadius: 8,
+                    background: "linear-gradient(135deg, #D97706 0%, #B45309 100%)",
+                    "&:hover": { background: "linear-gradient(135deg, #B45309 0%, #92400E 100%)" },
+                    borderRadius: 3,
                     py: 1.2,
                     fontWeight: 700,
                     textTransform: "none",
-                    boxShadow: "0 4px 12px rgba(0, 136, 204, 0.3)",
+                    boxShadow: "0 4px 14px rgba(217, 119, 6, 0.35)",
                   }}
                 >
                   Create Relieving Letter
@@ -805,22 +923,44 @@ We congratulate you on your confirmation and look forward to a long and successf
           <Grid item xs={12} sm={6} md={3}>
             <Card
               sx={{
-                borderRadius: 5,
-                p: 1.5,
-                boxShadow: "0 10px 30px rgba(0, 0, 0, 0.05)",
-                border: "1px solid #F1F5F9",
+                borderRadius: 4,
+                overflow: "hidden",
+                boxShadow: "0 10px 25px rgba(124, 58, 237, 0.08)",
+                border: "1px solid #E2E8F0",
                 height: "100%",
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
+                transition: "all 0.3s ease",
+                "&:hover": {
+                  boxShadow: "0 14px 35px rgba(124, 58, 237, 0.18)",
+                  transform: "translateY(-4px)",
+                },
               }}
             >
-              <CardContent sx={{ p: 2 }}>
-                <Typography variant="subtitle1" fontWeight={800} sx={{ mb: 2.5, color: "#0F172A" }}>
-                  CONFIRMATION LETTER
-                </Typography>
+              <Box
+                sx={{
+                  background: "linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)",
+                  p: 2.5,
+                  color: "#FFFFFF",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.5,
+                }}
+              >
+                <DescriptionIcon sx={{ fontSize: 28, opacity: 0.9 }} />
+                <Box>
+                  <Typography variant="subtitle1" fontWeight={800} letterSpacing={0.5}>
+                    CONFIRMATION LETTER
+                  </Typography>
+                  <Typography variant="caption" sx={{ opacity: 0.85, display: "block" }}>
+                    Permanent service confirmation
+                  </Typography>
+                </Box>
+              </Box>
 
-                <Stack spacing={2.2}>
+              <CardContent sx={{ p: 2.5, flexGrow: 1 }}>
+                <Stack spacing={2.5}>
                   <TextField
                     select
                     fullWidth
@@ -828,7 +968,10 @@ We congratulate you on your confirmation and look forward to a long and successf
                     label="BRANCH *"
                     value={confState.branchId}
                     onChange={(e) => setConfState({ ...confState, branchId: e.target.value, employeeId: "" })}
-                    sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
+                    InputLabelProps={{ shrink: true }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": { borderRadius: 2.5, bgcolor: "#F8FAFC" },
+                    }}
                   >
                     {branches.length === 0 ? (
                       <MenuItem disabled value="">
@@ -850,7 +993,10 @@ We congratulate you on your confirmation and look forward to a long and successf
                     label="EMPLOYEE ID *"
                     value={confState.employeeId}
                     onChange={(e) => setConfState({ ...confState, employeeId: e.target.value })}
-                    sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
+                    InputLabelProps={{ shrink: true }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": { borderRadius: 2.5, bgcolor: "#F8FAFC" },
+                    }}
                   >
                     {(() => {
                       const list = getFilteredEmployees(confState.branchId);
@@ -869,7 +1015,6 @@ We congratulate you on your confirmation and look forward to a long and successf
                     })()}
                   </TextField>
 
-
                   <TextField
                     type="date"
                     fullWidth
@@ -878,7 +1023,9 @@ We congratulate you on your confirmation and look forward to a long and successf
                     value={confState.probationStart}
                     onChange={(e) => setConfState({ ...confState, probationStart: e.target.value })}
                     InputLabelProps={{ shrink: true }}
-                    sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": { borderRadius: 2.5, bgcolor: "#F8FAFC" },
+                    }}
                   />
 
                   <TextField
@@ -889,24 +1036,27 @@ We congratulate you on your confirmation and look forward to a long and successf
                     value={confState.probationEnd}
                     onChange={(e) => setConfState({ ...confState, probationEnd: e.target.value })}
                     InputLabelProps={{ shrink: true }}
-                    sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": { borderRadius: 2.5, bgcolor: "#F8FAFC" },
+                    }}
                   />
                 </Stack>
               </CardContent>
 
-              <Box sx={{ p: 2 }}>
+              <Box sx={{ p: 2.5, pt: 0 }}>
                 <Button
                   fullWidth
                   variant="contained"
+                  startIcon={<DescriptionIcon />}
                   onClick={handleGenerateConfirmation}
                   sx={{
-                    bgcolor: "#0088CC",
-                    "&:hover": { bgcolor: "#0077BB" },
-                    borderRadius: 8,
+                    background: "linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)",
+                    "&:hover": { background: "linear-gradient(135deg, #6D28D9 0%, #5B21B6 100%)" },
+                    borderRadius: 3,
                     py: 1.2,
                     fontWeight: 700,
                     textTransform: "none",
-                    boxShadow: "0 4px 12px rgba(0, 136, 204, 0.3)",
+                    boxShadow: "0 4px 14px rgba(124, 58, 237, 0.35)",
                   }}
                 >
                   Create Confirmation Letter

@@ -12,7 +12,7 @@ import {
 
 class InitializeService {
   async initialize() {
-    // ===== 1. AUTO-CREATE ALL TABLES =====
+    // ===== 1. AUTO-CREATE ALL TABLES IF NOT PRESENT =====
     const schemaConnection = await repository.beginTransaction();
     try {
       logger.info("Starting database schema creation/verification...");
@@ -34,7 +34,7 @@ class InitializeService {
     try {
       logger.info("Starting database default data seeding...");
 
-      // ===== 2. Create Roles =====
+      // ===== 2. Create Roles (Only if missing) =====
       logger.info("Checking default roles...");
       const roleMap = {}; // role_name => role_id
 
@@ -55,7 +55,7 @@ class InitializeService {
         }
       }
 
-      // --- Create Permissions ---
+      // ===== 3. Create Permissions (Only if missing) =====
       logger.info("Checking default permissions...");
       const permissionMap = {}; // permission_name => permission_id
 
@@ -74,43 +74,21 @@ class InitializeService {
         }
       }
 
-      // --- Assign Permissions to Roles ---
+      // ===== 4. Assign Permissions to Roles =====
       logger.info("Assigning permissions to roles...");
-
       for (const [roleName, permNames] of Object.entries(
         ROLE_PERMISSIONS_MAP,
       )) {
         const roleId = roleMap[roleName];
         if (!roleId) continue;
 
-        // Replacing permissions keeps existing system roles in sync with the
-        // declarative map when access is added or intentionally removed.
-        if (roleName) {
-          const permissionIds = permNames
-            .map((permissionName) => permissionMap[permissionName])
-            .filter(Boolean);
-          await repository.replaceRolePermissions(connection, roleId, permissionIds);
-          logger.info(`  ${roleName} permissions synchronized`);
-          continue;
-        }
-
-        for (const permName of permNames) {
-          const permId = permissionMap[permName];
-          if (!permId) continue;
-
-          const assigned = await repository.rolePermissionExists(
-            connection,
-            roleId,
-            permId,
-          );
-          if (!assigned) {
-            await repository.assignPermission(connection, roleId, permId);
-            logger.info(`  ${roleName} ← ${permName}`);
-          }
-        }
+        const permissionIds = permNames
+          .map((permissionName) => permissionMap[permissionName])
+          .filter(Boolean);
+        await repository.replaceRolePermissions(connection, roleId, permissionIds);
       }
 
-      // --- Create Default Branch ---
+      // ===== 5. Create Default Branch =====
       logger.info("Checking Head Office...");
       let branch = await repository.findBranch(
         connection,
@@ -126,38 +104,81 @@ class InitializeService {
         logger.info("Head Office exists");
       }
 
-      // --- Create Default Admin ---
-      logger.info("Checking default super admin...");
-      const existingSuperAdmin = await repository.findAdmin(
-        connection,
-        DEFAULT_SUPER_ADMIN.email,
-      );
-
-      if (!existingSuperAdmin) {
-        const superAdminRoleId = roleMap["SUPER_ADMIN"];
-        const passwordHash = await bcrypt.hash(DEFAULT_SUPER_ADMIN.password, 12);
-
-        await repository.createAdmin(connection, {
-          branch_id: branchId,
-          role_id: superAdminRoleId,
+      // ===== 6. Create Default Admin & Staff Users (ONLY IF NOT PRESENT) =====
+      logger.info("Checking default super admin and sample staff users...");
+      const sampleUsers = [
+        {
           employee_code: DEFAULT_SUPER_ADMIN.employee_code,
           first_name: DEFAULT_SUPER_ADMIN.first_name,
           last_name: DEFAULT_SUPER_ADMIN.last_name,
           email: DEFAULT_SUPER_ADMIN.email,
           phone: DEFAULT_SUPER_ADMIN.phone,
-          password_hash: passwordHash,
-        });
+          password: DEFAULT_SUPER_ADMIN.password,
+          role_name: "SUPER_ADMIN",
+        },
+        {
+          employee_code: "EMP000001",
+          first_name: "System",
+          last_name: "Admin",
+          email: "admin@pnrgfinance.com",
+          phone: "9999999991",
+          password: "Admin@123",
+          role_name: "ADMIN",
+        },
+        {
+          employee_code: "EMP000002",
+          first_name: "Branch",
+          last_name: "Manager",
+          email: "bm@pnrgfinance.com",
+          phone: "9999999992",
+          password: "Manager@123",
+          role_name: "BRANCH_MANAGER",
+        },
+        {
+          employee_code: "EMP000003",
+          first_name: "Field",
+          last_name: "Officer",
+          email: "fo@pnrgfinance.com",
+          phone: "9999999993",
+          password: "Officer@123",
+          role_name: "FIELD_OFFICER",
+        },
+        {
+          employee_code: "EMP000004",
+          first_name: "Senior",
+          last_name: "Accountant",
+          email: "accountant@pnrgfinance.com",
+          phone: "9999999994",
+          password: "Accountant@123",
+          role_name: "ACCOUNTANT",
+        },
+      ];
 
-        logger.info("Default Super Admin created (superadmin@pnrgfinance.com)");
-      } else {
-        const superAdminRoleId = roleMap["SUPER_ADMIN"];
-        const passwordHash = await bcrypt.hash(DEFAULT_SUPER_ADMIN.password, 12);
-        await connection.execute(
-          `UPDATE users SET role_id = ?, password_hash = ? WHERE user_id = ?`,
-          [superAdminRoleId, passwordHash, existingSuperAdmin.user_id]
+      for (const uData of sampleUsers) {
+        const [existingU] = await connection.execute(
+          `SELECT user_id FROM users WHERE LOWER(email) = LOWER(?) OR employee_code = ? LIMIT 1`,
+          [uData.email, uData.employee_code]
         );
-        logger.info("Default Super Admin existing record verified and updated");
-      }      // --- Seed Initial Financial Records (Expenses & Income) ---
+        const uRoleId = roleMap[uData.role_name];
+        if (existingU.length === 0 && uRoleId) {
+          const uHash = await bcrypt.hash(uData.password, 12);
+          await repository.createAdmin(connection, {
+            branch_id: branchId,
+            role_id: uRoleId,
+            employee_code: uData.employee_code,
+            first_name: uData.first_name,
+            last_name: uData.last_name,
+            email: uData.email,
+            phone: uData.phone,
+            password_hash: uHash,
+          });
+          logger.info(`Sample User created: ${uData.email} (${uData.role_name})`);
+        } else {
+          logger.info(`User or Employee code already exists in DB, skipping: ${uData.email} (${uData.employee_code})`);
+        }
+      }
+
+      // ===== 7. Seed Sample Expenses (ONLY IF TABLE IS EMPTY) =====
       const [expCount] = await connection.execute(`SELECT COUNT(*) AS total FROM expenses`);
       if (expCount[0]?.total === 0) {
         const today = new Date().toISOString().split("T")[0];
@@ -175,9 +196,12 @@ class InitializeService {
             exp
           );
         }
-        logger.info("Sample Expenses seeded");
+        logger.info("Sample Expenses seeded because table was empty");
+      } else {
+        logger.info(`Expenses table has ${expCount[0]?.total} records; sample seeding skipped.`);
       }
 
+      // ===== 8. Seed Sample Income (ONLY IF TABLE IS EMPTY) =====
       const [incCount] = await connection.execute(`SELECT COUNT(*) AS total FROM income`);
       if (incCount[0]?.total === 0) {
         const today = new Date().toISOString().split("T")[0];
@@ -194,10 +218,12 @@ class InitializeService {
             inc
           );
         }
-        logger.info("Sample Income seeded");
+        logger.info("Sample Income seeded because table was empty");
+      } else {
+        logger.info(`Income table has ${incCount[0]?.total} records; sample seeding skipped.`);
       }
 
-      // --- Sync/Backfill CUSTOMER users into customers table ---
+      // ===== 9. Sync/Backfill CUSTOMER users into customers table =====
       const [custRoleRows] = await connection.execute(
         `SELECT role_id FROM roles WHERE role_name = 'CUSTOMER' LIMIT 1`
       );
@@ -231,27 +257,55 @@ class InitializeService {
         }
       }
 
-      // --- Seed Sample Customers if empty ---
+      // ===== 10. Seed Sample Customers (ONLY IF TABLE IS EMPTY) =====
       const [custCount] = await connection.execute(`SELECT COUNT(*) AS total FROM customers`);
       if (custCount[0]?.total === 0) {
         const sampleCustomers = [
-          ["CUST000001", branchId, "Rajesh", "Kumar", "MALE", "1988-05-12", "9876543210", "9876543211", "rajesh.kumar@example.com", "123456789012", "ABCDE1234F", "Farmer", 25000, "Village Road, Plot 12", "Hyderabad", "Telangana", "500001", 1],
-          ["CUST000002", branchId, "Priya", "Sharma", "FEMALE", "1992-08-20", "9876543220", "9876543221", "priya.sharma@example.com", "234567890123", "BCDEF2345G", "Small Business", 30000, "Market Yard, Shop 4", "Hyderabad", "Telangana", "500002", 1],
-          ["CUST000003", branchId, "Amit", "Patel", "MALE", "1990-11-15", "9876543230", "9876543231", "amit.patel@example.com", "345678901234", "CDEFG3456H", "Trader", 45000, "Station Road, Shop 10", "Hyderabad", "Telangana", "500003", 1],
-          ["CUST000004", branchId, "Sunita", "Devi", "FEMALE", "1985-03-25", "9876543240", "9876543241", "sunita.devi@example.com", "456789012345", "DEFGH4567I", "Tailoring", 20000, "Gandhi Nagar", "Hyderabad", "Telangana", "500004", 1],
-          ["CUST000005", branchId, "Ramesh", "Verma", "MALE", "1994-07-08", "9876543250", "9876543251", "ramesh.verma@example.com", "567890123456", "EFGHI5678J", "Dairy Farming", 35000, "Subhash Nagar", "Hyderabad", "Telangana", "500005", 1]
+          {
+            code: "CUST000001", branchId, firstName: "Rajesh", lastName: "Kumar", gender: "MALE", dob: "1988-05-12",
+            mobile: "9876543210", altMobile: "9876543211", email: "rajesh.kumar@example.com", aadhaar: "123456789012", pan: "ABCDE1234F",
+            occupation: "Farmer", income: 25000, address: "Village Road, Plot 12", city: "Hyderabad", state: "Telangana", pincode: "500001"
+          },
+          {
+            code: "CUST000002", branchId, firstName: "Priya", lastName: "Sharma", gender: "FEMALE", dob: "1992-08-20",
+            mobile: "9876543220", altMobile: "9876543221", email: "priya.sharma@example.com", aadhaar: "234567890123", pan: "BCDEF2345G",
+            occupation: "Small Business", income: 30000, address: "Market Yard, Shop 4", city: "Hyderabad", state: "Telangana", pincode: "500002"
+          },
+          {
+            code: "CUST000003", branchId, firstName: "Amit", lastName: "Patel", gender: "MALE", dob: "1990-11-15",
+            mobile: "9876543230", altMobile: "9876543231", email: "amit.patel@example.com", aadhaar: "345678901234", pan: "CDEFG3456H",
+            occupation: "Trader", income: 45000, address: "Station Road, Shop 10", city: "Hyderabad", state: "Telangana", pincode: "500003"
+          },
+          {
+            code: "CUST000004", branchId, firstName: "Sunita", lastName: "Devi", gender: "FEMALE", dob: "1985-03-25",
+            mobile: "9876543240", altMobile: "9876543241", email: "sunita.devi@example.com", aadhaar: "456789012345", pan: "DEFGH4567I",
+            occupation: "Tailoring", income: 20000, address: "Gandhi Nagar", city: "Hyderabad", state: "Telangana", pincode: "500004"
+          },
+          {
+            code: "CUST000005", branchId, firstName: "Ramesh", lastName: "Verma", gender: "MALE", dob: "1994-07-08",
+            mobile: "9876543250", altMobile: "9876543251", email: "ramesh.verma@example.com", aadhaar: "567890123456", pan: "EFGHI5678J",
+            occupation: "Dairy Farming", income: 35000, address: "Subhash Nagar", city: "Hyderabad", state: "Telangana", pincode: "500005"
+          }
         ];
         for (const c of sampleCustomers) {
+          const [res] = await connection.execute(
+            `INSERT INTO customers (customer_code, branch_id, first_name, last_name, gender, date_of_birth, mobile_number, alternate_mobile, email, occupation, monthly_income, address, city, state, pincode, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+            [c.code, c.branchId, c.firstName, c.lastName, c.gender, c.dob, c.mobile, c.altMobile, c.email, c.occupation, c.income, c.address, c.city, c.state, c.pincode]
+          );
+          const cId = res.insertId;
           await connection.execute(
-            `INSERT INTO customers (customer_code, branch_id, first_name, last_name, gender, date_of_birth, mobile_number, alternate_mobile, email, aadhaar_number, pan_number, occupation, monthly_income, address, city, state, pincode, created_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            c
+            `INSERT INTO customer_kyc (customer_id, aadhaar_number, pan_number, aadhaar_verified, pan_verified, kyc_status, remarks)
+             VALUES (?, ?, ?, 1, 1, 'VERIFIED', 'Verified during sample seeding')`,
+            [cId, c.aadhaar, c.pan]
           );
         }
-        logger.info("Sample Customers seeded");
+        logger.info("Sample Customers seeded because table was empty");
+      } else {
+        logger.info(`Customers table has ${custCount[0]?.total} records; sample seeding skipped.`);
       }
 
-      // --- Seed Sample Customer Groups & Group Members if empty ---
+      // ===== 11. Seed Sample Customer Groups (ONLY IF TABLE IS EMPTY) =====
       const [foUsers] = await connection.execute(
         `SELECT u.user_id FROM users u INNER JOIN roles r ON r.role_id = u.role_id WHERE r.role_name = 'FIELD_OFFICER' LIMIT 1`
       );
@@ -287,26 +341,37 @@ class InitializeService {
           if (cIds[4]) await connection.execute(`INSERT INTO group_members (group_id, customer_id, role, added_by) VALUES (?, ?, 'MEMBER', 1)`, [g2Id, cIds[4]]);
         }
 
-        logger.info("Sample Customer Groups & Members seeded");
-      } else if (defaultFoId) {
-        // Backfill existing groups without field officer assigned
-        await connection.execute(
-          `UPDATE customer_groups SET field_officer_id = ? WHERE field_officer_id IS NULL`,
-          [defaultFoId]
-        );
+        logger.info("Sample Customer Groups & Members seeded because table was empty");
+      } else {
+        logger.info(`Customer groups table has ${groupCount[0]?.total} records; sample seeding skipped.`);
       }
 
-      // --- Seed Commercial Bank & NBFC Loan Schemes ---
-      const commercialLoanProducts = [
-        ["LP000001", "Commercial Unsecured Personal Loan", "Instant unsecured personal credit for salaried and self-employed professionals for personal expenses and emergencies", 50000, 1000000, 12, 60, 12.50, "PERCENTAGE", 1.50, "MONTHLY", "ACTIVE", 1],
-        ["LP000002", "Commercial SME Business Expansion Loan", "Collateral-free commercial business loan for SMEs, retail traders, distributors, and service enterprises", 100000, 2500000, 12, 60, 13.50, "PERCENTAGE", 2.00, "MONTHLY", "ACTIVE", 1],
-        ["LP000003", "Commercial Vehicle & Auto Finance Loan", "Vehicle purchase financing for commercial pickup vans, delivery trucks, cars, and fleet vehicles", 100000, 1500000, 12, 60, 11.75, "PERCENTAGE", 1.00, "MONTHLY", "ACTIVE", 1],
-        ["LP000004", "Commercial Equipment & Machinery Financing", "Asset purchase financing for industrial machinery, medical equipment, printing presses, and commercial tools", 150000, 3000000, 12, 60, 12.00, "PERCENTAGE", 1.50, "MONTHLY", "ACTIVE", 1],
-        ["LP000005", "Commercial Loan Against Property (LAP)", "High-value secured loan against residential or commercial property for long-term business expansion and capital investment", 300000, 5000000, 24, 120, 10.50, "PERCENTAGE", 1.00, "MONTHLY", "ACTIVE", 1],
-        ["LP000006", "Commercial Gold Jewellery Credit Loan", "Fast collateralized credit against gold ornaments & jewellery with instant disbursement and flexible repayment", 10000, 1000000, 3, 12, 9.90, "PERCENTAGE", 0.50, "MONTHLY", "ACTIVE", 1],
-        ["LP000007", "Merchant Invoice & PoS Working Capital Credit", "Swipe-machine and merchant invoice based daily/weekly working capital financing for retail store owners", 25000, 500000, 3, 18, 14.00, "PERCENTAGE", 1.50, "MONTHLY", "ACTIVE", 1],
-        ["LP000008", "Commercial Home Loan & Housing Finance", "Long-term home loan for purchasing residential flats, independent houses, or plot construction", 500000, 7500000, 36, 240, 8.75, "PERCENTAGE", 1.00, "MONTHLY", "ACTIVE", 1],
-      ];
+      // ===== 12. Seed Loan Schemes (ONLY IF TABLE IS EMPTY) =====
+      const [lpCount] = await connection.execute(`SELECT COUNT(*) AS total FROM loan_products`);
+      if (lpCount[0]?.total === 0) {
+        const commercialLoanProducts = [
+          ["LP000001", "Commercial Unsecured Personal Loan", "Instant unsecured personal credit for salaried and self-employed professionals for personal expenses and emergencies", 50000, 1000000, 12, 60, 12.50, "PERCENTAGE", 1.50, "MONTHLY", "ACTIVE", 1],
+          ["LP000002", "Commercial SME Business Expansion Loan", "Collateral-free commercial business loan for SMEs, retail traders, distributors, and service enterprises", 100000, 2500000, 12, 60, 13.50, "PERCENTAGE", 2.00, "MONTHLY", "ACTIVE", 1],
+          ["LP000003", "Commercial Vehicle & Auto Finance Loan", "Vehicle purchase financing for commercial pickup vans, delivery trucks, cars, and fleet vehicles", 100000, 1500000, 12, 60, 11.75, "PERCENTAGE", 1.00, "MONTHLY", "ACTIVE", 1],
+          ["LP000004", "Commercial Equipment & Machinery Financing", "Asset purchase financing for industrial machinery, medical equipment, printing presses, and commercial tools", 150000, 3000000, 12, 60, 12.00, "PERCENTAGE", 1.50, "MONTHLY", "ACTIVE", 1],
+          ["LP000005", "Commercial Loan Against Property (LAP)", "High-value secured loan against residential or commercial property for long-term business expansion and capital investment", 300000, 5000000, 24, 120, 10.50, "PERCENTAGE", 1.00, "MONTHLY", "ACTIVE", 1],
+          ["LP000006", "Commercial Gold Jewellery Credit Loan", "Fast collateralized credit against gold ornaments & jewellery with instant disbursement and flexible repayment", 10000, 1000000, 3, 12, 9.90, "PERCENTAGE", 0.50, "MONTHLY", "ACTIVE", 1],
+          ["LP000007", "Merchant Invoice & PoS Working Capital Credit", "Swipe-machine and merchant invoice based daily/weekly working capital financing for retail store owners", 25000, 500000, 3, 18, 14.00, "PERCENTAGE", 1.50, "MONTHLY", "ACTIVE", 1],
+          ["LP000008", "Commercial Home Loan & Housing Finance", "Long-term home loan for purchasing residential flats, independent houses, or plot construction", 500000, 7500000, 36, 240, 8.75, "PERCENTAGE", 1.00, "MONTHLY", "ACTIVE", 1],
+        ];
+
+        for (const p of commercialLoanProducts) {
+          await connection.execute(
+            `INSERT IGNORE INTO loan_products (product_code, product_name, description, minimum_amount, maximum_amount, minimum_tenure, maximum_tenure, interest_rate, processing_fee_type, processing_fee, recovery_frequency, status, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            p
+          );
+        }
+        logger.info("Commercial Loan Products seeded because table was empty");
+      } else {
+        logger.info(`Loan products table has ${lpCount[0]?.total} records; sample seeding skipped.`);
+      }
+
       await repository.commit(connection);
       logger.info("Database initialization completed successfully.");
     } catch (error) {
