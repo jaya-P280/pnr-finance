@@ -28,6 +28,19 @@ class CustomerPortalService {
 
   async createApplication(userId, data, currentUser) {
     const customer = await this.getLinkedCustomer(userId);
+
+    // Require both Aadhaar and PAN verification before applying for a loan
+    const kyc = await customerPortalRepository.getKycStatus(customer.customer_id);
+    const isAadhaarVerified = Boolean(kyc?.aadhaarVerified);
+    const isPanVerified = Boolean(kyc?.panVerified);
+
+    if (!isAadhaarVerified || !isPanVerified) {
+      throw new ApiError(
+        403,
+        "Both Aadhaar and PAN verification must be completed before applying for a loan.",
+      );
+    }
+
     return loanApplicationService.createLoanApplication(
       {
         customerId: customer.customer_id,

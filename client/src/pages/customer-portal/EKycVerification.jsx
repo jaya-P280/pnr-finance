@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { customerPortalApi } from "../../api/customer.api";
 import toast from "react-hot-toast";
 import {
@@ -30,6 +31,7 @@ import {
 } from "@mui/material";
 
 export default function EKycVerification() {
+  const navigate = useNavigate();
   const [kycStatus, setKycStatus] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -200,6 +202,60 @@ export default function EKycVerification() {
           </div>
         </div>
       </div>
+
+      {/* KYC Status Banner & Action */}
+      {isFullyVerified ? (
+        <div className="bg-emerald-50 border border-emerald-300 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-5 shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-md">
+              <CheckCircle className="w-7 h-7" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-lg font-bold text-emerald-950">
+                  Aadhaar & PAN Verification Completed!
+                </h3>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-emerald-200 text-emerald-900 border border-emerald-300">
+                  VERIFIED
+                </span>
+              </div>
+              <p className="text-xs text-emerald-800 mt-1">
+                Your identity is 100% verified. You are pre-approved and eligible to submit loan applications.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate("/customer/apply-loan")}
+            className="shrink-0 px-6 py-3 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-teal-700/20 transition-all flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <span>Apply for Loan Now</span>
+            <ArrowForward className="w-4 h-4" />
+          </button>
+        </div>
+      ) : (
+        <div className="bg-amber-50 border border-amber-300 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-start gap-3">
+            <Info className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+            <div>
+              <h4 className="font-bold text-amber-900 text-sm">
+                Loan Application Requirement
+              </h4>
+              <p className="text-xs text-amber-800 mt-0.5 leading-relaxed">
+                Both <strong>Aadhaar e-KYC</strong> and <strong>PAN Verification</strong> must be completed before applying for a loan.
+              </p>
+              <div className="flex items-center gap-4 mt-2 text-xs font-semibold">
+                <span className={`inline-flex items-center gap-1 ${kycStatus?.aadhaarVerified ? "text-emerald-700" : "text-amber-800"}`}>
+                  {kycStatus?.aadhaarVerified ? "✓ Aadhaar Verified" : "⏳ Aadhaar Pending"}
+                </span>
+                <span className={`inline-flex items-center gap-1 ${kycStatus?.panVerified ? "text-emerald-700" : "text-amber-800"}`}>
+                  {kycStatus?.panVerified ? "✓ PAN Verified" : "⏳ PAN Pending"}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* DigiLocker Notice Info */}
       <div className="bg-teal-50/80 border border-teal-200/80 p-4 rounded-xl flex items-start gap-3">

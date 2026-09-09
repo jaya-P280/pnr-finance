@@ -395,32 +395,46 @@ class CustomerPortalRepository {
   async updateDigiLockerKyc(customerId, { aadhaarNumber, digilockerRefId }) {
     const remarks = `Verified via DigiLocker e-KYC (Ref: ${digilockerRefId || "DGL-" + Date.now()})`;
     await pool.execute(
-      `INSERT INTO customer_kyc (customer_id, aadhaar_number, aadhaar_verified, kyc_status, verified_at, remarks)
-       VALUES (?, ?, 1, 'VERIFIED', CURRENT_TIMESTAMP, ?)
+      `INSERT INTO customer_kyc (customer_id, aadhaar_number, aadhaar_verified, kyc_status, remarks)
+       VALUES (?, ?, 1, 'PENDING', ?)
        ON DUPLICATE KEY UPDATE 
          aadhaar_number = VALUES(aadhaar_number),
          aadhaar_verified = 1,
-         kyc_status = 'VERIFIED',
-         verified_at = CURRENT_TIMESTAMP,
          remarks = VALUES(remarks)`,
       [customerId, aadhaarNumber, remarks],
     );
+
+    await pool.execute(
+      `UPDATE customer_kyc
+       SET kyc_status = CASE WHEN aadhaar_verified = 1 AND pan_verified = 1 THEN 'VERIFIED' ELSE 'PENDING' END,
+           verified_at = CASE WHEN aadhaar_verified = 1 AND pan_verified = 1 THEN CURRENT_TIMESTAMP ELSE verified_at END
+       WHERE customer_id = ?`,
+      [customerId],
+    );
+
     return { success: true, aadhaarNumber, aadhaarVerified: true, digilockerRefId };
   }
 
   async updateAadhaarKyc(customerId, { aadhaarNumber, referenceId }) {
     const remarks = `Verified via Sandbox Aadhaar OTP (Ref: ${referenceId})`;
     await pool.execute(
-      `INSERT INTO customer_kyc (customer_id, aadhaar_number, aadhaar_verified, kyc_status, verified_at, remarks)
-       VALUES (?, ?, 1, 'VERIFIED', CURRENT_TIMESTAMP, ?)
+      `INSERT INTO customer_kyc (customer_id, aadhaar_number, aadhaar_verified, kyc_status, remarks)
+       VALUES (?, ?, 1, 'PENDING', ?)
        ON DUPLICATE KEY UPDATE 
          aadhaar_number = VALUES(aadhaar_number),
          aadhaar_verified = 1,
-         kyc_status = 'VERIFIED',
-         verified_at = CURRENT_TIMESTAMP,
          remarks = VALUES(remarks)`,
       [customerId, aadhaarNumber, remarks],
     );
+
+    await pool.execute(
+      `UPDATE customer_kyc
+       SET kyc_status = CASE WHEN aadhaar_verified = 1 AND pan_verified = 1 THEN 'VERIFIED' ELSE 'PENDING' END,
+           verified_at = CASE WHEN aadhaar_verified = 1 AND pan_verified = 1 THEN CURRENT_TIMESTAMP ELSE verified_at END
+       WHERE customer_id = ?`,
+      [customerId],
+    );
+
     return { success: true, aadhaarNumber, aadhaarVerified: true, referenceId };
   }
 
@@ -433,6 +447,15 @@ class CustomerPortalRepository {
          pan_verified = 1`,
       [customerId, panNumber],
     );
+
+    await pool.execute(
+      `UPDATE customer_kyc
+       SET kyc_status = CASE WHEN aadhaar_verified = 1 AND pan_verified = 1 THEN 'VERIFIED' ELSE 'PENDING' END,
+           verified_at = CASE WHEN aadhaar_verified = 1 AND pan_verified = 1 THEN CURRENT_TIMESTAMP ELSE verified_at END
+       WHERE customer_id = ?`,
+      [customerId],
+    );
+
     return { success: true, panNumber, panVerified: true };
   }
 }

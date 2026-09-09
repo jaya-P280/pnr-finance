@@ -85,7 +85,16 @@ export default function CustomerDashboard() {
     }
   };
 
-  const isKycComplete = kycStatus?.aadhaarVerified && kycStatus?.panVerified;
+  const isKycComplete = Boolean(kycStatus?.aadhaarVerified && kycStatus?.panVerified);
+
+  const handleApplyLoanClick = () => {
+    if (!isKycComplete) {
+      toast.error("Both Aadhaar and PAN verification are required before applying for a loan. Redirecting to KYC...");
+      navigate("/customer/ekyc");
+    } else {
+      navigate("/customer/apply-loan");
+    }
+  };
 
   const quickActions = [
     {
@@ -95,7 +104,7 @@ export default function CustomerDashboard() {
       path: "/customer/apply-loan",
       bgColor: "bg-blue-500",
       textColor: "text-blue-600",
-      badge: "Popular",
+      badge: isKycComplete ? "Verified" : "KYC Required",
     },
     {
       title: "Complete e-KYC",
@@ -131,8 +140,19 @@ export default function CustomerDashboard() {
         <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/20 border border-teal-400/30 text-teal-300 text-xs font-semibold tracking-wide">
-              <Shield className="w-3.5 h-3.5" /> Customer Portal
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/20 border border-teal-400/30 text-teal-300 text-xs font-semibold tracking-wide">
+                <Shield className="w-3.5 h-3.5" /> Customer Portal
+              </div>
+              {isKycComplete ? (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-semibold">
+                  <CheckCircle className="w-3.5 h-3.5" /> KYC Verified (Aadhaar & PAN)
+                </div>
+              ) : (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-xs font-semibold">
+                  <AccessTime className="w-3.5 h-3.5" /> KYC Pending
+                </div>
+              )}
             </div>
             <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
               Welcome back, {name}! 👋
@@ -144,7 +164,7 @@ export default function CustomerDashboard() {
 
           <div className="flex flex-wrap items-center gap-3">
             <button
-              onClick={() => navigate("/customer/apply-loan")}
+              onClick={handleApplyLoanClick}
               className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-teal-700 hover:bg-teal-600 text-white font-semibold text-sm shadow-lg shadow-teal-700/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               <AddCircleOutlined className="w-5 h-5" />
@@ -260,7 +280,13 @@ export default function CustomerDashboard() {
             return (
               <div
                 key={action.title}
-                onClick={() => navigate(action.path)}
+                onClick={() => {
+                  if (action.path === "/customer/apply-loan") {
+                    handleApplyLoanClick();
+                  } else {
+                    navigate(action.path);
+                  }
+                }}
                 className="group relative bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm hover:shadow-xl hover:border-slate-300 transition-all duration-200 cursor-pointer flex flex-col justify-between"
               >
                 <div>

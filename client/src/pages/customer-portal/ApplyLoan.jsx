@@ -59,23 +59,43 @@ export default function ApplyLoan() {
     documents: null,
   });
 
-  const [kycVerified, setKycVerified] = useState(true);
+  const [kycChecking, setKycChecking] = useState(true);
+  const [kycVerified, setKycVerified] = useState(false);
+  const [kycData, setKycData] = useState(null);
 
   useEffect(() => {
-    fetchProducts();
-    checkKycStatus();
+    checkKycAndLoad();
   }, []);
 
-  const checkKycStatus = async () => {
+  const checkKycAndLoad = async () => {
     try {
+      setKycChecking(true);
       const res = await customerPortalApi.getKycStatus();
-      const statusData = res.data?.data || res.data;
-      const status = String(statusData?.status || statusData?.kyc_status || "").toUpperCase();
-      if (status && status !== "VERIFIED" && status !== "APPROVED") {
-        setKycVerified(false);
+      const statusData = res.data?.data || res.data || {};
+      const isAadhaarVerified = Boolean(statusData?.aadhaarVerified);
+      const isPanVerified = Boolean(statusData?.panVerified);
+
+      if (!isAadhaarVerified || !isPanVerified) {
+        toast.error(
+          "Both Aadhaar and PAN verification are required before applying for a loan. Redirecting to KYC...",
+          { duration: 4500 },
+        );
+        navigate("/customer/ekyc");
+        return;
       }
-    } catch {
-      // Default fallback
+
+      setKycVerified(true);
+      setKycData(statusData);
+      await fetchProducts();
+    } catch (err) {
+      console.error("KYC check failed", err);
+      toast.error(
+        "Please complete your Aadhaar and PAN verification before applying for a loan.",
+        { duration: 4500 },
+      );
+      navigate("/customer/ekyc");
+    } finally {
+      setKycChecking(false);
     }
   };
 
@@ -194,6 +214,22 @@ export default function ApplyLoan() {
     "Review & Confirm",
   ];
 
+  if (kycChecking) {
+    return (
+      <Box sx={{ maxWidth: 650, mx: "auto", py: 10, textAlign: "center" }}>
+        <Paper elevation={0} sx={{ p: 5, border: "1px solid #E2E8F0", borderRadius: 3 }}>
+          <Shield sx={{ fontSize: 52, color: "#0F766E", mb: 2 }} />
+          <Typography variant="h6" fontWeight={700} color="#0F172A">
+            Verifying Identity & e-KYC Status...
+          </Typography>
+          <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+            Checking your Aadhaar and PAN authentication before loading loan application.
+          </Typography>
+        </Paper>
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ maxWidth: 1050, mx: "auto", pb: 6 }}>
       {/* Top Header Card */}
@@ -226,25 +262,41 @@ export default function ApplyLoan() {
         </CardContent>
       </Card>
 
-      {/* eKYC Verification Banner */}
-      {!kycVerified && (
-        <Alert
-          severity="warning"
-          sx={{ mb: 3, borderRadius: 3 }}
-          action={
-            <Button
-              color="inherit"
-              size="small"
-              onClick={() => navigate("/customer/ekyc")}
-              sx={{ fontWeight: 700, bgcolor: "rgba(0,0,0,0.06)" }}
-            >
-              Complete eKYC Now
-            </Button>
-          }
+      {/* KYC Verified Status Banner */}
+      {kycVerified && (
+        <Box
+          sx={{
+            mb: 3,
+            p: 2.5,
+            bgcolor: "#F0FDF4",
+            border: "1px solid #86EFAC",
+            borderRadius: 3,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 2,
+          }}
         >
-          <Typography fontWeight={700}>Identity eKYC Verification Required</Typography>
-          You must complete your Aadhaar & PAN eKYC verification before your loan application can be processed.
-        </Alert>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Avatar sx={{ bgcolor: "#DCFCE7", color: "#16A34A" }}>
+              <CheckCircle />
+            </Avatar>
+            <Box>
+              <Typography variant="subtitle1" fontWeight={700} color="#14532D">
+                KYC Completed & Verified
+              </Typography>
+              <Typography variant="body2" color="#166534">
+                Both your Aadhaar ({kycData?.aadhaarNumber ? `XXXX-XXXX-${String(kycData.aadhaarNumber).slice(-4)}` : "Verified"}) and PAN ({kycData?.panNumber || "Verified"}) are authenticated. You are pre-approved to apply for financing.
+              </Typography>
+            </Box>
+          </Stack>
+          <Chip
+            icon={<VerifiedUser sx={{ color: "#15803D !important", fontSize: 18 }} />}
+            label="KYC Verified"
+            sx={{ bgcolor: "#DCFCE7", color: "#15803D", fontWeight: 700, px: 1, py: 0.5 }}
+          />
+        </Box>
       )}
 
       {/* Stepper Header */}

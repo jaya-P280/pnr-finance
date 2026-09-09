@@ -141,8 +141,6 @@ class AuthService {
       if (existingUserMobile || existingCustMobile) {
         throw new ApiError(409, "Mobile number is already registered.");
       }
-
-      // 3. OTP verification removed for registration per requirement
     }
 
     // All registered users via public portal receive the CUSTOMER role
