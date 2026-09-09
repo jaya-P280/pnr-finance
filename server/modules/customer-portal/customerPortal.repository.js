@@ -408,6 +408,22 @@ class CustomerPortalRepository {
     return { success: true, aadhaarNumber, aadhaarVerified: true, digilockerRefId };
   }
 
+  async updateAadhaarKyc(customerId, { aadhaarNumber, referenceId }) {
+    const remarks = `Verified via Sandbox Aadhaar OTP (Ref: ${referenceId})`;
+    await pool.execute(
+      `INSERT INTO customer_kyc (customer_id, aadhaar_number, aadhaar_verified, kyc_status, verified_at, remarks)
+       VALUES (?, ?, 1, 'VERIFIED', CURRENT_TIMESTAMP, ?)
+       ON DUPLICATE KEY UPDATE 
+         aadhaar_number = VALUES(aadhaar_number),
+         aadhaar_verified = 1,
+         kyc_status = 'VERIFIED',
+         verified_at = CURRENT_TIMESTAMP,
+         remarks = VALUES(remarks)`,
+      [customerId, aadhaarNumber, remarks],
+    );
+    return { success: true, aadhaarNumber, aadhaarVerified: true, referenceId };
+  }
+
   async updatePanKyc(customerId, { panNumber }) {
     await pool.execute(
       `INSERT INTO customer_kyc (customer_id, pan_number, pan_verified, remarks)

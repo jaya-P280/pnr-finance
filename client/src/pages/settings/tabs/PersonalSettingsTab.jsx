@@ -142,8 +142,8 @@ export default function PersonalSettingsTab() {
         <Typography variant="h6" fontWeight={700} sx={{ mb: 3, color: "#0F172A" }}>
           Change Password
         </Typography>
-        <Grid container spacing={3}>
-          <Grid xs={12} md={6}>
+        <Stack spacing={2.5} sx={{ maxWidth: 800 }}>
+          <Box sx={{ maxWidth: { xs: "100%", sm: "calc(50% - 10px)" } }}>
             <TextField
               fullWidth
               type={showPassword ? "text" : "password"}
@@ -164,46 +164,25 @@ export default function PersonalSettingsTab() {
                   ),
                 },
               }}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 2,
-                  "&.Mui-focused fieldset": { borderColor: "#0F766E" },
-                },
-              }}
             />
-          </Grid>
-          <Grid xs={12} md={6} />
-          <Grid xs={12} md={6}>
+          </Box>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2.5}>
             <TextField
               fullWidth
               type="password"
               label="New Password"
               value={passwordData.newPassword}
               onChange={(e) => handlePasswordChange("newPassword", e.target.value)}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 2,
-                  "&.Mui-focused fieldset": { borderColor: "#0F766E" },
-                },
-              }}
             />
-          </Grid>
-          <Grid xs={12} md={6}>
             <TextField
               fullWidth
               type="password"
               label="Confirm New Password"
               value={passwordData.confirmPassword}
               onChange={(e) => handlePasswordChange("confirmPassword", e.target.value)}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 2,
-                  "&.Mui-focused fieldset": { borderColor: "#0F766E" },
-                },
-              }}
             />
-          </Grid>
-          <Grid xs={12}>
+          </Stack>
+          <Box sx={{ pt: 1 }}>
             <Button
               variant="contained"
               onClick={handleChangePassword}
@@ -216,12 +195,15 @@ export default function PersonalSettingsTab() {
                 bgcolor: "#0F766E",
                 "&:hover": { bgcolor: "#0D9488" },
                 borderRadius: 2,
+                px: 3,
+                py: 1,
+                fontWeight: 600,
               }}
             >
               Update Password
             </Button>
-          </Grid>
-        </Grid>
+          </Box>
+        </Stack>
       </Box>
 
       <Divider sx={{ my: 4 }} />

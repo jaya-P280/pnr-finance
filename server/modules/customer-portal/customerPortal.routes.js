@@ -82,7 +82,9 @@ router.get(
 );
 
 router.get("/kyc/status", customerPortalController.getKycStatus);
-router.post("/kyc/digilocker", customerPortalController.verifyDigiLockerKyc);
+router.post("/kyc/aadhaar/generate-otp", customerPortalController.generateAadhaarOtp);
+router.post("/kyc/aadhaar/verify-otp", customerPortalController.verifyAadhaarOtp);
+router.post("/kyc/digilocker", customerPortalController.verifyDigiLockerKyc); // Legacy/fallback
 router.post("/kyc/pan", customerPortalController.verifyPanKyc);
 
 export default router;

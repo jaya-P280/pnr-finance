@@ -120,7 +120,7 @@ export default function CompanySettingsTab() {
 
       {/* Company Profile Section */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid xs={12} md={6}>
+        <Grid item xs={12} md={6}>
           <TextField
             fullWidth
             label="Company Name"
@@ -135,7 +135,7 @@ export default function CompanySettingsTab() {
             }}
           />
         </Grid>
-        <Grid xs={12} md={6}>
+        <Grid item xs={12} md={6}>
           <TextField
             fullWidth
             label="Registration Number"
@@ -150,7 +150,7 @@ export default function CompanySettingsTab() {
             }}
           />
         </Grid>
-        <Grid xs={12} md={6}>
+        <Grid item xs={12} md={6}>
           <TextField
             fullWidth
             label="Email"
@@ -166,7 +166,7 @@ export default function CompanySettingsTab() {
             }}
           />
         </Grid>
-        <Grid xs={12} md={6}>
+        <Grid item xs={12} md={6}>
           <TextField
             fullWidth
             label="Phone Number"
@@ -181,7 +181,7 @@ export default function CompanySettingsTab() {
             }}
           />
         </Grid>
-        <Grid xs={12}>
+        <Grid item xs={12}>
           <TextField
             fullWidth
             label="Address"
@@ -196,7 +196,7 @@ export default function CompanySettingsTab() {
             }}
           />
         </Grid>
-        <Grid xs={12} md={4}>
+        <Grid item xs={12} md={4}>
           <TextField
             fullWidth
             label="City"
@@ -211,7 +211,7 @@ export default function CompanySettingsTab() {
             }}
           />
         </Grid>
-        <Grid xs={12} md={4}>
+        <Grid item xs={12} md={4}>
           <TextField
             fullWidth
             label="State"
@@ -226,7 +226,7 @@ export default function CompanySettingsTab() {
             }}
           />
         </Grid>
-        <Grid xs={12} md={4}>
+        <Grid item xs={12} md={4}>
           <TextField
             fullWidth
             label="Pincode"
@@ -251,7 +251,7 @@ export default function CompanySettingsTab() {
       </Typography>
 
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid xs={12} md={6}>
+        <Grid item xs={12} md={6}>
           <TextField
             fullWidth
             label="Default Interest Rate"
@@ -272,7 +272,7 @@ export default function CompanySettingsTab() {
             }}
           />
         </Grid>
-        <Grid xs={12} md={6}>
+        <Grid item xs={12} md={6}>
           <TextField
             fullWidth
             label="Default Processing Fee"
@@ -293,7 +293,7 @@ export default function CompanySettingsTab() {
             }}
           />
         </Grid>
-        <Grid xs={12} md={6}>
+        <Grid item xs={12} md={6}>
           <TextField
             fullWidth
             label="Max Loan Amount"
@@ -313,7 +313,7 @@ export default function CompanySettingsTab() {
             }}
           />
         </Grid>
-        <Grid xs={12} md={6}>
+        <Grid item xs={12} md={6}>
           <TextField
             fullWidth
             label="Min Loan Amount"
@@ -333,18 +333,18 @@ export default function CompanySettingsTab() {
             }}
           />
         </Grid>
-        <Grid xs={12} md={6}>
+        <Grid item xs={12} md={6}>
           <FormControl fullWidth disabled={!isEditing}>
-            <InputLabel>Default Currency</InputLabel>
+            <InputLabel id="default-currency-label">Default Currency</InputLabel>
             <Select
+              labelId="default-currency-label"
+              id="default-currency-select"
               value={systemSettings.defaultCurrency}
               onChange={(e) => handleSystemChange("defaultCurrency", e.target.value)}
               label="Default Currency"
               sx={{
                 borderRadius: 2,
-                "& .MuiOutlinedInput-root": {
-                  "&.Mui-focused fieldset": { borderColor: "#0F766E" },
-                },
+                "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#0F766E" },
               }}
             >
               <MenuItem value="INR">INR (₹)</MenuItem>
@@ -352,18 +352,18 @@ export default function CompanySettingsTab() {
             </Select>
           </FormControl>
         </Grid>
-        <Grid xs={12} md={6}>
+        <Grid item xs={12} md={6}>
           <FormControl fullWidth disabled={!isEditing}>
-            <InputLabel>Financial Year</InputLabel>
+            <InputLabel id="financial-year-label">Financial Year</InputLabel>
             <Select
+              labelId="financial-year-label"
+              id="financial-year-select"
               value={systemSettings.financialYear}
               onChange={(e) => handleSystemChange("financialYear", e.target.value)}
               label="Financial Year"
               sx={{
                 borderRadius: 2,
-                "& .MuiOutlinedInput-root": {
-                  "&.Mui-focused fieldset": { borderColor: "#0F766E" },
-                },
+                "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#0F766E" },
               }}
             >
               <MenuItem value="April-March">April - March</MenuItem>

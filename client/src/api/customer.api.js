@@ -54,6 +54,10 @@ export const customerPortalApi = {
     api.get(`${customerPortal}/loans/${loanId}/disbursement`),
 
   getKycStatus: () => api.get(`${customerPortal}/kyc/status`),
+  generateAadhaarOtp: (data) =>
+    api.post(`${customerPortal}/kyc/aadhaar/generate-otp`, data),
+  verifyAadhaarOtp: (data) =>
+    api.post(`${customerPortal}/kyc/aadhaar/verify-otp`, data),
   verifyDigiLockerKyc: (data) =>
     api.post(`${customerPortal}/kyc/digilocker`, data),
   verifyPanKyc: (data) =>

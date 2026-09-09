@@ -803,7 +803,7 @@ export default function Groups() {
               />
 
               <Grid container spacing={2}>
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     select
                     required
@@ -826,7 +826,7 @@ export default function Groups() {
                   </TextField>
                 </Grid>
 
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     select
                     fullWidth
@@ -999,7 +999,7 @@ export default function Groups() {
               {/* TAB 0: OVERVIEW */}
               <TabPanel value={tabValue} index={0}>
                 <Grid container spacing={2} sx={{ mb: 3 }}>
-                  <Grid size={{ xs: 12, sm: 4 }}>
+                  <Grid item xs={12} sm={4}>
                     <Card
                       elevation={0}
                       sx={{ border: "1px solid #E2E8F0", borderRadius: 2, bgcolor: "#F8FAFC" }}
@@ -1015,7 +1015,7 @@ export default function Groups() {
                     </Card>
                   </Grid>
 
-                  <Grid size={{ xs: 12, sm: 4 }}>
+                  <Grid item xs={12} sm={4}>
                     <Card
                       elevation={0}
                       sx={{ border: "1px solid #E2E8F0", borderRadius: 2, bgcolor: "#F8FAFC" }}
@@ -1031,7 +1031,7 @@ export default function Groups() {
                     </Card>
                   </Grid>
 
-                  <Grid size={{ xs: 12, sm: 4 }}>
+                  <Grid item xs={12} sm={4}>
                     <Card
                       elevation={0}
                       sx={{ border: "1px solid #E2E8F0", borderRadius: 2, bgcolor: "#F8FAFC" }}
@@ -1050,7 +1050,7 @@ export default function Groups() {
 
                 <Paper elevation={0} sx={{ p: 2.5, border: "1px solid #E2E8F0", borderRadius: 2 }}>
                   <Grid container spacing={2}>
-                    <Grid size={{ xs: 12, sm: 6 }}>
+                    <Grid item xs={12} sm={6}>
                       <Typography variant="caption" color="#64748B">
                         Branch Name
                       </Typography>
@@ -1059,7 +1059,7 @@ export default function Groups() {
                       </Typography>
                     </Grid>
 
-                    <Grid size={{ xs: 12, sm: 6 }}>
+                    <Grid item xs={12} sm={6}>
                       <Typography variant="caption" color="#64748B">
                         Weekly Meeting Day
                       </Typography>
@@ -1068,7 +1068,7 @@ export default function Groups() {
                       </Typography>
                     </Grid>
 
-                    <Grid size={12}>
+                    <Grid item xs={12}>
                       <Divider sx={{ my: 1 }} />
                       <Typography variant="caption" color="#64748B">
                         Group Description
@@ -1092,7 +1092,7 @@ export default function Groups() {
                     Add Customer to Group
                   </Typography>
                   <Grid container spacing={2} sx={{ alignItems: "center" }}>
-                    <Grid size={{ xs: 12, sm: 6 }}>
+                    <Grid item xs={12} sm={6}>
                       <TextField
                         select
                         fullWidth
@@ -1100,7 +1100,7 @@ export default function Groups() {
                         label="Select Customer"
                         value={selectedCustomerId}
                         onChange={(e) => setSelectedCustomerId(e.target.value)}
-                        sx={{ bgcolor: "#FFFFFF", borderRadius: 1 }}
+                        sx={{ "& .MuiOutlinedInput-root": { bgcolor: "#FFFFFF", borderRadius: 1 } }}
                       >
                         <MenuItem value="">-- Select Customer --</MenuItem>
                         {customers.map((c) => (
@@ -1111,7 +1111,7 @@ export default function Groups() {
                       </TextField>
                     </Grid>
 
-                    <Grid size={{ xs: 12, sm: 3 }}>
+                    <Grid item xs={12} sm={3}>
                       <TextField
                         select
                         fullWidth
@@ -1119,14 +1119,14 @@ export default function Groups() {
                         label="Group Role"
                         value={selectedMemberRole}
                         onChange={(e) => setSelectedMemberRole(e.target.value)}
-                        sx={{ bgcolor: "#FFFFFF", borderRadius: 1 }}
+                        sx={{ "& .MuiOutlinedInput-root": { bgcolor: "#FFFFFF", borderRadius: 1 } }}
                       >
                         <MenuItem value="MEMBER">Member</MenuItem>
                         <MenuItem value="LEADER">Leader</MenuItem>
                       </TextField>
                     </Grid>
 
-                    <Grid size={{ xs: 12, sm: 3 }}>
+                    <Grid item xs={12} sm={3}>
                       <Button
                         fullWidth
                         variant="contained"
@@ -1280,7 +1280,7 @@ export default function Groups() {
                     Record Group Meeting Attendance
                   </Typography>
                   <Grid container spacing={2} sx={{ alignItems: "center" }}>
-                    <Grid size={{ xs: 12, sm: 4 }}>
+                    <Grid item xs={12} sm={4}>
                       <TextField
                         type="date"
                         fullWidth
@@ -1295,7 +1295,7 @@ export default function Groups() {
                       />
                     </Grid>
 
-                    <Grid size={{ xs: 12, sm: 8 }} textAlign={{ sm: "right" }}>
+                    <Grid item xs={12} sm={8} sx={{ textAlign: { sm: "right" } }}>
                       <Button
                         variant="contained"
                         startIcon={<CheckCircleIcon />}

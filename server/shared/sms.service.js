@@ -16,9 +16,31 @@ class SmsService {
         return { success: false, message: "Invalid mobile number" };
       }
 
-      const apiKey = env.SMS?.API_KEY || process.env.FAST2SMS_API_KEY || process.env.SMS_API_KEY;
+      const fast2smsKey = env.SMS?.API_KEY || process.env.FAST2SMS_API_KEY || process.env.SMS_API_KEY;
+      const twilioSid = process.env.TWILIO_ACCOUNT_SID;
+      const twilioToken = process.env.TWILIO_AUTH_TOKEN; // This acts as your API Key
+      const twilioPhone = process.env.TWILIO_PHONE_NUMBER;
 
-      if (apiKey) {
+      if (twilioSid && twilioToken && twilioPhone) {
+        // Twilio Integration
+        const params = new URLSearchParams();
+        params.append("To", `+91${cleanMobile}`);
+        params.append("From", twilioPhone);
+        params.append("Body", message);
+
+        const response = await axios.post(
+          `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`,
+          params,
+          {
+            auth: {
+              username: twilioSid,
+              password: twilioToken,
+            },
+          }
+        );
+        console.log(`[SMS Service] Twilio SMS sent to ${cleanMobile} (SID: ${response.data.sid})`);
+        return { success: true, provider: "twilio", response: response.data };
+      } else if (fast2smsKey) {
         // Fast2SMS / Gateway HTTP Request
         const response = await axios.post(
           "https://www.fast2sms.com/dev/bulkV2",
@@ -31,7 +53,7 @@ class SmsService {
           },
           {
             headers: {
-              authorization: apiKey,
+              authorization: fast2smsKey,
               "Content-Type": "application/json",
             },
             timeout: 10000,
@@ -39,7 +61,7 @@ class SmsService {
         );
 
         console.log(`[SMS Service] Live SMS sent to ${cleanMobile}:`, response.data);
-        return { success: true, response: response.data };
+        return { success: true, provider: "fast2sms", response: response.data };
       } else {
         // Simulated / Sandbox Mode Output
         console.log(`\n=================== [SMS REMINDER SENT (SANDBOX)] ===================`);
@@ -57,7 +79,17 @@ class SmsService {
       }
     } catch (err) {
       console.error(`[SMS Service] Failed to send SMS to ${mobileNumber}:`, err.message);
-      return { success: false, error: err.message };
+      if (err.response?.data) {
+         console.error(`[SMS Service] Provider Error Details:`, err.response.data);
+      }
+
+      console.log(`\n=================== [SMS FALLBACK (SANDBOX)] ===================`);
+      console.log(`TO MOBILE : +91 ${String(mobileNumber || "").replace(/\D/g, "").slice(-10)}`);
+      console.log(`MESSAGE   : ${message}`);
+      console.log(`TIMESTAMP : ${new Date().toLocaleString("en-IN")}`);
+      console.log(`====================================================================\n`);
+
+      return { success: true, mode: "FALLBACK_SANDBOX", error: err.message };
     }
   }
 

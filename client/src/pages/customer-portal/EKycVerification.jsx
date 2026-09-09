@@ -40,6 +40,7 @@ export default function EKycVerification() {
   const [otpInput, setOtpInput] = useState("");
   const [verifyingDigi, setVerifyingDigi] = useState(false);
   const [digiDetails, setDigiDetails] = useState(null);
+  const [referenceId, setReferenceId] = useState(null);
 
   // PAN State
   const [panInput, setPanInput] = useState("");
@@ -70,58 +71,72 @@ export default function EKycVerification() {
     setAadhaarInput("");
     setOtpInput("");
     setDigiDetails(null);
+    setReferenceId(null);
     setOpenDigiLockerModal(true);
   };
 
-  const handleSendOtp = () => {
+  const handleSendOtp = async () => {
     if (!aadhaarInput || aadhaarInput.length !== 12) {
       toast.error("Please enter a valid 12-digit Aadhaar number");
       return;
     }
     setVerifyingDigi(true);
-    setTimeout(() => {
-      setVerifyingDigi(false);
+    try {
+      const response = await customerPortalApi.generateAadhaarOtp({ aadhaarNumber: aadhaarInput });
+      const data = response.data?.data;
+      setReferenceId(data?.reference_id);
       setDigiStep(3);
-      toast.success("OTP sent to Aadhaar linked mobile number ending in ****89");
-    }, 1200);
+      toast.success(data?.message || "OTP sent successfully");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to generate OTP");
+    } finally {
+      setVerifyingDigi(false);
+    }
   };
 
-  const handleVerifyOtp = () => {
+  const handleVerifyOtp = async () => {
     if (!otpInput || otpInput.length < 4) {
       toast.error("Please enter a valid OTP (e.g. 123456)");
       return;
     }
     setVerifyingDigi(true);
-    setTimeout(() => {
-      setVerifyingDigi(false);
-      const masked = `XXXX-XXXX-${aadhaarInput.slice(-4)}`;
-      const mockDetails = {
-        name: "Verified Customer",
-        dob: "1994-08-15",
-        gender: "Female",
-        maskedAadhaar: masked,
-        digilockerRef: `DGL-INDIA-${Math.floor(100000 + Math.random() * 900000)}`,
-      };
-      setDigiDetails(mockDetails);
-      setDigiStep(4);
-    }, 1500);
-  };
-
-  const handleConfirmDigiLocker = async () => {
     try {
-      setVerifyingDigi(true);
-      await customerPortalApi.verifyDigiLockerKyc({
-        aadhaarNumber: aadhaarInput,
-        digilockerRefId: digiDetails?.digilockerRef,
+      const response = await customerPortalApi.verifyAadhaarOtp({
+        reference_id: referenceId,
+        otp: otpInput
       });
-      toast.success("DigiLocker Aadhaar e-KYC completed successfully!");
-      setOpenDigiLockerModal(false);
-      fetchKycStatus();
+      const data = response.data?.data;
+      
+      console.log("=========================================");
+      console.log("RAW SANDBOX AADHAAR RESPONSE (BEFORE UI):");
+      console.log(data);
+      console.log("=========================================");
+      
+      const details = {
+        name: data?.name || "Verified Customer",
+        dob: data?.date_of_birth,
+        gender: data?.gender === "M" ? "Male" : data?.gender === "F" ? "Female" : data?.gender,
+        care_of: data?.care_of,
+        full_address: data?.full_address,
+        maskedAadhaar: data?.maskedAadhaar || `XXXX-XXXX-${aadhaarInput.slice(-4)}`,
+        digilockerRef: data?.reference_id,
+        photo: data?.photo,
+      };
+      setDigiDetails(details);
+      setDigiStep(4);
+      toast.success("OTP verified successfully!");
     } catch (error) {
-      toast.error(error.response?.data?.message || "DigiLocker verification failed");
+      toast.error(error.response?.data?.message || "Invalid OTP");
     } finally {
       setVerifyingDigi(false);
     }
+  };
+
+  const handleConfirmDigiLocker = async () => {
+    // Already saved to DB during verifyAadhaarOtp if successful. Just fetch and close.
+    toast.success("Sandbox Aadhaar e-KYC completed successfully!");
+    setOpenDigiLockerModal(false);
+    fetchKycStatus();
   };
 
   const handleVerifyPan = async (e) => {
@@ -237,7 +252,7 @@ export default function EKycVerification() {
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-semibold text-emerald-900">Verification Source:</span>
-                  <span className="font-bold text-emerald-700">DigiLocker Govt API</span>
+                  <span className="font-bold text-emerald-700">Sandbox Aadhaar API</span>
                 </div>
               </div>
             )}
@@ -250,7 +265,7 @@ export default function EKycVerification() {
                 onClick={handleStartDigiLocker}
                 className="w-full py-3 px-4 bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
               >
-                <AccountBalance className="w-4 h-4" /> Connect with DigiLocker
+                <AccountBalance className="w-4 h-4" /> Verify with Sandbox Aadhaar
               </button>
             ) : (
               <button
@@ -258,7 +273,7 @@ export default function EKycVerification() {
                 disabled
                 className="w-full py-2.5 px-4 bg-slate-100 text-emerald-700 font-bold text-xs rounded-xl flex items-center justify-center gap-2"
               >
-                <CheckCircle className="w-4 h-4" /> DigiLocker e-KYC Completed
+                <CheckCircle className="w-4 h-4" /> Aadhaar e-KYC Completed
               </button>
             )}
           </div>
@@ -334,7 +349,7 @@ export default function EKycVerification() {
         <DialogTitle sx={{ fontWeight: 800, bgcolor: "#0F766E", color: "#FFFFFF", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
             <AccountBalance />
-            <span>DigiLocker e-KYC Authentication</span>
+            <span>Sandbox Aadhaar e-KYC Authentication</span>
           </Stack>
           <IconButton size="small" onClick={() => setOpenDigiLockerModal(false)} sx={{ color: "white" }}>
             <Close />
@@ -438,7 +453,18 @@ export default function EKycVerification() {
                 onClick={handleVerifyOtp}
                 sx={{ bgcolor: "#0F766E", "&:hover": { bgcolor: "#0D9488" } }}
               >
-                {verifyingDigi ? "Authenticating with DigiLocker..." : "Verify OTP"}
+                {verifyingDigi ? "Authenticating with Sandbox..." : "Verify OTP"}
+              </Button>
+
+              <Button
+                variant="outlined"
+                fullWidth
+                size="large"
+                disabled={verifyingDigi}
+                onClick={handleSendOtp}
+                sx={{ color: "#0F766E", borderColor: "#0F766E", "&:hover": { borderColor: "#0D9488", bgcolor: "#F0FDF4" } }}
+              >
+                Resend OTP
               </Button>
             </Stack>
           )}
@@ -452,23 +478,62 @@ export default function EKycVerification() {
                   Aadhaar e-KYC Retrieved!
                 </Typography>
                 <Typography variant="caption" color="#047857">
-                  Source: DigiLocker National e-Governance Division
+                  Source: Sandbox Aadhaar Verification API
                 </Typography>
               </Box>
 
               <Box sx={{ p: 2, bgcolor: "#F8FAFC", borderRadius: 2, border: "1px solid #E2E8F0" }}>
                 <Stack spacing={1}>
+                  {digiDetails.photo && (
+                    <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
+                      <img
+                        src={`data:image/jpeg;base64,${digiDetails.photo}`}
+                        alt="Aadhaar Profile"
+                        style={{ width: 80, height: 80, borderRadius: 8, border: "2px solid #E2E8F0", objectFit: "cover" }}
+                      />
+                    </Box>
+                  )}
                   <Stack direction="row" sx={{ justifyContent: "space-between" }}>
                     <Typography variant="caption" color="#64748B">Masked Aadhaar:</Typography>
                     <Typography variant="caption" fontWeight={700} color="#0F172A">{digiDetails.maskedAadhaar}</Typography>
                   </Stack>
                   <Stack direction="row" sx={{ justifyContent: "space-between" }}>
-                    <Typography variant="caption" color="#64748B">DigiLocker Ref ID:</Typography>
+                    <Typography variant="caption" color="#64748B">Name:</Typography>
+                    <Typography variant="caption" fontWeight={700} color="#0F172A">{digiDetails.name}</Typography>
+                  </Stack>
+                  {digiDetails.dob && (
+                    <Stack direction="row" sx={{ justifyContent: "space-between" }}>
+                      <Typography variant="caption" color="#64748B">Date of Birth:</Typography>
+                      <Typography variant="caption" fontWeight={700} color="#0F172A">{digiDetails.dob}</Typography>
+                    </Stack>
+                  )}
+                  {digiDetails.gender && (
+                    <Stack direction="row" sx={{ justifyContent: "space-between" }}>
+                      <Typography variant="caption" color="#64748B">Gender:</Typography>
+                      <Typography variant="caption" fontWeight={700} color="#0F172A">{digiDetails.gender}</Typography>
+                    </Stack>
+                  )}
+                  {digiDetails.care_of && (
+                    <Stack direction="row" sx={{ justifyContent: "space-between" }}>
+                      <Typography variant="caption" color="#64748B">Care Of:</Typography>
+                      <Typography variant="caption" fontWeight={700} color="#0F172A">{digiDetails.care_of}</Typography>
+                    </Stack>
+                  )}
+                  {digiDetails.full_address && (
+                    <Stack direction="column" sx={{ mt: 0.5 }}>
+                      <Typography variant="caption" color="#64748B">Address:</Typography>
+                      <Typography variant="caption" fontWeight={700} color="#0F172A" sx={{ lineHeight: 1.3, mt: 0.2 }}>
+                        {digiDetails.full_address}
+                      </Typography>
+                    </Stack>
+                  )}
+                  <Stack direction="row" sx={{ justifyContent: "space-between", mt: 1 }}>
+                    <Typography variant="caption" color="#64748B">Sandbox Ref ID:</Typography>
                     <Typography variant="caption" fontWeight={700} color="#0F766E">{digiDetails.digilockerRef}</Typography>
                   </Stack>
                   <Stack direction="row" sx={{ justifyContent: "space-between" }}>
                     <Typography variant="caption" color="#64748B">KYC Status:</Typography>
-                    <Chip label="VERIFIED" color="success" size="small" />
+                    <Chip label="VERIFIED" color="success" size="small" sx={{ height: 20, fontSize: "0.65rem" }} />
                   </Stack>
                 </Stack>
               </Box>
@@ -481,7 +546,7 @@ export default function EKycVerification() {
                 onClick={handleConfirmDigiLocker}
                 sx={{ bgcolor: "#0F766E", "&:hover": { bgcolor: "#0D9488" } }}
               >
-                Save & Complete e-KYC
+                Finish & Close
               </Button>
             </Stack>
           )}

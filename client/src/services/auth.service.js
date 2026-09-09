@@ -6,6 +6,11 @@ class AuthService {
     return response.data.data;
   }
 
+  async sendOtp(payload) {
+    const response = await authApi.sendOtp(payload);
+    return response.data;
+  }
+
   async register(payload) {
     const response = await authApi.register(payload);
     return response.data;

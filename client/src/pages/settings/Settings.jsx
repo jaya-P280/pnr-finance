@@ -139,7 +139,7 @@ const handleSave = async () => {
         </Typography>
 
         <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid item xs={12} md={6}>
             <TextField
               fullWidth
               label="Company Name"
@@ -154,7 +154,7 @@ const handleSave = async () => {
               }}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid item xs={12} md={6}>
             <TextField
               fullWidth
               label="Registration Number"
@@ -169,7 +169,7 @@ const handleSave = async () => {
               }}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid item xs={12} md={6}>
             <TextField
               fullWidth
               label="Email"
@@ -185,7 +185,7 @@ const handleSave = async () => {
               }}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid item xs={12} md={6}>
             <TextField
               fullWidth
               label="Phone Number"
@@ -200,7 +200,7 @@ const handleSave = async () => {
               }}
             />
           </Grid>
-          <Grid size={12}>
+          <Grid item xs={12}>
             <TextField
               fullWidth
               label="Address"
@@ -215,7 +215,7 @@ const handleSave = async () => {
               }}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Grid item xs={12} md={4}>
             <TextField
               fullWidth
               label="City"
@@ -230,7 +230,7 @@ const handleSave = async () => {
               }}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Grid item xs={12} md={4}>
             <TextField
               fullWidth
               label="State"
@@ -245,7 +245,7 @@ const handleSave = async () => {
               }}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Grid item xs={12} md={4}>
             <TextField
               fullWidth
               label="Pincode"
@@ -270,7 +270,7 @@ const handleSave = async () => {
         </Typography>
 
         <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid item xs={12} md={6}>
             <TextField
               fullWidth
               label="Default Interest Rate"
@@ -291,7 +291,7 @@ const handleSave = async () => {
               }}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid item xs={12} md={6}>
             <TextField
               fullWidth
               label="Default Processing Fee"
@@ -312,7 +312,7 @@ const handleSave = async () => {
               }}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid item xs={12} md={6}>
             <TextField
               fullWidth
               label="Max Loan Amount"
@@ -332,7 +332,7 @@ const handleSave = async () => {
               }}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid item xs={12} md={6}>
             <TextField
               fullWidth
               label="Min Loan Amount"
@@ -352,18 +352,18 @@ const handleSave = async () => {
               }}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid item xs={12} md={6}>
             <FormControl fullWidth disabled={!isEditing}>
-              <InputLabel>Default Currency</InputLabel>
+              <InputLabel id="default-currency-label">Default Currency</InputLabel>
               <Select
+                labelId="default-currency-label"
+                id="default-currency-select"
                 value={systemSettings.defaultCurrency}
                 onChange={(e) => handleSystemChange("defaultCurrency", e.target.value)}
                 label="Default Currency"
                 sx={{
                   borderRadius: 2,
-                  "& .MuiOutlinedInput-root": {
-                    "&.Mui-focused fieldset": { borderColor: "#0F766E" },
-                  },
+                  "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#0F766E" },
                 }}
               >
                 <MenuItem value="INR">INR (₹)</MenuItem>
@@ -371,18 +371,18 @@ const handleSave = async () => {
               </Select>
             </FormControl>
           </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid item xs={12} md={6}>
             <FormControl fullWidth disabled={!isEditing}>
-              <InputLabel>Financial Year</InputLabel>
+              <InputLabel id="financial-year-label">Financial Year</InputLabel>
               <Select
+                labelId="financial-year-label"
+                id="financial-year-select"
                 value={systemSettings.financialYear}
                 onChange={(e) => handleSystemChange("financialYear", e.target.value)}
                 label="Financial Year"
                 sx={{
                   borderRadius: 2,
-                  "& .MuiOutlinedInput-root": {
-                    "&.Mui-focused fieldset": { borderColor: "#0F766E" },
-                  },
+                  "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#0F766E" },
                 }}
               >
                 <MenuItem value="April-March">April - March</MenuItem>

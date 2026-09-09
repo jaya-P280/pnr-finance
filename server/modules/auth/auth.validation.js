@@ -1,5 +1,16 @@
 import { body } from "express-validator";
 
+export const sendOtpValidation = [
+  body("mobileNumber").trim().notEmpty().withMessage("Mobile number is required.")
+    .custom((value) => {
+      if (!/^\+?\d{10,15}$/.test(value.replace(/\s+/g, ""))) {
+        throw new Error("Mobile number must be at least 10 digits.");
+      }
+      return true;
+    }),
+  body("type").isIn(["LOGIN", "REGISTER"]).withMessage("Invalid OTP type."),
+];
+
 export const loginValidation = [
   body().custom((value, { req }) => {
     const input = req.body.identifier || req.body.email || req.body.mobileNumber;
@@ -8,7 +19,12 @@ export const loginValidation = [
     }
     return true;
   }),
-  body("password").notEmpty().withMessage("Password is required."),
+  body("password").custom((value, { req }) => {
+    if (!req.body.otp && !value) {
+      throw new Error("Password is required if OTP is not provided.");
+    }
+    return true;
+  }),
 ];
 
 export const registerValidation = [
@@ -28,7 +44,14 @@ export const registerValidation = [
     }
     return true;
   }),
-  body("password").isLength({ min: 6 }).withMessage("Password must be at least 6 characters."),
+  body("password").custom((value, { req }) => {
+    // If we're registering with mobile and OTP, maybe password is still required? The prompt says "along with email for registration also". 
+    // Usually password is still needed to setup account, OTP is just for verification.
+    if (!value || value.length < 6) {
+      throw new Error("Password must be at least 6 characters.");
+    }
+    return true;
+  }),
   body("branchId").optional().isInt({ min: 1 }),
 ];
 

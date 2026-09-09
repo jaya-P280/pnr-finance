@@ -6,11 +6,48 @@ import ApiError from "../../shared/ApiError.js";
 import auditService from "../audit/audit.service.js";
 import attendanceRepository from "../attendance/attendance.repository.js";
 import logger from "../../config/logger.js";
+import smsService from "../../shared/sms.service.js";
+
+const otpCache = new Map(); // Simple in-memory cache for OTPs
 
 class AuthService {
-  async login(identifier, password, metadata = {}) {
+  async sendOtp(mobileNumber, type) {
+    const cleanMobile = String(mobileNumber).trim();
+    if (!cleanMobile) throw new ApiError(400, "Mobile number is required.");
+
+    if (type === "LOGIN") {
+      const user = await authRepository.findUserByIdentifier(cleanMobile);
+      if (!user) throw new ApiError(404, "Mobile number not registered.");
+    } else if (type === "REGISTER") {
+      const existingUser = await authRepository.findUserByMobile(cleanMobile);
+      if (existingUser) throw new ApiError(409, "Mobile number is already registered.");
+    } else {
+      throw new ApiError(400, "Invalid OTP type.");
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Cache for 5 minutes
+    otpCache.set(cleanMobile, {
+      otp,
+      expiresAt: Date.now() + 5 * 60 * 1000,
+    });
+
+    const message = `Your PNRG Finance OTP for ${type.toLowerCase()} is ${otp}. It is valid for 5 minutes. Do not share this with anyone.`;
+    const result = await smsService.sendSms({ mobileNumber: cleanMobile, message });
+
+    if (!result.success) {
+      throw new ApiError(500, "Failed to send OTP via SMS.");
+    }
+
+    return { message: "OTP sent successfully." };
+  }
+
+  async login(identifier, password, otp, metadata = {}) {
     const cleanIdentifier = identifier ? String(identifier).trim() : "";
     const cleanPassword = password ? String(password).trim() : "";
+    const cleanOtp = otp ? String(otp).trim() : "";
 
     if (!cleanIdentifier) throw new ApiError(400, "Email address or Mobile number is required.");
 
@@ -18,9 +55,18 @@ class AuthService {
     if (!user) throw new ApiError(401, "Invalid email/mobile number or password.");
     if (user.status !== "ACTIVE") throw new ApiError(403, "Your account is inactive or suspended. Please contact administrator.");
 
+    if (cleanOtp) {
+      const cached = otpCache.get(cleanIdentifier);
+      if (!cached || cached.otp !== cleanOtp || cached.expiresAt < Date.now()) {
+        throw new ApiError(401, "Invalid or expired OTP.");
+      }
+      otpCache.delete(cleanIdentifier);
+    } else {
+      const matched = await passwordService.compare(cleanPassword, user.password_hash);
+      if (!matched) throw new ApiError(401, "Invalid email/mobile number or password.");
+    }
+
     const permissions = await authRepository.getUserPermissions(user.user_id);
-    const matched = await passwordService.compare(cleanPassword, user.password_hash);
-    if (!matched) throw new ApiError(401, "Invalid email/mobile number or password.");
 
     const tokenPayload = { ...user, permissions };
     const accessToken = tokenService.generateAccessToken(tokenPayload);
@@ -94,6 +140,16 @@ class AuthService {
       const existingCustMobile = await authRepository.findCustomerByMobile(cleanMobile);
       if (existingUserMobile || existingCustMobile) {
         throw new ApiError(409, "Mobile number is already registered.");
+      }
+
+      // 3. Verify OTP if provided
+      if (data.otp) {
+        const cleanOtp = String(data.otp).trim();
+        const cached = otpCache.get(cleanMobile);
+        if (!cached || cached.otp !== cleanOtp || cached.expiresAt < Date.now()) {
+          throw new ApiError(400, "Invalid or expired OTP.");
+        }
+        otpCache.delete(cleanMobile);
       }
     }
 

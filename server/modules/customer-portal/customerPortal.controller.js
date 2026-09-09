@@ -144,6 +144,22 @@ class CustomerPortalController {
     );
     res.json(new ApiResponse(200, "PAN verified successfully.", result));
   });
+
+  generateAadhaarOtp = asyncHandler(async (req, res) => {
+    const result = await customerPortalService.generateAadhaarOtp(
+      req.user.user_id,
+      req.body,
+    );
+    res.json(new ApiResponse(200, "Aadhaar OTP generated.", result));
+  });
+
+  verifyAadhaarOtp = asyncHandler(async (req, res) => {
+    const result = await customerPortalService.verifyAadhaarOtp(
+      req.user.user_id,
+      req.body,
+    );
+    res.json(new ApiResponse(200, "Aadhaar OTP verified.", result));
+  });
 }
 
 export default new CustomerPortalController();

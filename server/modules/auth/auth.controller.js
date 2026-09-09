@@ -6,10 +6,16 @@ import asyncHandler from "../../shared/asyncHandler.js";
 import { getFullImageUrl } from "../../shared/imageUrl.helper.js";
 
 class AuthController {
+  sendOtp = asyncHandler(async (req, res) => {
+    const { mobileNumber, type } = req.body;
+    const result = await authService.sendOtp(mobileNumber, type);
+    return res.status(200).json(new ApiResponse(200, result.message));
+  });
+
   login = asyncHandler(async (req, res) => {
-    const { identifier, email, mobileNumber, password } = req.body;
+    const { identifier, email, mobileNumber, password, otp } = req.body;
     const targetIdentifier = identifier || email || mobileNumber;
-    const data = await authService.login(targetIdentifier, password, {
+    const data = await authService.login(targetIdentifier, password, otp, {
       ipAddress: req.ip,
       userAgent: req.get("User-Agent"),
     });

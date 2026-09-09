@@ -169,7 +169,7 @@ export default function ApplyLoan() {
       const payload = {
         loanProductId: formData.loanProductId,
         requestedAmount: Number(formData.amount),
-        tenureMonths: Number(formData.tenureMonths),
+        tenure: Number(formData.tenureMonths),
         purpose: formData.purpose,
         employmentType: formData.employmentType,
         monthlyIncome: Number(formData.monthlyIncome || 0),
@@ -559,6 +559,7 @@ export default function ApplyLoan() {
               </Typography>
 
               <Paper
+                component="label"
                 sx={{
                   p: 4,
                   border: "2px dashed #CBD5E1",
@@ -566,12 +567,23 @@ export default function ApplyLoan() {
                   textAlign: "center",
                   bgcolor: "#F8FAFC",
                   cursor: "pointer",
+                  display: "block",
                   "&:hover": { borderColor: "#0F766E" },
                 }}
               >
+                <input
+                  type="file"
+                  hidden
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      setFormData((prev) => ({ ...prev, documents: e.target.files[0] }));
+                    }
+                  }}
+                  accept=".pdf,.png,.jpg,.jpeg"
+                />
                 <Upload sx={{ fontSize: 48, color: "#0F766E", mb: 1 }} />
                 <Typography variant="subtitle1" fontWeight={700} color="#0F172A">
-                  Click or Drag & Drop Documents Here
+                  {formData.documents ? formData.documents.name : "Click or Drag & Drop Documents Here"}
                 </Typography>
                 <Typography variant="caption" color="textSecondary">
                   Supports PDF, PNG, JPG up to 10MB (Aadhaar, PAN, Bank Statement, Income Proof)

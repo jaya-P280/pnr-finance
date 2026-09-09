@@ -31,6 +31,7 @@ import {
   Email as EmailIcon,
 } from "@mui/icons-material";
 import toast from "react-hot-toast";
+import authService from "../../services/auth.service";
 import useAuth from "../../hooks/useAuth";
 
 export default function Login() {
@@ -40,6 +41,9 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  const [loginMethod, setLoginMethod] = useState("password");
+  const [otpSent, setOtpSent] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
 
   const from = location.state?.from?.pathname || "/";
 
@@ -51,16 +55,37 @@ export default function Login() {
     defaultValues: {
       identifier: "",
       password: "",
+      otp: "",
     },
   });
 
+  const handleSendOtp = async (identifier) => {
+    if (!identifier) return toast.error("Please enter your registered mobile number.");
+    setSendingOtp(true);
+    try {
+      const res = await authService.sendOtp({ mobileNumber: identifier, type: "LOGIN" });
+      toast.success(res.message || "OTP sent successfully");
+      setOtpSent(true);
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to send OTP");
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
   const onSubmit = async (values) => {
+    if (loginMethod === "otp" && !otpSent) {
+      return handleSendOtp(values.identifier);
+    }
+
     setLoading(true);
     try {
       await login({
         identifier: values.identifier,
         email: values.identifier,
-        password: values.password,
+        mobileNumber: values.identifier,
+        password: loginMethod === "password" ? values.password : undefined,
+        otp: loginMethod === "otp" ? values.otp : undefined,
       });
       toast.success("Welcome back! Signed in successfully.");
       navigate(from, { replace: true });
@@ -141,7 +166,7 @@ export default function Login() {
             />
 
             <Box sx={{ position: "relative", zIndex: 2 }}>
-              <Stack direction="row" spacing={1.5} sx={{ alignItems: "center",  mb: 4 }}>
+              <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", mb: 4 }}>
                 <Box
                   sx={{
                     width: 44,
@@ -217,9 +242,30 @@ export default function Login() {
               <Typography variant="h5" fontWeight={800} sx={{ color: "#0F172A", mb: 0.5 }}>
                 Sign In to Your Account
               </Typography>
-              <Typography variant="body2" sx={{ color: "#64748B" }}>
-                Enter your registered email address or mobile number to access the portal.
+              <Typography variant="body2" sx={{ color: "#64748B", mb: 3 }}>
+                Enter your registered details to access the portal.
               </Typography>
+
+              <Box sx={{ display: "flex", justifyContent: "center" }}>
+                <Stack direction="row" spacing={1} sx={{ p: 0.5, bgcolor: "#F1F5F9", borderRadius: 3 }}>
+                  <Button
+                    disableElevation
+                    variant={loginMethod === "password" ? "contained" : "text"}
+                    onClick={() => { setLoginMethod("password"); setOtpSent(false); }}
+                    sx={{ borderRadius: 2.5, px: 3, py: 1, textTransform: "none", fontWeight: 600, color: loginMethod === "password" ? "#FFFFFF" : "#64748B", bgcolor: loginMethod === "password" ? "#0F766E" : "transparent", "&:hover": { bgcolor: loginMethod === "password" ? "#0D9488" : "rgba(15,118,110,0.08)" } }}
+                  >
+                    Password
+                  </Button>
+                  <Button
+                    disableElevation
+                    variant={loginMethod === "otp" ? "contained" : "text"}
+                    onClick={() => { setLoginMethod("otp"); setOtpSent(false); }}
+                    sx={{ borderRadius: 2.5, px: 3, py: 1, textTransform: "none", fontWeight: 600, color: loginMethod === "otp" ? "#FFFFFF" : "#64748B", bgcolor: loginMethod === "otp" ? "#0F766E" : "transparent", "&:hover": { bgcolor: loginMethod === "otp" ? "#0D9488" : "rgba(15,118,110,0.08)" } }}
+                  >
+                    OTP Login
+                  </Button>
+                </Stack>
+              </Box>
             </Box>
 
             <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
@@ -259,51 +305,108 @@ export default function Login() {
                   }}
                 />
 
-                <TextField
+                {loginMethod === "password" && (
+                  <TextField
+                    fullWidth
+                    label="Password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    autoComplete="current-password"
+                    error={!!errors.password}
+                    helperText={errors.password?.message}
+                    {...register("password", {
+                      required: loginMethod === "password" ? "Password is required" : false,
+                      minLength: {
+                        value: 6,
+                        message: "Password must have at least 6 characters",
+                      },
+                    })}
+                    slotProps={{
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <LockIcon sx={{ color: "#0F766E", fontSize: 20 }} />
+                          </InputAdornment>
+                        ),
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              onClick={() => setShowPassword(!showPassword)}
+                              edge="end"
+                              tabIndex={-1}
+                              size="small"
+                            >
+                              {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      },
+                    }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: 2.5,
+                        "& fieldset": { borderColor: "#CBD5E1" },
+                        "&:hover fieldset": { borderColor: "#0F766E" },
+                        "&.Mui-focused fieldset": { borderColor: "#0F766E", borderWidth: 2 },
+                      },
+                    }}
+                  />
+                )}
+
+                {loginMethod === "otp" && otpSent && (
+                  <TextField
+                    fullWidth
+                    label="Enter 6-digit OTP"
+                    placeholder="123456"
+                    error={!!errors.otp}
+                    helperText={errors.otp?.message}
+                    {...register("otp", {
+                      required: "OTP is required",
+                      minLength: { value: 6, message: "OTP must be 6 digits" },
+                      maxLength: { value: 6, message: "OTP must be 6 digits" }
+                    })}
+                    slotProps={{
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <LockIcon sx={{ color: "#0F766E", fontSize: 20 }} />
+                          </InputAdornment>
+                        ),
+                      },
+                    }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: 2.5,
+                        "& fieldset": { borderColor: "#CBD5E1" },
+                        "&:hover fieldset": { borderColor: "#0F766E" },
+                        "&.Mui-focused fieldset": { borderColor: "#0F766E", borderWidth: 2 },
+                      },
+                    }}
+                  />
+                )}
+
+                <Button
+                  type="submit"
+                  variant="contained"
                   fullWidth
-                  label="Password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  autoComplete="current-password"
-                  error={!!errors.password}
-                  helperText={errors.password?.message}
-                  {...register("password", {
-                    required: "Password is required",
-                    minLength: {
-                      value: 6,
-                      message: "Password must have at least 6 characters",
-                    },
-                  })}
-                  slotProps={{
-                    input: {
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <LockIcon sx={{ color: "#0F766E", fontSize: 20 }} />
-                        </InputAdornment>
-                      ),
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton
-                            onClick={() => setShowPassword(!showPassword)}
-                            edge="end"
-                            tabIndex={-1}
-                            size="small"
-                          >
-                            {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    },
-                  }}
+                  disabled={loading || sendingOtp}
                   sx={{
-                    "& .MuiOutlinedInput-root": {
-                      borderRadius: 2.5,
-                      "& fieldset": { borderColor: "#CBD5E1" },
-                      "&:hover fieldset": { borderColor: "#0F766E" },
-                      "&.Mui-focused fieldset": { borderColor: "#0F766E", borderWidth: 2 },
+                    py: 1.8,
+                    mt: 2,
+                    fontSize: 16,
+                    fontWeight: 700,
+                    textTransform: "none",
+                    borderRadius: 2.5,
+                    background: "linear-gradient(135deg, #0F766E 0%, #0D9488 100%)",
+                    boxShadow: "0 10px 15px -3px rgba(15, 118, 110, 0.3)",
+                    "&:hover": {
+                      background: "linear-gradient(135deg, #0F766E 0%, #0F766E 100%)",
+                      boxShadow: "0 10px 20px -3px rgba(15, 118, 110, 0.4)",
                     },
                   }}
-                />
+                >
+                  {loading ? "Authenticating..." : sendingOtp ? "Sending OTP..." : loginMethod === "otp" && !otpSent ? "Send OTP" : "Sign In to Portal"}
+                </Button>
 
                 <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
                   <FormControlLabel
@@ -331,34 +434,6 @@ export default function Login() {
                     Forgot Password?
                   </Typography>
                 </Stack>
-
-                <Button
-                  type="submit"
-                  variant="contained"
-                  size="large"
-                  disabled={loading}
-                  fullWidth
-                  sx={{
-                    background: "linear-gradient(135deg, #0F766E 0%, #0D9488 100%)",
-                    height: 50,
-                    fontWeight: 700,
-                    fontSize: 16,
-                    borderRadius: 2.5,
-                    boxShadow: "0 4px 14px rgba(15, 118, 110, 0.35)",
-                    textTransform: "none",
-                    "&:hover": {
-                      background: "linear-gradient(135deg, #0D9488 0%, #115E59 100%)",
-                      boxShadow: "0 6px 20px rgba(15, 118, 110, 0.45)",
-                    },
-                    "&:disabled": {
-                      bgcolor: "#CBD5E1",
-                    },
-                  }}
-                >
-                  {loading ? "Authenticating..." : "Sign In to ERP Portal"}
-                </Button>
-
-
 
                 <Typography
                   variant="body2"

@@ -1,4 +1,5 @@
 import ApiError from "../../shared/ApiError.js";
+import aadhaarService from "../../shared/aadhaar.service.js";
 import customerService from "../customers/customer.service.js";
 import loanApplicationService from "../loan-applications/loanApplications.service.js";
 import customerPortalRepository from "./customerPortal.repository.js";
@@ -130,6 +131,41 @@ class CustomerPortalService {
       aadhaarNumber: data.aadhaarNumber,
       digilockerRefId: data.digilockerRefId || `DGL-${Date.now()}`,
     });
+  }
+
+  async generateAadhaarOtp(userId, data) {
+    // Validate that the user exists and has a linked customer profile
+    await this.getLinkedCustomer(userId);
+    if (!data.aadhaarNumber) {
+      throw new ApiError(400, "Aadhaar number is required");
+    }
+    
+    // Call Sandbox API
+    const result = await aadhaarService.generateOtp(data.aadhaarNumber);
+    return result;
+  }
+
+  async verifyAadhaarOtp(userId, data) {
+    const customer = await this.getLinkedCustomer(userId);
+    if (!data.reference_id || !data.otp) {
+      throw new ApiError(400, "reference_id and otp are required");
+    }
+
+    // Verify OTP with Sandbox API
+    const result = await aadhaarService.verifyOtp(data.reference_id, data.otp);
+    
+    if (result.success) {
+      // Safely update the database now that KYC is verified
+      // Format to fit strictly inside VARCHAR(12) or similar tiny columns:
+      const safeAadhaar = (result.maskedAadhaar || "VERIFIED").replace(/-/g, "").substring(0, 12);
+      
+      await customerPortalRepository.updateAadhaarKyc(customer.customer_id, {
+        aadhaarNumber: safeAadhaar,
+        referenceId: result.reference_id,
+      });
+    }
+    
+    return result;
   }
 
   async verifyPanKyc(userId, data) {
