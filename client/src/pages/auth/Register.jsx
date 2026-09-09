@@ -43,8 +43,6 @@ export default function Register() {
   const [success, setSuccess] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(true);
-  const [otpSent, setOtpSent] = useState(false);
-  const [sendingOtp, setSendingOtp] = useState(false);
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -52,29 +50,11 @@ export default function Register() {
     password: "",
     confirmPassword: "",
     mobileNumber: "",
-    otp: "",
     role: "CUSTOMER",
   });
 
   const handleChange = (field) => (e) =>
     setForm((f) => ({ ...f, [field]: e.target.value }));
-
-  const handleSendOtp = async () => {
-    if (!form.mobileNumber.trim()) return toast.error("Please enter a mobile number first.");
-    if (!/^\+?\d{10,15}$/.test(form.mobileNumber.trim().replace(/\s+/g, "")))
-      return toast.error("Please enter a valid 10-digit Mobile Phone number.");
-
-    setSendingOtp(true);
-    try {
-      const res = await authService.sendOtp({ mobileNumber: form.mobileNumber.trim(), type: "REGISTER" });
-      toast.success(res.message || "OTP sent successfully");
-      setOtpSent(true);
-    } catch (error) {
-      toast.error(error?.response?.data?.message || "Failed to send OTP");
-    } finally {
-      setSendingOtp(false);
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -88,8 +68,6 @@ export default function Register() {
       return toast.error("Passwords do not match.");
     if (form.password.length < 6)
       return toast.error("Password must be at least 6 characters.");
-    if (form.mobileNumber.trim() && (!form.otp || form.otp.length !== 6))
-      return toast.error("Please verify your mobile number with a 6-digit OTP.");
     if (!termsAccepted)
       return toast.error("Please accept terms and conditions.");
 
@@ -101,7 +79,6 @@ export default function Register() {
         email: form.email.trim() || undefined,
         password: form.password,
         mobileNumber: form.mobileNumber.trim() || undefined,
-        otp: form.otp.trim() || undefined,
         role: form.role,
       });
       setSuccess(true);
@@ -376,46 +353,6 @@ export default function Register() {
                       },
                     }}
                   />
-                  {form.mobileNumber.trim() && (
-                    <Box sx={{ mt: 1, display: "flex", gap: 1 }}>
-                      {!otpSent ? (
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          disabled={sendingOtp}
-                          onClick={handleSendOtp}
-                          sx={{ textTransform: "none", borderRadius: 2, color: "#0F766E", borderColor: "#0F766E" }}
-                        >
-                          {sendingOtp ? "Sending..." : "Verify via OTP"}
-                        </Button>
-                      ) : (
-                        <Box sx={{ display: "flex", width: "100%", gap: 1 }}>
-                          <TextField
-                            fullWidth
-                            size="small"
-                            placeholder="Enter 6-digit OTP"
-                            value={form.otp}
-                            onChange={handleChange("otp")}
-                            sx={{
-                              "& .MuiOutlinedInput-root": {
-                                borderRadius: 2,
-                                "& fieldset": { borderColor: "#CBD5E1" },
-                              },
-                            }}
-                          />
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            disabled={sendingOtp}
-                            onClick={handleSendOtp}
-                            sx={{ textTransform: "none", borderRadius: 2, color: "#0F766E", borderColor: "#0F766E", whiteSpace: "nowrap" }}
-                          >
-                            {sendingOtp ? "Sending..." : "Resend OTP"}
-                          </Button>
-                        </Box>
-                      )}
-                    </Box>
-                  )}
                 </Grid>
 
 

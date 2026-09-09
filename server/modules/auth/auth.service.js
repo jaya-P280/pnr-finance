@@ -142,15 +142,7 @@ class AuthService {
         throw new ApiError(409, "Mobile number is already registered.");
       }
 
-      // 3. Verify OTP if provided
-      if (data.otp) {
-        const cleanOtp = String(data.otp).trim();
-        const cached = otpCache.get(cleanMobile);
-        if (!cached || cached.otp !== cleanOtp || cached.expiresAt < Date.now()) {
-          throw new ApiError(400, "Invalid or expired OTP.");
-        }
-        otpCache.delete(cleanMobile);
-      }
+      // 3. OTP verification removed for registration per requirement
     }
 
     // All registered users via public portal receive the CUSTOMER role
