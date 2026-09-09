@@ -300,7 +300,7 @@ class InitializeService {
             [cId, c.aadhaar, c.pan]
           );
         }
-        logger.info("Sample Customers seeded because table was empty");
+        logger.info("Sample Customers seeded with 6-digit codes and KYC records");
       } else {
         logger.info(`Customers table has ${custCount[0]?.total} records; sample seeding skipped.`);
       }
