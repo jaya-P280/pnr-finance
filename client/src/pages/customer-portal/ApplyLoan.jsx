@@ -76,11 +76,7 @@ export default function ApplyLoan() {
       const isPanVerified = Boolean(statusData?.panVerified);
 
       if (!isAadhaarVerified || !isPanVerified) {
-        toast.error(
-          "Both Aadhaar and PAN verification are required before applying for a loan. Redirecting to KYC...",
-          { duration: 4500 },
-        );
-        navigate("/customer/ekyc");
+        navigate("/customer/ekyc", { replace: true });
         return;
       }
 
@@ -89,11 +85,7 @@ export default function ApplyLoan() {
       await fetchProducts();
     } catch (err) {
       console.error("KYC check failed", err);
-      toast.error(
-        "Please complete your Aadhaar and PAN verification before applying for a loan.",
-        { duration: 4500 },
-      );
-      navigate("/customer/ekyc");
+      navigate("/customer/ekyc", { replace: true });
     } finally {
       setKycChecking(false);
     }
@@ -179,7 +171,6 @@ export default function ApplyLoan() {
     }
 
     if (!kycVerified) {
-      toast.error("eKYC Verification Required! Please complete your eKYC identity verification before submitting a loan application.");
       navigate("/customer/ekyc");
       return;
     }

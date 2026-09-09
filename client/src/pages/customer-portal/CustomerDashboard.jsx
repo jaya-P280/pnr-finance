@@ -89,7 +89,6 @@ export default function CustomerDashboard() {
 
   const handleApplyLoanClick = () => {
     if (!isKycComplete) {
-      toast.error("Both Aadhaar and PAN verification are required before applying for a loan. Redirecting to KYC...");
       navigate("/customer/ekyc");
     } else {
       navigate("/customer/apply-loan");
