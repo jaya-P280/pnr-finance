@@ -86,12 +86,50 @@ class AuthRepository {
   }
 
   async updateOwnProfile(userId, data) {
+    if (data.profileImage !== undefined) {
+      await pool.execute(
+        `UPDATE users
+         SET first_name = ?, last_name = ?, mobile_number = ?, profile_image = ?, updated_at = CURRENT_TIMESTAMP
+         WHERE user_id = ? AND deleted_at IS NULL`,
+        [data.firstName, data.lastName || null, data.mobileNumber || null, data.profileImage || null, userId],
+      );
+    } else {
+      await pool.execute(
+        `UPDATE users
+         SET first_name = ?, last_name = ?, mobile_number = ?, updated_at = CURRENT_TIMESTAMP
+         WHERE user_id = ? AND deleted_at IS NULL`,
+        [data.firstName, data.lastName || null, data.mobileNumber || null, userId],
+      );
+    }
+    return this.findUserById(userId);
+  }
+
+  async updateProfileImage(userId, filename) {
     await pool.execute(
       `UPDATE users
-       SET first_name = ?, last_name = ?, mobile_number = ?, updated_at = CURRENT_TIMESTAMP
+       SET profile_image = ?, updated_at = CURRENT_TIMESTAMP
        WHERE user_id = ? AND deleted_at IS NULL`,
-      [data.firstName, data.lastName || null, data.mobileNumber || null, userId],
+      [filename, userId],
     );
+
+    // Sync to customers table if user is a customer
+    try {
+      const [userRows] = await pool.execute(
+        `SELECT email, mobile_number FROM users WHERE user_id = ?`,
+        [userId],
+      );
+      if (userRows[0]) {
+        await pool.execute(
+          `UPDATE customers
+           SET profile_image = ?, updated_at = CURRENT_TIMESTAMP
+           WHERE (email = ? OR mobile_number = ?) AND deleted_at IS NULL`,
+          [filename, userRows[0].email, userRows[0].mobile_number],
+        );
+      }
+    } catch {
+      // Ignore if customer sync fails
+    }
+
     return this.findUserById(userId);
   }
 

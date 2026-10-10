@@ -11,6 +11,8 @@ import {
   uploadKycValidation,
 } from "./customerPortal.validation.js";
 
+import documentUpload from "../../middleware/documentUpload.middleware.js";
+
 const router = express.Router();
 
 router.use(authenticate);
@@ -49,6 +51,12 @@ router.get(
   validateRequest,
   customerPortalController.getApplicationDetails,
 );
+router.get(
+  "/applications/:id/contract",
+  customerResourceValidation,
+  validateRequest,
+  customerPortalController.getLoanContract,
+);
 router.patch(
   "/applications/:id/withdraw",
   customerResourceValidation,
@@ -84,7 +92,14 @@ router.get(
 router.get("/kyc/status", customerPortalController.getKycStatus);
 router.post("/kyc/aadhaar/generate-otp", customerPortalController.generateAadhaarOtp);
 router.post("/kyc/aadhaar/verify-otp", customerPortalController.verifyAadhaarOtp);
+router.post("/kyc/aadhaar/confirm", customerPortalController.confirmAadhaarKyc);
 router.post("/kyc/digilocker", customerPortalController.verifyDigiLockerKyc); // Legacy/fallback
 router.post("/kyc/pan", customerPortalController.verifyPanKyc);
+
+// Documents
+router.get("/documents", customerPortalController.getMyDocuments);
+router.post("/documents", documentUpload, customerPortalController.uploadDocument);
+router.post("/documents/upload", documentUpload, customerPortalController.uploadDocument);
+router.delete("/documents/:id", customerPortalController.deleteDocument);
 
 export default router;

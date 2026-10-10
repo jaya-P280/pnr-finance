@@ -58,10 +58,21 @@ export const customerPortalApi = {
     api.post(`${customerPortal}/kyc/aadhaar/generate-otp`, data),
   verifyAadhaarOtp: (data) =>
     api.post(`${customerPortal}/kyc/aadhaar/verify-otp`, data),
+  confirmAadhaarKyc: (data) =>
+    api.post(`${customerPortal}/kyc/aadhaar/confirm`, data),
   verifyDigiLockerKyc: (data) =>
     api.post(`${customerPortal}/kyc/digilocker`, data),
   verifyPanKyc: (data) =>
     api.post(`${customerPortal}/kyc/pan`, data),
   sendEmiReminderSms: (loanId, scheduleId) =>
     api.post(`${ENDPOINTS.LOANS}/${loanId}/schedule/${scheduleId}/send-sms`),
+
+  getMyDocuments: () => api.get(`${customerPortal}/documents`),
+  uploadDocument: (formData) =>
+    api.post(`${customerPortal}/documents`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+  deleteDocument: (id) => api.delete(`${customerPortal}/documents/${id}`),
+  getLoanContract: (applicationId) =>
+    api.get(`${customerPortal}/applications/${applicationId}/contract`),
 };

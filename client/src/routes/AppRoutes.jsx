@@ -14,6 +14,7 @@ import CustomerDocuments from "../pages/customer-documents/CustomerDocuments";
 import ApplyLoan from "../pages/customer-portal/ApplyLoan";
 import CustomerDashboard from "../pages/customer-portal/CustomerDashboard";
 import EKycVerification from "../pages/customer-portal/EKycVerification";
+import CustomerDocumentsPortal from "../pages/customer-portal/CustomerDocumentsPortal";
 import LoanApplicationDetail from "../pages/customer-portal/LoanApplicationDetail";
 import MyLoanApplications from "../pages/customer-portal/MyLoanApplications";
 import MyLoans from "../pages/customer-portal/MyLoans";
@@ -174,6 +175,7 @@ export default function AppRoutes() {
           <Route element={<PermissionGuard allowedRoles={["CUSTOMER"]} />}>
             <Route path="/customer/dashboard" element={<CustomerDashboard />} />
             <Route path="/customer/profile" element={<Profile />} />
+            <Route path="/customer/documents" element={<CustomerDocumentsPortal />} />
             <Route path="/customer/settings" element={<UnifiedSettings />} />
             <Route path="/customer/ekyc" element={<EKycVerification />} />
             <Route path="/customer/applications" element={<MyLoanApplications />} />

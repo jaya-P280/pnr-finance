@@ -381,7 +381,15 @@ class CustomerPortalRepository {
          COALESCE(ck.pan_verified, 0) AS panVerified,
          COALESCE(ck.kyc_status, 'PENDING') AS status,
          ck.verified_at AS verifiedAt,
-         ck.remarks
+         ck.remarks,
+         c.first_name AS firstName,
+         c.last_name AS lastName,
+         c.date_of_birth AS dateOfBirth,
+         c.gender,
+         c.address,
+         c.city,
+         c.state,
+         c.pincode
        FROM customers c
        LEFT JOIN customer_kyc ck ON ck.customer_id = c.customer_id
        WHERE c.customer_id = ?
@@ -415,8 +423,8 @@ class CustomerPortalRepository {
     return { success: true, aadhaarNumber, aadhaarVerified: true, digilockerRefId };
   }
 
-  async updateAadhaarKyc(customerId, { aadhaarNumber, referenceId }) {
-    const remarks = `Verified via Sandbox Aadhaar OTP (Ref: ${referenceId})`;
+  async updateAadhaarKyc(customerId, { aadhaarNumber, referenceId, name, dob, gender, address }) {
+    const remarks = `Verified and confirmed via Sandbox Aadhaar OTP (Ref: ${referenceId})`;
     await pool.execute(
       `INSERT INTO customer_kyc (customer_id, aadhaar_number, aadhaar_verified, kyc_status, remarks)
        VALUES (?, ?, 1, 'PENDING', ?)
@@ -434,6 +442,23 @@ class CustomerPortalRepository {
        WHERE customer_id = ?`,
       [customerId],
     );
+
+    // Optionally update customer demographic info when confirmed
+    const updates = [];
+    const params = [];
+    if (gender) {
+      const g = gender.toUpperCase().startsWith("M") ? "MALE" : gender.toUpperCase().startsWith("F") ? "FEMALE" : "OTHER";
+      updates.push("gender = ?");
+      params.push(g);
+    }
+    if (address) {
+      updates.push("address = ?");
+      params.push(address);
+    }
+    if (updates.length > 0) {
+      params.push(customerId);
+      await pool.execute(`UPDATE customers SET ${updates.join(", ")} WHERE customer_id = ?`, params);
+    }
 
     return { success: true, aadhaarNumber, aadhaarVerified: true, referenceId };
   }
@@ -457,6 +482,198 @@ class CustomerPortalRepository {
     );
 
     return { success: true, panNumber, panVerified: true };
+  }
+
+  async getCustomerDocuments(customerId) {
+    const [rows] = await pool.execute(
+      `SELECT
+         cd.document_id AS documentId,
+         cd.document_id AS document_id,
+         cd.customer_id AS customerId,
+         cd.customer_id AS customer_id,
+         cd.application_id AS applicationId,
+         cd.application_id AS application_id,
+         cd.document_type_id AS documentTypeId,
+         cd.document_type_id AS document_type_id,
+         cd.document_type_code AS documentTypeCode,
+         cd.document_type_code AS document_type_code,
+         cd.document_title AS documentTitle,
+         cd.document_title AS document_title,
+         cd.file_url AS fileUrl,
+         cd.file_url AS file_url,
+         cd.file_name AS fileName,
+         cd.file_name AS file_name,
+         cd.file_name AS original_name,
+         cd.file_size AS fileSize,
+         cd.file_size AS file_size,
+         cd.mime_type AS mimeType,
+         cd.mime_type AS mime_type,
+         cd.status,
+         cd.status AS verification_status,
+         cd.verified_by AS verifiedBy,
+         cd.verified_at AS verifiedAt,
+         cd.rejection_reason AS rejectionReason,
+         cd.uploaded_at AS uploadedAt,
+         cd.uploaded_at AS uploaded_at,
+         dt.title AS slotTitle,
+         dt.title AS document_type_title,
+         dt.title AS type_name,
+         dt.category AS slotCategory,
+         dt.description AS slotDescription,
+         dt.is_required_for_loan AS isRequiredForLoan,
+         la.application_number AS applicationNumber
+       FROM customer_documents cd
+       INNER JOIN document_types dt ON dt.id = cd.document_type_id
+       LEFT JOIN loan_applications la ON la.application_id = cd.application_id
+       WHERE cd.customer_id = ?
+       ORDER BY cd.uploaded_at DESC`,
+      [customerId]
+    );
+    return rows;
+  }
+
+  async addCustomerDocument(data) {
+    const [existing] = await pool.execute(
+      `SELECT document_id FROM customer_documents
+       WHERE customer_id = ? AND document_type_id = ?
+       ORDER BY document_id DESC LIMIT 1`,
+      [data.customerId, data.documentTypeId]
+    );
+
+    let docId;
+    if (existing && existing.length > 0) {
+      docId = existing[0].document_id;
+      await pool.execute(
+        `UPDATE customer_documents SET
+           application_id = COALESCE(?, application_id),
+           document_type_code = ?,
+           document_title = ?,
+           file_url = ?,
+           file_name = ?,
+           file_size = ?,
+           mime_type = ?,
+           status = 'PENDING',
+           rejection_reason = NULL,
+           uploaded_at = NOW()
+         WHERE document_id = ?`,
+        [
+          data.applicationId || null,
+          data.documentTypeCode,
+          data.documentTitle,
+          data.fileUrl,
+          data.fileName || null,
+          data.fileSize || null,
+          data.mimeType || null,
+          docId,
+        ]
+      );
+    } else {
+      const [result] = await pool.execute(
+        `INSERT INTO customer_documents
+           (customer_id, application_id, document_type_id, document_type_code, document_title, file_url, file_name, file_size, mime_type, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING')`,
+        [
+          data.customerId,
+          data.applicationId || null,
+          data.documentTypeId,
+          data.documentTypeCode,
+          data.documentTitle,
+          data.fileUrl,
+          data.fileName || null,
+          data.fileSize || null,
+          data.mimeType || null,
+        ]
+      );
+      docId = result.insertId;
+    }
+
+    const [rows] = await pool.execute(
+      `SELECT
+         cd.document_id AS documentId,
+         cd.document_id AS document_id,
+         cd.customer_id AS customerId,
+         cd.customer_id AS customer_id,
+         cd.application_id AS applicationId,
+         cd.application_id AS application_id,
+         cd.document_type_id AS documentTypeId,
+         cd.document_type_id AS document_type_id,
+         cd.document_type_code AS documentTypeCode,
+         cd.document_type_code AS document_type_code,
+         cd.document_title AS documentTitle,
+         cd.document_title AS document_title,
+         cd.file_url AS fileUrl,
+         cd.file_url AS file_url,
+         cd.file_name AS fileName,
+         cd.file_name AS file_name,
+         cd.file_name AS original_name,
+         cd.file_size AS fileSize,
+         cd.file_size AS file_size,
+         cd.mime_type AS mimeType,
+         cd.mime_type AS mime_type,
+         cd.status,
+         cd.status AS verification_status,
+         cd.uploaded_at AS uploadedAt,
+         cd.uploaded_at AS uploaded_at
+       FROM customer_documents cd
+       WHERE cd.document_id = ?`,
+      [docId]
+    );
+    return rows[0] || null;
+  }
+
+  async deleteCustomerDocument(documentId, customerId) {
+    const [result] = await pool.execute(
+      `DELETE FROM customer_documents WHERE document_id = ? AND customer_id = ? AND status = 'PENDING'`,
+      [documentId, customerId]
+    );
+    return result.affectedRows > 0;
+  }
+
+  async getApplicationForContract(applicationId, customerId) {
+    const [rows] = await pool.execute(
+      `SELECT
+         la.application_id AS applicationId,
+         la.application_number AS applicationNumber,
+         la.customer_id AS customerId,
+         la.branch_id AS branchId,
+         la.loan_product_id AS loanProductId,
+         la.requested_amount AS requestedAmount,
+         la.approved_amount AS approvedAmount,
+         la.tenure,
+         la.interest_rate AS interestRate,
+         la.recovery_frequency AS recoveryFrequency,
+         la.purpose,
+         la.application_status AS applicationStatus,
+         la.applied_at AS appliedAt,
+         la.approved_at AS approvedAt,
+         c.customer_code AS customerCode,
+         c.first_name AS firstName,
+         c.last_name AS lastName,
+         c.email,
+         c.mobile_number AS mobileNumber,
+         c.address,
+         c.city,
+         c.state,
+         c.pincode,
+         ck.aadhaar_number AS aadhaarNumber,
+         ck.pan_number AS panNumber,
+         b.branch_name AS branchName,
+         b.branch_code AS branchCode,
+         b.address AS branchAddress,
+         b.phone AS branchPhone,
+         b.email AS branchEmail,
+         lp.product_name AS productName,
+         lp.product_code AS productCode
+       FROM loan_applications la
+       INNER JOIN customers c ON c.customer_id = la.customer_id
+       LEFT JOIN customer_kyc ck ON ck.customer_id = c.customer_id
+       INNER JOIN branches b ON b.branch_id = la.branch_id
+       INNER JOIN loan_products lp ON lp.loan_product_id = la.loan_product_id
+       WHERE la.application_id = ? AND la.customer_id = ?
+       LIMIT 1`,
+      [applicationId, customerId]
+    );
+    return rows[0] || null;
   }
 }
 

@@ -162,32 +162,57 @@ class AadhaarService {
         { headers }
       );
 
+      console.log("[Sandbox Verify OTP Response]:", JSON.stringify(response.data, null, 2));
+
       if (response.data?.code === 200) {
         const data = response.data.data;
 
-        // Sandbox returns 200 even for wrong OTPs, but includes a message in data
-        if (data.message && data.message.toLowerCase().includes("invalid")) {
+        if (!data) {
+          throw new ApiError(400, "No data received from Aadhaar verification service.");
+        }
+
+        // Sandbox returns 200 even for failed OTPs with message in data
+        if (data.status && String(data.status).toUpperCase() !== "VALID") {
+          throw new ApiError(400, data.message || `Aadhaar verification status: ${data.status}`);
+        }
+        if (data.message && !data.name && !data.full_name) {
           throw new ApiError(400, data.message);
         }
 
+        // Format structured address if full_address is missing
+        let fullAddress = data.full_address;
+        if (!fullAddress && data.address) {
+          if (typeof data.address === "object") {
+            const { house, street, landmark, post_office, vtc, subdistrict, district, state, pincode } = data.address;
+            fullAddress = [house, street, landmark, post_office, vtc, subdistrict, district, state, pincode]
+              .filter(Boolean)
+              .join(", ");
+          } else {
+            fullAddress = String(data.address);
+          }
+        }
+
+        const rawGender = data.gender || "";
+        const gender = rawGender === "M" ? "Male" : rawGender === "F" ? "Female" : rawGender;
+
         return {
           success: true,
-          reference_id: data.reference_id,
-          status: data.status,
-          name: data.name,
-          gender: data.gender,
-          date_of_birth: data.date_of_birth,
-          care_of: data.care_of,
-          full_address: data.full_address,
-          photo: data.photo, // Base64
+          reference_id: data.reference_id || referenceId,
+          status: data.status || "VALID",
+          name: data.name || data.full_name || "Verified Customer",
+          gender,
+          date_of_birth: data.date_of_birth || data.dob || data.year_of_birth || "",
+          care_of: data.care_of || (data.address && data.address.care_of) || "",
+          full_address: fullAddress || "",
+          photo: data.photo || data.image || null,
         };
       }
 
       throw new ApiError(400, "Failed to verify Aadhaar OTP");
     } catch (error) {
-      console.error("[Sandbox Verify OTP Error Details]:", JSON.stringify(error.response?.data, null, 2));
-      const msg = error.response?.data?.message || error.message;
-      throw new ApiError(error.response?.status || 500, `Sandbox API Error: ${msg}`);
+      console.error("[Sandbox Verify OTP Error Details]:", JSON.stringify(error.response?.data || error.message, null, 2));
+      const msg = error.response?.data?.data?.message || error.response?.data?.message || error.message;
+      throw new ApiError(error.response?.status || 400, `Sandbox API Error: ${msg}`);
     }
   }
 }

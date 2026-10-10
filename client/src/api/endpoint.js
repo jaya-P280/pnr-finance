@@ -42,6 +42,8 @@ const ENDPOINTS = {
   AUDIT: "/audit-logs",
   ATTENDANCE: "/attendance",
   LETTERS: "/letters",
+  DOCUMENT_SLOTS: "/document-slots",
+  CUSTOMER_DOCUMENTS: "/customer-documents",
 };
 
 export default ENDPOINTS;

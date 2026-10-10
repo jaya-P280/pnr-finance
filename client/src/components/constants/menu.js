@@ -52,6 +52,7 @@ export const ROLE_ACCESS = {
     "/salary",
     "/customer/dashboard",
     "/customer/profile",
+    "/customer/documents",
     "/customer/applications",
     "/customer/apply-loan",
     "/customer/loans",
@@ -98,6 +99,7 @@ export const ROLE_ACCESS = {
   CUSTOMER: [
     "/customer/dashboard",
     "/customer/profile",
+    "/customer/documents",
     "/customer/applications",
     "/customer/apply-loan",
     "/customer/loans",
@@ -183,6 +185,11 @@ export function getFilteredMenu(rawRole) {
             title: "Profile",
             icon: PersonIcon,
             path: "/customer/profile",
+          },
+          {
+            title: "My Documents",
+            icon: DescriptionIcon,
+            path: "/customer/documents",
           },
           {
             title: "e-KYC Status",

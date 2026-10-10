@@ -160,6 +160,41 @@ class CustomerPortalController {
     );
     res.json(new ApiResponse(200, "Aadhaar OTP verified.", result));
   });
+
+  confirmAadhaarKyc = asyncHandler(async (req, res) => {
+    const result = await customerPortalService.confirmAadhaarKyc(
+      req.user.user_id,
+      req.body,
+    );
+    res.json(new ApiResponse(200, "Aadhaar e-KYC verified and confirmed successfully.", result));
+  });
+
+  getMyDocuments = asyncHandler(async (req, res) => {
+    const docs = await customerPortalService.getCustomerDocuments(req.user.user_id);
+    res.status(200).json(new ApiResponse(200, "Customer documents retrieved successfully.", docs));
+  });
+
+  uploadDocument = asyncHandler(async (req, res) => {
+    const doc = await customerPortalService.uploadCustomerDocument(
+      req.user.user_id,
+      req.file,
+      req.body
+    );
+    res.status(201).json(new ApiResponse(201, "Document uploaded successfully.", doc));
+  });
+
+  deleteDocument = asyncHandler(async (req, res) => {
+    await customerPortalService.deleteCustomerDocument(req.user.user_id, req.params.id);
+    res.status(200).json(new ApiResponse(200, "Document deleted successfully."));
+  });
+
+  getLoanContract = asyncHandler(async (req, res) => {
+    const contract = await customerPortalService.getLoanContractData(
+      req.user.user_id,
+      req.params.id
+    );
+    res.status(200).json(new ApiResponse(200, "Loan contract generated successfully.", contract));
+  });
 }
 
 export default new CustomerPortalController();

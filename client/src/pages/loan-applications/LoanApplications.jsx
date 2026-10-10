@@ -22,14 +22,28 @@ import {
   TableRow,
   TextField,
   Typography,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
-import { Add as AddIcon, Search as SearchIcon } from "@mui/icons-material";
+import {
+  Add as AddIcon,
+  Search as SearchIcon,
+  FolderOpen as FolderIcon,
+  Description as DocIcon,
+  CheckCircle as CheckCircleIcon,
+  Cancel as CancelIcon,
+  Visibility as ViewIcon,
+  Close as CloseIcon,
+  Download as DownloadIcon,
+  OpenInNew as OpenInNewIcon,
+} from "@mui/icons-material";
 import toast from "react-hot-toast";
 import SectionPage from "../../components/layout/SectionPage";
 import customerService from "../../services/customer.service";
 import loanProductService from "../../services/loanProduct.service";
 import loanApplicationService from "../../services/loanApplication.service";
 import groupService from "../../services/group.service";
+import customerDocumentsService from "../../services/customerDocuments.service";
 import useAuth from "../../hooks/useAuth";
 
 const emptyForm = {
@@ -55,6 +69,27 @@ const STATUS_COLORS = {
 const getErrorMessage = (error, fallback) =>
   error?.response?.data?.message || error?.message || fallback;
 
+const resolveFileUrl = (url) => {
+  if (!url) return "";
+  if (url.startsWith("http://localhost:5000/") || url.startsWith("http://127.0.0.1:5000/")) {
+    return url.replace(/^http:\/\/(localhost|127\.0\.0\.1):5000/, "");
+  }
+  if (url.startsWith("http") || url.startsWith("data:")) return url;
+  return url.startsWith("/") ? url : `/${url}`;
+};
+
+const isPdfFile = (doc) => {
+  const url = (doc?.file_url || doc?.fileUrl || "").toLowerCase();
+  const mime = (doc?.mime_type || doc?.mimeType || "").toLowerCase();
+  if (url.endsWith(".jpg") || url.endsWith(".jpeg") || url.endsWith(".png") || url.endsWith(".webp")) {
+    return false;
+  }
+  if (mime.startsWith("image/")) {
+    return false;
+  }
+  return url.endsWith(".pdf") || mime === "application/pdf";
+};
+
 const toPayload = (form) => {
   const payload = {
     customerId: Number(form.customerId),
@@ -78,7 +113,62 @@ export default function LoanApplications() {
   const canVerify = ["SUPER_ADMIN", "ADMIN", "BRANCH_MANAGER"].includes(roleName);
   const canApprove = ["SUPER_ADMIN", "ADMIN", "BRANCH_MANAGER"].includes(roleName);
   const canDisburse = ["SUPER_ADMIN", "ADMIN", "FIELD_OFFICER"].includes(roleName);
+  const canReviewDocs = ["ADMIN", "BRANCH_MANAGER", "FIELD_OFFICER"].includes(roleName);
   const [search, setSearch] = useState("");
+
+  const [docInspectionApp, setDocInspectionApp] = useState(null);
+  const [customerDocs, setCustomerDocs] = useState([]);
+  const [loadingDocs, setLoadingDocs] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState(null);
+  const [rejectDocDialog, setRejectDocDialog] = useState(null);
+  const [rejectDocReason, setRejectDocReason] = useState("");
+
+  const openDocumentInspection = async (app) => {
+    setDocInspectionApp(app);
+    setLoadingDocs(true);
+    try {
+      const res = await customerDocumentsService.getByCustomer(app.customer_id);
+      const docs = res?.data?.data || res?.data || [];
+      setCustomerDocs(Array.isArray(docs) ? docs : []);
+    } catch {
+      toast.error("Failed to load customer documents.");
+    } finally {
+      setLoadingDocs(false);
+    }
+  };
+
+  const handleVerifyDoc = async (docId) => {
+    try {
+      await customerDocumentsService.verify(docId);
+      toast.success("Document marked as verified.");
+      if (docInspectionApp) {
+        const res = await customerDocumentsService.getByCustomer(docInspectionApp.customer_id);
+        const docs = res?.data?.data || res?.data || [];
+        setCustomerDocs(Array.isArray(docs) ? docs : []);
+      }
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Verification failed.");
+    }
+  };
+
+  const handleRejectDoc = async () => {
+    if (!rejectDocDialog?.docId) return;
+    try {
+      await customerDocumentsService.reject(rejectDocDialog.docId, {
+        reason: rejectDocReason || "Document does not meet requirements",
+      });
+      toast.success("Document rejected.");
+      setRejectDocDialog(null);
+      setRejectDocReason("");
+      if (docInspectionApp) {
+        const res = await customerDocumentsService.getByCustomer(docInspectionApp.customer_id);
+        const docs = res?.data?.data || res?.data || [];
+        setCustomerDocs(Array.isArray(docs) ? docs : []);
+      }
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Rejection failed.");
+    }
+  };
 
   const preselectedCustomerId = searchParams.get("customerId");
   const [dialog, setDialog] = useState(
@@ -365,6 +455,17 @@ export default function LoanApplications() {
                         spacing={1}
                         sx={{ flexWrap: "wrap" }}
                       >
+                        {canReviewDocs && (
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="info"
+                            startIcon={<FolderIcon />}
+                            onClick={() => openDocumentInspection(app)}
+                          >
+                            Documents
+                          </Button>
+                        )}
                         {canCreate && canEditOrDelete(app.application_status) && (
                           <Button size="small" onClick={() => openEdit(app)}>
                             Edit
@@ -778,6 +879,249 @@ export default function LoanApplications() {
             onClick={() => saveApplication.mutate()}
           >
             {saveApplication.isPending ? "Saving…" : "Save"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* CUSTOMER DOCUMENTS INSPECTION DIALOG (FOR APPROVERS / FIELD OFFICERS) */}
+      <Dialog
+        open={Boolean(docInspectionApp)}
+        onClose={() => setDocInspectionApp(null)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ m: 0, p: 2.5, bgcolor: "#0F766E", color: "#FFFFFF" }}>
+          <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center" }}>
+            <Box>
+              <Typography variant="h6" fontWeight={800}>
+                Customer Documents Review
+              </Typography>
+              <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                Application #{docInspectionApp?.application_number} • Customer: {docInspectionApp?.customer_name}
+              </Typography>
+            </Box>
+            <IconButton size="small" onClick={() => setDocInspectionApp(null)} sx={{ color: "#FFFFFF" }}>
+              <CloseIcon />
+            </IconButton>
+          </Stack>
+        </DialogTitle>
+
+        <DialogContent dividers sx={{ p: 3 }}>
+          {loadingDocs ? (
+            <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+              <CircularProgress />
+            </Box>
+          ) : customerDocs.length === 0 ? (
+            <Box sx={{ py: 6, textAlign: "center" }}>
+              <Typography color="text.secondary">
+                No uploaded documents found for this customer yet.
+              </Typography>
+            </Box>
+          ) : (
+            <TableContainer component={Paper} variant="outlined">
+              <Table size="small">
+                <TableHead sx={{ bgcolor: "#F8FAFC" }}>
+                  <TableRow>
+                    <TableCell>Document Type</TableCell>
+                    <TableCell>File</TableCell>
+                    <TableCell>Uploaded On</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell align="right">Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {customerDocs.map((doc) => (
+                    <TableRow key={doc.id}>
+                      <TableCell>
+                        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                          <DocIcon sx={{ color: "#0F766E", fontSize: 20 }} />
+                          <Typography variant="body2" fontWeight={700}>
+                            {doc.document_type_title || doc.type_name || doc.document_type_code}
+                          </Typography>
+                        </Stack>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="caption" sx={{ maxWidth: 160, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {doc.original_name || doc.file_name || "Document File"}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="caption" color="text.secondary">
+                          {new Date(doc.created_at || Date.now()).toLocaleDateString()}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={doc.verification_status || "PENDING"}
+                          size="small"
+                          color={
+                            doc.verification_status === "VERIFIED"
+                              ? "success"
+                              : doc.verification_status === "REJECTED"
+                              ? "error"
+                              : "warning"
+                          }
+                          sx={{ fontWeight: 700, fontSize: "0.7rem" }}
+                        />
+                        {doc.rejection_reason && (
+                          <Typography variant="caption" color="error" display="block">
+                            {doc.rejection_reason}
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell align="right">
+                        <Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end" }}>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<ViewIcon />}
+                            onClick={() => setPreviewDoc(doc)}
+                          >
+                            View
+                          </Button>
+                          {doc.verification_status !== "VERIFIED" && (
+                            <Button
+                              size="small"
+                              variant="contained"
+                              color="success"
+                              startIcon={<CheckCircleIcon />}
+                              onClick={() => handleVerifyDoc(doc.id)}
+                            >
+                              Verify
+                            </Button>
+                          )}
+                          {doc.verification_status !== "REJECTED" && (
+                            <Button
+                              size="small"
+                              variant="contained"
+                              color="error"
+                              startIcon={<CancelIcon />}
+                              onClick={() => {
+                                setRejectDocDialog({ docId: doc.id });
+                                setRejectDocReason("");
+                              }}
+                            >
+                              Reject
+                            </Button>
+                          )}
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setDocInspectionApp(null)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* DOCUMENT FILE PREVIEW DIALOG */}
+      <Dialog
+        open={Boolean(previewDoc)}
+        onClose={() => setPreviewDoc(null)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ m: 0, p: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <Box>
+            <Typography variant="subtitle1" fontWeight={700}>
+              {previewDoc?.document_title || previewDoc?.documentTitle || previewDoc?.document_type_title || previewDoc?.type_name || previewDoc?.slotTitle || previewDoc?.documentTypeCode || previewDoc?.document_type_code || "Document Preview"}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              File: {previewDoc?.fileName || previewDoc?.original_name || previewDoc?.file_name || "Document"}
+            </Typography>
+          </Box>
+          <Stack direction="row" spacing={1}>
+            {(previewDoc?.file_url || previewDoc?.fileUrl) && (
+              <>
+                <Tooltip title="Open in new tab">
+                  <IconButton
+                    component="a"
+                    href={resolveFileUrl(previewDoc.file_url || previewDoc.fileUrl)}
+                    target="_blank"
+                    rel="noreferrer"
+                    size="small"
+                  >
+                    <OpenInNewIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Download file">
+                  <IconButton
+                    component="a"
+                    href={resolveFileUrl(previewDoc.file_url || previewDoc.fileUrl)}
+                    download={previewDoc?.fileName || previewDoc?.original_name || previewDoc?.file_name || "document"}
+                    target="_blank"
+                    rel="noreferrer"
+                    size="small"
+                  >
+                    <DownloadIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </>
+            )}
+            <IconButton size="small" onClick={() => setPreviewDoc(null)}>
+              <CloseIcon />
+            </IconButton>
+          </Stack>
+        </DialogTitle>
+        <DialogContent dividers sx={{ p: 2, textAlign: "center", bgcolor: "#F1F5F9", minHeight: 400 }}>
+          {previewDoc?.file_url || previewDoc?.fileUrl ? (
+            isPdfFile(previewDoc) ? (
+              <Box sx={{ width: "100%", height: "600px" }}>
+                <iframe
+                  title="Document PDF"
+                  src={resolveFileUrl(previewDoc.file_url || previewDoc.fileUrl)}
+                  style={{ width: "100%", height: "100%", border: "none", borderRadius: 4 }}
+                />
+              </Box>
+            ) : (
+              <img
+                src={resolveFileUrl(previewDoc.file_url || previewDoc.fileUrl)}
+                alt="Document Preview"
+                style={{ maxWidth: "100%", maxHeight: "600px", objectFit: "contain", borderRadius: 4 }}
+              />
+            )
+          ) : (
+            <Typography color="text.secondary">No preview file available.</Typography>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* REJECT DOCUMENT REASON DIALOG */}
+      <Dialog
+        open={Boolean(rejectDocDialog)}
+        onClose={() => setRejectDocDialog(null)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Reject Document</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Please state the reason for rejecting this document so the customer can upload a corrected copy.
+          </Typography>
+          <TextField
+            fullWidth
+            multiline
+            minRows={2}
+            label="Rejection Reason"
+            placeholder="e.g. Signature missing, blur image, incomplete bank statement"
+            value={rejectDocReason}
+            onChange={(e) => setRejectDocReason(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRejectDocDialog(null)}>Cancel</Button>
+          <Button
+            variant="contained"
+            color="error"
+            disabled={!rejectDocReason.trim()}
+            onClick={handleRejectDoc}
+          >
+            Confirm Reject
           </Button>
         </DialogActions>
       </Dialog>

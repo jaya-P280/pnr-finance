@@ -22,6 +22,8 @@ import auditRoutes from "../modules/audit/audit.routes.js";
 import attendanceRoutes from "../modules/attendance/attendance.routes.js";
 import letterRoutes from "../modules/letters/letters.routes.js";
 import salaryRoutes from "../modules/salaries/salaries.routes.js";
+import documentSlotsRoutes from "../modules/document-slots/documentSlots.routes.js";
+import customerDocumentsRoutes from "../modules/customer-documents/customerDocuments.routes.js";
 
 const router = express.Router();
 
@@ -48,5 +50,7 @@ router.use("/audit-logs", auditRoutes);
 router.use("/attendance", attendanceRoutes);
 router.use("/letters", letterRoutes);
 router.use("/salaries", salaryRoutes);
+router.use("/document-slots", documentSlotsRoutes);
+router.use("/customer-documents", customerDocumentsRoutes);
 
 export default router;

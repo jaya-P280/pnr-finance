@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "dev:client": "npm run dev --workspace=client",
-    "dev:server": "node server/server.js",
+    "dev:server": "node --watch server/server.js",
     "dev": "concurrently \"npm:dev:client\" \"npm:dev:server\"",
     "build:client": "npm run build --workspace=client",
     "build": "npm run build --workspace=client",

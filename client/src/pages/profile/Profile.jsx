@@ -16,6 +16,7 @@ import {
   FormControlLabel,
   IconButton,
   InputAdornment,
+  Tooltip,
 } from "@mui/material";
 import {
   Person as PersonIcon,
@@ -31,6 +32,7 @@ import {
   Visibility,
   VisibilityOff,
   Notifications as NotifIcon,
+  PhotoCamera as CameraIcon,
 } from "@mui/icons-material";
 import toast from "react-hot-toast";
 import useAuth from "../../hooks/useAuth";
@@ -41,6 +43,25 @@ export default function Profile() {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
+
+  // Profile Photo Edit State
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose a valid image file (JPEG, PNG, WebP).");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image file size must be less than 5MB.");
+      return;
+    }
+    setSelectedFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+  };
 
   // Profile Edit State
   const firstName = user?.firstName || user?.first_name || "";
@@ -78,15 +99,38 @@ export default function Profile() {
     if (!form.firstName.trim()) return toast.error("First name is required.");
     setSaving(true);
     try {
-      const updated = await authService.updateProfile(form);
-      setUser({ ...user, ...updated });
+      let updatedUser = await authService.updateProfile(form);
+
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append("profileImage", selectedFile);
+        const imageRes = await authService.uploadProfileImage(formData);
+        if (imageRes) {
+          updatedUser = { ...updatedUser, ...imageRes };
+        }
+      }
+
+      setUser({ ...user, ...updatedUser });
       setEditing(false);
-      toast.success("Profile updated successfully.");
+      setSelectedFile(null);
+      setPreviewUrl(null);
+      toast.success("Profile and photo updated successfully.");
     } catch (error) {
       toast.error(error?.response?.data?.message || "Unable to update profile.");
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleCancelEdit = () => {
+    setEditing(false);
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setForm({
+      firstName,
+      lastName,
+      mobileNumber: user?.mobileNumber || user?.phone || user?.mobile_number || "",
+    });
   };
 
   const handleChangePassword = async (e) => {
@@ -129,22 +173,75 @@ export default function Profile() {
       >
         <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ alignItems: "center" }}>
-            <Avatar
-              src={user?.profileImage || user?.profile_image || ""}
-              alt={displayName}
-              sx={{
-                width: 96,
-                height: 96,
-                fontSize: "2.4rem",
-                bgcolor: "#FFFFFF",
-                color: "#0F766E",
-                fontWeight: 800,
-                boxShadow: "0 6px 16px rgba(0,0,0,0.18)",
-                border: "3px solid rgba(255, 255, 255, 0.4)",
-              }}
-            >
-              {initials}
-            </Avatar>
+            <Box sx={{ position: "relative", display: "inline-block", textAlign: "center" }}>
+              <Avatar
+                src={previewUrl || user?.profileImage || user?.profile_image || ""}
+                alt={displayName}
+                sx={{
+                  width: 104,
+                  height: 104,
+                  fontSize: "2.4rem",
+                  bgcolor: "#FFFFFF",
+                  color: "#0F766E",
+                  fontWeight: 800,
+                  boxShadow: "0 6px 16px rgba(0,0,0,0.18)",
+                  border: "3px solid rgba(255, 255, 255, 0.6)",
+                }}
+              >
+                {initials}
+              </Avatar>
+
+              {editing && (
+                <>
+                  <input
+                    type="file"
+                    id="profile-avatar-upload"
+                    accept="image/png, image/jpeg, image/jpg, image/webp"
+                    style={{ display: "none" }}
+                    onChange={handleFileChange}
+                  />
+                  <label htmlFor="profile-avatar-upload">
+                    <Tooltip title="Upload New Profile Picture">
+                      <IconButton
+                        component="span"
+                        size="small"
+                        sx={{
+                          position: "absolute",
+                          bottom: 0,
+                          right: 0,
+                          bgcolor: "#0284C7",
+                          color: "#FFFFFF",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.35)",
+                          border: "2px solid #FFFFFF",
+                          "&:hover": { bgcolor: "#0369A1" },
+                          width: 36,
+                          height: 36,
+                        }}
+                      >
+                        <CameraIcon sx={{ fontSize: 20 }} />
+                      </IconButton>
+                    </Tooltip>
+                  </label>
+                </>
+              )}
+              {editing && selectedFile && (
+                <Typography
+                  variant="caption"
+                  sx={{
+                    display: "block",
+                    mt: 0.5,
+                    maxWidth: 120,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    color: "#E0F2FE",
+                    fontWeight: 600,
+                  }}
+                >
+                  {selectedFile.name}
+                </Typography>
+              )}
+            </Box>
 
             <Box sx={{ textAlign: { xs: "center", sm: "left" }, flexGrow: 1 }}>
               <Stack direction="row" spacing={1.5} sx={{ justifyContent: { xs: "center", sm: "flex-start" }, alignItems: "center", mb: 0.5 }}>
@@ -186,7 +283,7 @@ export default function Profile() {
             <Button
               variant="contained"
               startIcon={editing ? <CancelIcon /> : <EditIcon />}
-              onClick={() => setEditing(!editing)}
+              onClick={() => (editing ? handleCancelEdit() : setEditing(true))}
               disabled={saving}
               sx={{
                 bgcolor: editing ? "#EF4444" : "#FFFFFF",

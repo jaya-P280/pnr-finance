@@ -94,8 +94,17 @@ class AuthController {
 
   updateProfile = asyncHandler(async (req, res) => {
     const user = await authService.updateProfile(req.user.user_id, req.body);
-    user.profile_image = getFullImageUrl(req, user.profile_image, "users");
+    user.profile_image = getFullImageUrl(req, user.profile_image, "profiles");
     return res.status(200).json(new ApiResponse(200, "Profile updated", user));
+  });
+
+  uploadProfileImage = asyncHandler(async (req, res) => {
+    if (!req.file) {
+      throw new ApiError(400, "Please select an image file to upload.");
+    }
+    const user = await authService.updateProfileImage(req.user.user_id, req.file.filename);
+    user.profile_image = getFullImageUrl(req, user.profile_image, "profiles");
+    return res.status(200).json(new ApiResponse(200, "Profile image updated successfully.", user));
   });
 }
 

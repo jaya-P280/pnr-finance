@@ -34,6 +34,11 @@ class AuthService {
     const response = await authApi.updateProfile(payload);
     return response.data.data;
   }
+
+  async uploadProfileImage(formData) {
+    const response = await authApi.uploadProfileImage(formData);
+    return response.data.data;
+  }
 }
 
 export default new AuthService();

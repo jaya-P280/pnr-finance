@@ -208,6 +208,12 @@ class AuthService {
     return user;
   }
 
+  async updateProfileImage(userId, filename) {
+    const user = await authRepository.updateProfileImage(userId, filename);
+    if (!user) throw new ApiError(404, "User not found.");
+    return user;
+  }
+
   async refresh(refreshToken) {
     if (!refreshToken) throw new ApiError(401, "Refresh token required");
     const payload = tokenService.verifyRefreshToken(refreshToken);

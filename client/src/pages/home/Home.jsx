@@ -28,6 +28,12 @@ import {
   Select,
   FormControl,
   InputLabel,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
 } from "@mui/material";
 import {
   Home as HomeIcon,
@@ -55,6 +61,7 @@ import {
   SupportAgent as SupportIcon,
   PlayCircle as PlayIcon,
   AutoAwesome as SparklesIcon,
+  Menu as MenuIcon,
 } from "@mui/icons-material";
 import useAuth from "../../hooks/useAuth";
 
@@ -69,6 +76,17 @@ export default function Home() {
   const [loanAmount, setLoanAmount] = useState(150000);
   const [tenureMonths, setTenureMonths] = useState(24);
   const [interestRate, setInterestRate] = useState(11.5);
+
+  // Mobile Drawer State
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+
+  const scrollToSection = (id) => {
+    setMobileDrawerOpen(false);
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+  };
 
   // Quick Hero Apply State
   const [quickLoanType, setQuickLoanType] = useState("BUSINESS");
@@ -221,9 +239,10 @@ export default function Home() {
   ];
 
   return (
-    <Box sx={{ bgcolor: "#F8FAFC", minHeight: "100vh", color: "#0F172A", width: "100%", overflowX: "hidden" }}>
+    <Box sx={{ bgcolor: "#F8FAFC", minHeight: "100vh", color: "#0F172A", width: "100%", boxSizing: "border-box" }}>
       {/* 1. FULL-WIDTH GLASSMORPHIC HEADER NAVBAR */}
       <Box
+        component="header"
         sx={{
           bgcolor: "rgba(255, 255, 255, 0.95)",
           backdropFilter: "blur(12px)",
@@ -233,65 +252,89 @@ export default function Home() {
           zIndex: 1100,
           boxShadow: "0 4px 20px rgba(0,0,0,0.04)",
           width: "100%",
+          boxSizing: "border-box",
         }}
       >
-        <Box sx={{ px: { xs: 2, sm: 4, md: 6, lg: 8 }, py: 1.8 }}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between">
-            {/* Brand Logo */}
-            <Stack direction="row" alignItems="center" spacing={1.8} sx={{ cursor: "pointer" }} onClick={() => navigate("/")}>
-              <Box
-                sx={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 3,
-                  background: "linear-gradient(135deg, #0F766E 0%, #0D655E 50%, #F97316 100%)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#FFFFFF",
-                  fontWeight: 900,
-                  fontSize: "1.35rem",
-                  boxShadow: "0 6px 16px rgba(15, 118, 110, 0.3)",
-                }}
-              >
-                P
-              </Box>
-              <Box>
-                <Typography variant="h6" fontWeight={900} letterSpacing={-0.5} sx={{ color: "#0F172A", lineHeight: 1.1, fontSize: "1.25rem" }}>
-                  PNRG <span style={{ color: "#0F766E" }}>FINANCE</span>
-                </Typography>
-                <Typography variant="caption" color="#64748B" fontWeight={700} letterSpacing={0.8}>
-                  MICROFINANCE & CREDIT ERP
-                </Typography>
-              </Box>
+        <Box sx={{ px: { xs: 1.5, sm: 2.5, md: 5, lg: 8 }, py: { xs: 1, sm: 1.5 } }}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+            {/* Left: Mobile Menu Toggle & Brand Logo */}
+            <Stack direction="row" alignItems="center" spacing={{ xs: 0.5, sm: 1.5 }}>
+              {isMobile && (
+                <IconButton
+                  onClick={() => setMobileDrawerOpen(true)}
+                  aria-label="open navigation menu"
+                  sx={{ color: "#0F766E", p: { xs: 0.5, sm: 1 } }}
+                >
+                  <MenuIcon fontSize="medium" />
+                </IconButton>
+              )}
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ cursor: "pointer" }} onClick={() => navigate("/")}>
+                <Box
+                  sx={{
+                    width: { xs: 34, sm: 42 },
+                    height: { xs: 34, sm: 42 },
+                    borderRadius: 2,
+                    background: "linear-gradient(135deg, #0F766E 0%, #0D655E 50%, #F97316 100%)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#FFFFFF",
+                    fontWeight: 900,
+                    fontSize: { xs: "1.05rem", sm: "1.3rem" },
+                    boxShadow: "0 4px 12px rgba(15, 118, 110, 0.3)",
+                    flexShrink: 0,
+                  }}
+                >
+                  P
+                </Box>
+                <Box>
+                  <Typography
+                    variant="h6"
+                    fontWeight={900}
+                    letterSpacing={-0.5}
+                    sx={{ color: "#0F172A", lineHeight: 1.1, fontSize: { xs: "0.95rem", sm: "1.2rem" }, whiteSpace: "nowrap" }}
+                  >
+                    PNRG <span style={{ color: "#0F766E" }}>FINANCE</span>
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    color="#64748B"
+                    fontWeight={700}
+                    letterSpacing={0.6}
+                    sx={{ display: { xs: "none", sm: "block" }, fontSize: "0.68rem" }}
+                  >
+                    MICROFINANCE & CREDIT ERP
+                  </Typography>
+                </Box>
+              </Stack>
             </Stack>
 
             {/* Laptop Navigation Links */}
             {!isMobile && (
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Button startIcon={<HomeIcon />} sx={{ bgcolor: "#F0F9FF", color: "#0369A1", fontWeight: 700, borderRadius: 3, px: 2.5, textTransform: "none" }}>
+              <Stack direction="row" spacing={0.5} alignItems="center">
+                <Button startIcon={<HomeIcon />} sx={{ bgcolor: "#F0F9FF", color: "#0369A1", fontWeight: 700, borderRadius: 3, px: 1.8, textTransform: "none" }}>
                   Home
                 </Button>
-                <Button onClick={() => document.getElementById("loan-products")?.scrollIntoView({ behavior: "smooth" })} sx={{ color: "#475569", fontWeight: 600, px: 2, textTransform: "none", "&:hover": { bgcolor: "#F1F5F9" } }}>
+                <Button onClick={() => scrollToSection("loan-products")} sx={{ color: "#475569", fontWeight: 600, px: 1.3, textTransform: "none", "&:hover": { bgcolor: "#F1F5F9" } }}>
                   Loan Schemes
                 </Button>
-                <Button onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })} sx={{ color: "#475569", fontWeight: 600, px: 2, textTransform: "none", "&:hover": { bgcolor: "#F1F5F9" } }}>
+                <Button onClick={() => scrollToSection("how-it-works")} sx={{ color: "#475569", fontWeight: 600, px: 1.3, textTransform: "none", "&:hover": { bgcolor: "#F1F5F9" } }}>
                   How It Works
                 </Button>
-                <Button onClick={() => setEmiModalOpen(true)} startIcon={<CalculateIcon />} sx={{ color: "#F97316", fontWeight: 700, px: 2, textTransform: "none", "&:hover": { bgcolor: "#FFF7ED" } }}>
+                <Button onClick={() => setEmiModalOpen(true)} startIcon={<CalculateIcon />} sx={{ color: "#F97316", fontWeight: 700, px: 1.3, textTransform: "none", "&:hover": { bgcolor: "#FFF7ED" } }}>
                   EMI Calculator
                 </Button>
-                <Button onClick={() => document.getElementById("why-us")?.scrollIntoView({ behavior: "smooth" })} sx={{ color: "#475569", fontWeight: 600, px: 2, textTransform: "none", "&:hover": { bgcolor: "#F1F5F9" } }}>
+                <Button onClick={() => scrollToSection("why-us")} sx={{ color: "#475569", fontWeight: 600, px: 1.3, textTransform: "none", "&:hover": { bgcolor: "#F1F5F9" } }}>
                   Why PNRG
                 </Button>
-                <Button onClick={() => document.getElementById("contact-section")?.scrollIntoView({ behavior: "smooth" })} sx={{ color: "#475569", fontWeight: 600, px: 2, textTransform: "none", "&:hover": { bgcolor: "#F1F5F9" } }}>
+                <Button onClick={() => scrollToSection("contact-section")} sx={{ color: "#475569", fontWeight: 600, px: 1.3, textTransform: "none", "&:hover": { bgcolor: "#F1F5F9" } }}>
                   Contact HQ
                 </Button>
               </Stack>
             )}
 
             {/* Header Right Action Buttons */}
-            <Stack direction="row" spacing={1.5} alignItems="center">
+            <Stack direction="row" spacing={{ xs: 0.8, sm: 1.2 }} alignItems="center">
               {isAuthenticated ? (
                 <Button
                   variant="contained"
@@ -299,51 +342,59 @@ export default function Home() {
                   onClick={() => navigate("/dashboard")}
                   sx={{
                     background: "linear-gradient(135deg, #0F766E 0%, #0D655E 100%)",
-                    borderRadius: 3,
-                    px: 3,
-                    py: 1.1,
+                    borderRadius: 2.5,
+                    px: { xs: 1.5, sm: 2.5 },
+                    py: { xs: 0.7, sm: 0.9 },
                     fontWeight: 700,
+                    fontSize: { xs: "0.8rem", sm: "0.92rem" },
                     textTransform: "none",
                     boxShadow: "0 4px 14px rgba(15, 118, 110, 0.35)",
+                    whiteSpace: "nowrap",
                   }}
                 >
-                  Go to Dashboard
+                  Dashboard
                 </Button>
               ) : (
                 <>
                   <Button
                     variant="outlined"
-                    startIcon={<LoginIcon />}
+                    startIcon={<LoginIcon sx={{ fontSize: { xs: 16, sm: 20 } }} />}
                     onClick={() => navigate("/login")}
                     sx={{
                       borderColor: "#0F766E",
                       color: "#0F766E",
-                      borderRadius: 3,
-                      px: 2.8,
-                      py: 1,
+                      borderRadius: 2.5,
+                      px: { xs: 1.2, sm: 2.2 },
+                      py: { xs: 0.6, sm: 0.8 },
                       fontWeight: 700,
+                      fontSize: { xs: "0.78rem", sm: "0.9rem" },
                       textTransform: "none",
+                      whiteSpace: "nowrap",
                       "&:hover": { borderColor: "#0D655E", bgcolor: "#F0F9FF" },
                     }}
                   >
                     Login
                   </Button>
-                  <Button
-                    variant="contained"
-                    startIcon={<PersonAddIcon />}
-                    onClick={() => navigate("/register")}
-                    sx={{
-                      background: "linear-gradient(135deg, #0F766E 0%, #0D655E 100%)",
-                      borderRadius: 3,
-                      px: 3,
-                      py: 1,
-                      fontWeight: 700,
-                      textTransform: "none",
-                      boxShadow: "0 4px 14px rgba(15, 118, 110, 0.35)",
-                    }}
-                  >
-                    Register
-                  </Button>
+                  {!isMobile && (
+                    <Button
+                      variant="contained"
+                      startIcon={<PersonAddIcon />}
+                      onClick={() => navigate("/register")}
+                      sx={{
+                        background: "linear-gradient(135deg, #0F766E 0%, #0D655E 100%)",
+                        borderRadius: 2.5,
+                        px: 2.5,
+                        py: 0.8,
+                        fontWeight: 700,
+                        fontSize: "0.9rem",
+                        textTransform: "none",
+                        boxShadow: "0 4px 14px rgba(15, 118, 110, 0.35)",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      Register
+                    </Button>
+                  )}
                 </>
               )}
             </Stack>
@@ -351,17 +402,200 @@ export default function Home() {
         </Box>
       </Box>
 
+      {/* MOBILE SLIDE-OUT NAVIGATION DRAWER */}
+      <Drawer
+        anchor="left"
+        open={mobileDrawerOpen}
+        onClose={() => setMobileDrawerOpen(false)}
+        sx={{
+          "& .MuiDrawer-paper": {
+            width: 290,
+            bgcolor: "#FFFFFF",
+            p: 2.5,
+            boxSizing: "border-box",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+          },
+        }}
+      >
+        <Box>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ pb: 2, mb: 1, borderBottom: "1px solid #E2E8F0" }}>
+            <Stack direction="row" alignItems="center" spacing={1.5}>
+              <Box
+                sx={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 2,
+                  background: "linear-gradient(135deg, #0F766E 0%, #F97316 100%)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#FFFFFF",
+                  fontWeight: 900,
+                }}
+              >
+                P
+              </Box>
+              <Box>
+                <Typography variant="subtitle1" fontWeight={900} color="#0F172A" lineHeight={1.1}>
+                  PNRG FINANCE
+                </Typography>
+                <Typography variant="caption" color="#64748B" fontWeight={700}>
+                  MICROFINANCE ERP
+                </Typography>
+              </Box>
+            </Stack>
+            <IconButton size="small" onClick={() => setMobileDrawerOpen(false)}>
+              <CloseIcon />
+            </IconButton>
+          </Stack>
+
+          <List sx={{ pt: 1 }}>
+            <ListItem disablePadding sx={{ mb: 0.5 }}>
+              <ListItemButton
+                onClick={() => {
+                  setMobileDrawerOpen(false);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                sx={{ borderRadius: 2, "&:hover": { bgcolor: "#F0FDF4" } }}
+              >
+                <ListItemIcon sx={{ minWidth: 38, color: "#0F766E" }}>
+                  <HomeIcon />
+                </ListItemIcon>
+                <ListItemText primary="Home" primaryTypographyProps={{ fontWeight: 700, fontSize: "0.95rem" }} />
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem disablePadding sx={{ mb: 0.5 }}>
+              <ListItemButton onClick={() => scrollToSection("loan-products")} sx={{ borderRadius: 2, "&:hover": { bgcolor: "#F0FDF4" } }}>
+                <ListItemIcon sx={{ minWidth: 38, color: "#0F766E" }}>
+                  <BankIcon />
+                </ListItemIcon>
+                <ListItemText primary="Loan Schemes" primaryTypographyProps={{ fontWeight: 700, fontSize: "0.95rem" }} />
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem disablePadding sx={{ mb: 0.5 }}>
+              <ListItemButton onClick={() => scrollToSection("how-it-works")} sx={{ borderRadius: 2, "&:hover": { bgcolor: "#F0FDF4" } }}>
+                <ListItemIcon sx={{ minWidth: 38, color: "#0F766E" }}>
+                  <SpeedIcon />
+                </ListItemIcon>
+                <ListItemText primary="How It Works" primaryTypographyProps={{ fontWeight: 700, fontSize: "0.95rem" }} />
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem disablePadding sx={{ mb: 0.5 }}>
+              <ListItemButton
+                onClick={() => {
+                  setMobileDrawerOpen(false);
+                  setEmiModalOpen(true);
+                }}
+                sx={{ borderRadius: 2, "&:hover": { bgcolor: "#FFF7ED" } }}
+              >
+                <ListItemIcon sx={{ minWidth: 38, color: "#F97316" }}>
+                  <CalculateIcon />
+                </ListItemIcon>
+                <ListItemText primary="EMI Calculator" primaryTypographyProps={{ fontWeight: 700, fontSize: "0.95rem", color: "#EA580C" }} />
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem disablePadding sx={{ mb: 0.5 }}>
+              <ListItemButton onClick={() => scrollToSection("why-us")} sx={{ borderRadius: 2, "&:hover": { bgcolor: "#F0FDF4" } }}>
+                <ListItemIcon sx={{ minWidth: 38, color: "#0F766E" }}>
+                  <ShieldIcon />
+                </ListItemIcon>
+                <ListItemText primary="Why PNRG" primaryTypographyProps={{ fontWeight: 700, fontSize: "0.95rem" }} />
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem disablePadding sx={{ mb: 0.5 }}>
+              <ListItemButton onClick={() => scrollToSection("contact-section")} sx={{ borderRadius: 2, "&:hover": { bgcolor: "#F0FDF4" } }}>
+                <ListItemIcon sx={{ minWidth: 38, color: "#0F766E" }}>
+                  <PhoneIcon />
+                </ListItemIcon>
+                <ListItemText primary="Contact HQ" primaryTypographyProps={{ fontWeight: 700, fontSize: "0.95rem" }} />
+              </ListItemButton>
+            </ListItem>
+          </List>
+        </Box>
+
+        <Box sx={{ pt: 2, borderTop: "1px solid #E2E8F0" }}>
+          {isAuthenticated ? (
+            <Button
+              fullWidth
+              variant="contained"
+              startIcon={<DashboardIcon />}
+              onClick={() => {
+                setMobileDrawerOpen(false);
+                navigate("/dashboard");
+              }}
+              sx={{
+                background: "linear-gradient(135deg, #0F766E 0%, #0D655E 100%)",
+                borderRadius: 2.5,
+                py: 1.2,
+                fontWeight: 700,
+                textTransform: "none",
+              }}
+            >
+              Go to Dashboard
+            </Button>
+          ) : (
+            <Stack spacing={1.5}>
+              <Button
+                fullWidth
+                variant="outlined"
+                startIcon={<LoginIcon />}
+                onClick={() => {
+                  setMobileDrawerOpen(false);
+                  navigate("/login");
+                }}
+                sx={{
+                  borderColor: "#0F766E",
+                  color: "#0F766E",
+                  borderRadius: 2.5,
+                  py: 1.1,
+                  fontWeight: 700,
+                  textTransform: "none",
+                }}
+              >
+                Customer / Staff Login
+              </Button>
+              <Button
+                fullWidth
+                variant="contained"
+                startIcon={<PersonAddIcon />}
+                onClick={() => {
+                  setMobileDrawerOpen(false);
+                  navigate("/register");
+                }}
+                sx={{
+                  background: "linear-gradient(135deg, #0F766E 0%, #0D655E 100%)",
+                  borderRadius: 2.5,
+                  py: 1.1,
+                  fontWeight: 700,
+                  textTransform: "none",
+                }}
+              >
+                New Registration (eKYC)
+              </Button>
+            </Stack>
+          )}
+        </Box>
+      </Drawer>
+
       {/* 2. FULL-SCREEN LAPTOP HERO BANNER (Full Width Laptop Display) */}
       <Box
         sx={{
           background: "linear-gradient(135deg, #064E3B 0%, #0F766E 40%, #0F172A 100%)",
           color: "#FFFFFF",
-          pt: { xs: 6, md: 8 },
-          pb: { xs: 8, md: 10 },
-          px: { xs: 2, sm: 4, md: 6, lg: 8 },
+          pt: { xs: 3.5, sm: 5, md: 7 },
+          pb: { xs: 5, sm: 7, md: 9 },
+          px: { xs: 2, sm: 3, md: 5, lg: 8 },
           position: "relative",
           overflow: "hidden",
           width: "100%",
+          boxSizing: "border-box",
         }}
       >
         {/* Background Mesh Orbs */}
@@ -370,8 +604,8 @@ export default function Home() {
             position: "absolute",
             top: "-15%",
             right: "-5%",
-            width: 550,
-            height: 550,
+            width: { xs: 280, sm: 400, md: 550 },
+            height: { xs: 280, sm: 400, md: 550 },
             borderRadius: "50%",
             background: "radial-gradient(circle, rgba(16, 185, 129, 0.25) 0%, rgba(0,0,0,0) 70%)",
             pointerEvents: "none",
@@ -382,70 +616,89 @@ export default function Home() {
             position: "absolute",
             bottom: "-20%",
             left: "-5%",
-            width: 650,
-            height: 650,
+            width: { xs: 300, sm: 450, md: 650 },
+            height: { xs: 300, sm: 450, md: 650 },
             borderRadius: "50%",
             background: "radial-gradient(circle, rgba(249, 115, 22, 0.2) 0%, rgba(0,0,0,0) 70%)",
             pointerEvents: "none",
           }}
         />
 
-        <Grid container spacing={5} alignItems="center" sx={{ maxWidth: 1600, mx: "auto" }}>
+        <Grid container spacing={{ xs: 2.5, sm: 3, md: 4, lg: 5 }} alignItems="center" sx={{ maxWidth: 1600, mx: "auto" }}>
           {/* Left Column: Hero Copy & Actions */}
-          <Grid item xs={12} lg={7}>
-            <Stack spacing={3}>
+          <Grid item xs={12} md={7}>
+            <Stack spacing={2.5}>
               <Box>
                 <Chip
-                  icon={<SparklesIcon sx={{ color: "#F97316 !important", fontSize: "16px !important" }} />}
+                  icon={<SparklesIcon sx={{ color: "#F97316 !important", fontSize: "15px !important" }} />}
                   label="INSTANT MICROFINANCE & DIGITAL CREDIT PLATFORM"
+                  size="small"
                   sx={{
                     bgcolor: "rgba(255, 255, 255, 0.12)",
                     backdropFilter: "blur(10px)",
                     color: "#FFFFFF",
                     fontWeight: 800,
-                    px: 1,
-                    py: 0.5,
+                    px: 0.8,
+                    py: 0.3,
                     border: "1px solid rgba(255,255,255,0.2)",
-                    fontSize: "0.8rem",
+                    fontSize: { xs: "0.68rem", sm: "0.78rem" },
                   }}
                 />
               </Box>
 
               <Typography
-                variant={isMobile ? "h4" : "h2"}
+                variant="h2"
                 fontWeight={900}
                 letterSpacing={-1}
-                sx={{ lineHeight: 1.15, textShadow: "0 4px 20px rgba(0,0,0,0.2)" }}
+                sx={{
+                  fontSize: { xs: "1.65rem", sm: "2.1rem", md: "2.75rem", lg: "3.25rem" },
+                  lineHeight: 1.18,
+                  textShadow: "0 4px 20px rgba(0,0,0,0.2)",
+                }}
               >
                 Fast, Fair & Empowering Financial Solutions for Everyone.
               </Typography>
 
-              <Typography variant="h6" fontWeight={400} sx={{ opacity: 0.9, lineHeight: 1.6, maxWidth: 700 }}>
+              <Typography
+                variant="h6"
+                fontWeight={400}
+                sx={{
+                  opacity: 0.9,
+                  lineHeight: 1.6,
+                  fontSize: { xs: "0.85rem", sm: "0.98rem" },
+                  maxWidth: 700,
+                }}
+              >
                 Access instant business loans, Mahila SHG group financing, education credit, and personal microfinance with <b>100% digital eKYC verification</b> and rapid 24-hour disbursal.
               </Typography>
 
               {/* Floating Feature Pills */}
-              <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", gap: 1 }}>
-                <Chip icon={<VerifiedIcon sx={{ color: "#34D399 !important" }} />} label="Zero Collateral Loans" sx={{ bgcolor: "rgba(255,255,255,0.1)", color: "#FFFFFF", fontWeight: 700 }} />
-                <Chip icon={<SpeedIcon sx={{ color: "#34D399 !important" }} />} label="Disbursal in 60 Mins" sx={{ bgcolor: "rgba(255,255,255,0.1)", color: "#FFFFFF", fontWeight: 700 }} />
-                <Chip icon={<ShieldIcon sx={{ color: "#34D399 !important" }} />} label="Aadhaar/PAN Verified" sx={{ bgcolor: "rgba(255,255,255,0.1)", color: "#FFFFFF", fontWeight: 700 }} />
-              </Stack>
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                <Chip icon={<VerifiedIcon sx={{ color: "#34D399 !important" }} />} label="Zero Collateral Loans" size="small" sx={{ bgcolor: "rgba(255,255,255,0.12)", color: "#FFFFFF", fontWeight: 700, fontSize: { xs: "0.72rem", sm: "0.8rem" } }} />
+                <Chip icon={<SpeedIcon sx={{ color: "#34D399 !important" }} />} label="Disbursal in 60 Mins" size="small" sx={{ bgcolor: "rgba(255,255,255,0.12)", color: "#FFFFFF", fontWeight: 700, fontSize: { xs: "0.72rem", sm: "0.8rem" } }} />
+                <Chip icon={<ShieldIcon sx={{ color: "#34D399 !important" }} />} label="Aadhaar/PAN Verified" size="small" sx={{ bgcolor: "rgba(255,255,255,0.12)", color: "#FFFFFF", fontWeight: 700, fontSize: { xs: "0.72rem", sm: "0.8rem" } }} />
+              </Box>
 
               {/* Action Buttons */}
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={2.5} sx={{ pt: 2 }}>
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                spacing={{ xs: 1.5, sm: 2 }}
+                sx={{ pt: { xs: 1, sm: 2 }, width: { xs: "100%", sm: "auto" } }}
+              >
                 <Button
                   variant="contained"
                   size="large"
                   endIcon={<ArrowForwardIcon />}
                   onClick={() => navigate(isAuthenticated ? "/customer/apply-loan" : "/register")}
                   sx={{
+                    width: { xs: "100%", sm: "auto" },
                     background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
                     color: "#FFFFFF",
                     fontWeight: 900,
-                    borderRadius: 4,
-                    px: 4,
-                    py: 1.8,
-                    fontSize: "1.05rem",
+                    borderRadius: 3.5,
+                    px: { xs: 2.5, sm: 3.5, md: 4 },
+                    py: { xs: 1.3, sm: 1.5, md: 1.6 },
+                    fontSize: { xs: "0.92rem", sm: "1rem" },
                     textTransform: "none",
                     boxShadow: "0 8px 25px rgba(16, 185, 129, 0.4)",
                     "&:hover": { background: "linear-gradient(135deg, #059669 0%, #047857 100%)" },
@@ -460,13 +713,14 @@ export default function Home() {
                   startIcon={<CalculateIcon />}
                   onClick={() => setEmiModalOpen(true)}
                   sx={{
+                    width: { xs: "100%", sm: "auto" },
                     background: "linear-gradient(135deg, #F97316 0%, #EA580C 100%)",
                     color: "#FFFFFF",
                     fontWeight: 900,
-                    borderRadius: 4,
-                    px: 4,
-                    py: 1.8,
-                    fontSize: "1.05rem",
+                    borderRadius: 3.5,
+                    px: { xs: 2.5, sm: 3.5, md: 4 },
+                    py: { xs: 1.3, sm: 1.5, md: 1.6 },
+                    fontSize: { xs: "0.92rem", sm: "1rem" },
                     textTransform: "none",
                     boxShadow: "0 8px 25px rgba(249, 115, 22, 0.4)",
                     "&:hover": { background: "linear-gradient(135deg, #EA580C 0%, #C2410C 100%)" },
@@ -479,22 +733,24 @@ export default function Home() {
           </Grid>
 
           {/* Right Column: Hero Quick Apply & EMI Estimator Widget */}
-          <Grid item xs={12} lg={5}>
+          <Grid item xs={12} md={5}>
             <Paper
               elevation={0}
               sx={{
-                p: 3.5,
-                borderRadius: 5,
-                background: "rgba(255, 255, 255, 0.95)",
+                p: { xs: 2, sm: 2.8, md: 3.5 },
+                borderRadius: { xs: 3, sm: 4, md: 5 },
+                background: "rgba(255, 255, 255, 0.96)",
                 backdropFilter: "blur(20px)",
                 color: "#0F172A",
                 boxShadow: "0 25px 50px rgba(0, 0, 0, 0.3)",
                 border: "1px solid rgba(255,255,255,0.8)",
+                boxSizing: "border-box",
+                width: "100%",
               }}
             >
-              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2.5 }}>
+              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
                 <Box>
-                  <Typography variant="h6" fontWeight={900} color="#0F172A">
+                  <Typography variant="h6" fontWeight={900} color="#0F172A" sx={{ fontSize: { xs: "1.05rem", sm: "1.25rem" } }}>
                     Quick Loan Estimator
                   </Typography>
                   <Typography variant="caption" color="#64748B">
@@ -504,7 +760,7 @@ export default function Home() {
                 <Chip label="Live Rate" color="success" size="small" sx={{ fontWeight: 800 }} />
               </Stack>
 
-              <Stack spacing={3}>
+              <Stack spacing={2.5}>
                 <Box>
                   <Typography variant="body2" fontWeight={700} color="#334155" gutterBottom>
                     Select Loan Category
@@ -542,17 +798,17 @@ export default function Home() {
                   />
                 </Box>
 
-                <Paper elevation={0} sx={{ p: 2.5, bgcolor: "#F0FDF4", borderRadius: 3, border: "1px solid #BBF7D0" }}>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Paper elevation={0} sx={{ p: { xs: 1.8, sm: 2.5 }, bgcolor: "#F0FDF4", borderRadius: 3, border: "1px solid #BBF7D0" }}>
+                  <Stack direction={{ xs: "column", sm: "row" }} spacing={1} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }}>
                     <Box>
                       <Typography variant="caption" color="#166534" fontWeight={800} display="block">
                         ESTIMATED MONTHLY EMI (24 MOS)
                       </Typography>
-                      <Typography variant="h5" fontWeight={900} color="#15803D">
+                      <Typography variant="h5" fontWeight={900} color="#15803D" sx={{ fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>
                         ₹{heroQuickEmi.toLocaleString("en-IN")} / mo
                       </Typography>
                     </Box>
-                    <Chip label="11% p.a." color="success" size="small" sx={{ fontWeight: 800 }} />
+                    <Chip label="11% p.a." color="success" size="small" sx={{ fontWeight: 800, alignSelf: { xs: "flex-start", sm: "center" } }} />
                   </Stack>
                 </Paper>
 
@@ -564,7 +820,7 @@ export default function Home() {
                   sx={{
                     background: "linear-gradient(135deg, #0F766E 0%, #0D655E 100%)",
                     borderRadius: 3,
-                    py: 1.5,
+                    py: 1.4,
                     fontWeight: 800,
                     textTransform: "none",
                     boxShadow: "0 4px 14px rgba(15, 118, 110, 0.4)",
@@ -579,53 +835,53 @@ export default function Home() {
       </Box>
 
       {/* 3. FULL-WIDTH IMPACT STATS TICKER STRIP */}
-      <Box sx={{ bgcolor: "#0F172A", color: "#FFFFFF", py: 3.5, borderTop: "1px solid #334155", borderBottom: "1px solid #334155", width: "100%" }}>
-        <Box sx={{ px: { xs: 2, sm: 4, md: 6, lg: 8 } }}>
-          <Grid container spacing={3} justifyContent="space-between" alignItems="center">
-            <Grid item xs={6} sm={3} lg={3}>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <Avatar sx={{ bgcolor: "rgba(16, 185, 129, 0.2)", color: "#34D399", width: 48, height: 48 }}>
-                  <BankIcon />
+      <Box id="why-us" sx={{ bgcolor: "#0F172A", color: "#FFFFFF", py: { xs: 2.5, sm: 3.5 }, borderTop: "1px solid #334155", borderBottom: "1px solid #334155", width: "100%", boxSizing: "border-box" }}>
+        <Box sx={{ px: { xs: 2, sm: 3, md: 5, lg: 8 }, maxWidth: 1600, mx: "auto" }}>
+          <Grid container spacing={{ xs: 2, sm: 2.5, md: 3 }} justifyContent="space-between" alignItems="center">
+            <Grid item xs={6} sm={6} md={3}>
+              <Stack direction="row" spacing={{ xs: 1, sm: 1.8 }} alignItems="center">
+                <Avatar sx={{ bgcolor: "rgba(16, 185, 129, 0.2)", color: "#34D399", width: { xs: 36, sm: 44 }, height: { xs: 36, sm: 44 } }}>
+                  <BankIcon sx={{ fontSize: { xs: 18, sm: 22 } }} />
                 </Avatar>
-                <Box>
-                  <Typography variant="h5" fontWeight={900}>100+ Branches</Typography>
-                  <Typography variant="caption" color="#94A3B8">Across Pan-India Network</Typography>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="h6" fontWeight={900} sx={{ fontSize: { xs: "0.88rem", sm: "1.05rem", md: "1.2rem" }, whiteSpace: "nowrap" }}>100+ Branches</Typography>
+                  <Typography variant="caption" color="#94A3B8" sx={{ fontSize: { xs: "0.65rem", sm: "0.72rem" }, display: "block" }}>Pan-India Network</Typography>
                 </Box>
               </Stack>
             </Grid>
 
-            <Grid item xs={6} sm={3} lg={3}>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <Avatar sx={{ bgcolor: "rgba(249, 115, 22, 0.2)", color: "#FB923C", width: 48, height: 48 }}>
-                  <TrendingUpIcon />
+            <Grid item xs={6} sm={6} md={3}>
+              <Stack direction="row" spacing={{ xs: 1, sm: 1.8 }} alignItems="center">
+                <Avatar sx={{ bgcolor: "rgba(249, 115, 22, 0.2)", color: "#FB923C", width: { xs: 36, sm: 44 }, height: { xs: 36, sm: 44 } }}>
+                  <TrendingUpIcon sx={{ fontSize: { xs: 18, sm: 22 } }} />
                 </Avatar>
-                <Box>
-                  <Typography variant="h5" fontWeight={900}>₹50 Cr+ Disbursed</Typography>
-                  <Typography variant="caption" color="#94A3B8">Total Credit Delivered</Typography>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="h6" fontWeight={900} sx={{ fontSize: { xs: "0.88rem", sm: "1.05rem", md: "1.2rem" }, whiteSpace: "nowrap" }}>₹50 Cr+ Disbursed</Typography>
+                  <Typography variant="caption" color="#94A3B8" sx={{ fontSize: { xs: "0.65rem", sm: "0.72rem" }, display: "block" }}>Total Credit Delivered</Typography>
                 </Box>
               </Stack>
             </Grid>
 
-            <Grid item xs={6} sm={3} lg={3}>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <Avatar sx={{ bgcolor: "rgba(14, 165, 233, 0.2)", color: "#38BDF8", width: 48, height: 48 }}>
-                  <GroupsIcon />
+            <Grid item xs={6} sm={6} md={3}>
+              <Stack direction="row" spacing={{ xs: 1, sm: 1.8 }} alignItems="center">
+                <Avatar sx={{ bgcolor: "rgba(14, 165, 233, 0.2)", color: "#38BDF8", width: { xs: 36, sm: 44 }, height: { xs: 36, sm: 44 } }}>
+                  <GroupsIcon sx={{ fontSize: { xs: 18, sm: 22 } }} />
                 </Avatar>
-                <Box>
-                  <Typography variant="h5" fontWeight={900}>25,000+ Borrowers</Typography>
-                  <Typography variant="caption" color="#94A3B8">Individuals & Women SHGs</Typography>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="h6" fontWeight={900} sx={{ fontSize: { xs: "0.88rem", sm: "1.05rem", md: "1.2rem" }, whiteSpace: "nowrap" }}>25,000+ Borrowers</Typography>
+                  <Typography variant="caption" color="#94A3B8" sx={{ fontSize: { xs: "0.65rem", sm: "0.72rem" }, display: "block" }}>Individuals & SHGs</Typography>
                 </Box>
               </Stack>
             </Grid>
 
-            <Grid item xs={6} sm={3} lg={3}>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <Avatar sx={{ bgcolor: "rgba(168, 85, 247, 0.2)", color: "#C084FC", width: 48, height: 48 }}>
-                  <SpeedIcon />
+            <Grid item xs={6} sm={6} md={3}>
+              <Stack direction="row" spacing={{ xs: 1, sm: 1.8 }} alignItems="center">
+                <Avatar sx={{ bgcolor: "rgba(168, 85, 247, 0.2)", color: "#C084FC", width: { xs: 36, sm: 44 }, height: { xs: 36, sm: 44 } }}>
+                  <SpeedIcon sx={{ fontSize: { xs: 18, sm: 22 } }} />
                 </Avatar>
-                <Box>
-                  <Typography variant="h5" fontWeight={900}>99.8% On-Time</Typography>
-                  <Typography variant="caption" color="#94A3B8">Collection Disbursal Accuracy</Typography>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="h6" fontWeight={900} sx={{ fontSize: { xs: "0.88rem", sm: "1.05rem", md: "1.2rem" }, whiteSpace: "nowrap" }}>99.8% On-Time</Typography>
+                  <Typography variant="caption" color="#94A3B8" sx={{ fontSize: { xs: "0.65rem", sm: "0.72rem" }, display: "block" }}>Collection Accuracy</Typography>
                 </Box>
               </Stack>
             </Grid>
@@ -634,18 +890,18 @@ export default function Home() {
       </Box>
 
       {/* 4. LOAN PRODUCTS CATALOG (Full-Width Laptop Screen View) */}
-      <Box id="loan-products" sx={{ py: 8, px: { xs: 2, sm: 4, md: 6, lg: 8 }, width: "100%" }}>
-        <Box sx={{ textAlign: "center", mb: 5 }}>
+      <Box id="loan-products" sx={{ py: { xs: 5, sm: 7, md: 8 }, px: { xs: 2, sm: 3, md: 5, lg: 8 }, width: "100%", boxSizing: "border-box" }}>
+        <Box sx={{ textAlign: "center", mb: { xs: 3.5, sm: 5 } }}>
           <Chip label="Tailored Credit Products" color="primary" size="small" sx={{ fontWeight: 800, mb: 1 }} />
-          <Typography variant="h3" fontWeight={900} color="#0F172A" gutterBottom>
+          <Typography variant="h3" fontWeight={900} color="#0F172A" sx={{ fontSize: { xs: "1.75rem", sm: "2.25rem", md: "2.8rem" } }} gutterBottom>
             Flexible Loan Schemes for Every Need
           </Typography>
-          <Typography variant="body1" color="#64748B" sx={{ maxWidth: 600, mx: "auto" }}>
+          <Typography variant="body1" color="#64748B" sx={{ maxWidth: 600, mx: "auto", fontSize: { xs: "0.9rem", sm: "1rem" } }}>
             Choose from transparent, low-interest microfinance loans with quick approval and doorstep service.
           </Typography>
 
           {/* Product Category Filter Tabs */}
-          <Stack direction="row" spacing={1} justifyContent="center" sx={{ mt: 3, flexWrap: "wrap", gap: 1 }}>
+          <Box sx={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 1, mt: 3 }}>
             {[
               { id: "ALL", label: "All Schemes" },
               { id: "BUSINESS", label: "Business & SME" },
@@ -657,11 +913,13 @@ export default function Home() {
                 key={cat.id}
                 variant={productCategory === cat.id ? "contained" : "outlined"}
                 onClick={() => setProductCategory(cat.id)}
+                size="small"
                 sx={{
                   borderRadius: 6,
-                  px: 3,
-                  py: 0.8,
+                  px: { xs: 2, sm: 2.8 },
+                  py: 0.7,
                   fontWeight: 700,
+                  fontSize: { xs: "0.8rem", sm: "0.875rem" },
                   textTransform: "none",
                   bgcolor: productCategory === cat.id ? "#0F766E" : "#FFFFFF",
                   borderColor: "#CBD5E1",
@@ -672,11 +930,11 @@ export default function Home() {
                 {cat.label}
               </Button>
             ))}
-          </Stack>
+          </Box>
         </Box>
 
         {/* 4-Column Laptop Grid Layout */}
-        <Grid container spacing={3.5} sx={{ maxWidth: 1600, mx: "auto" }}>
+        <Grid container spacing={{ xs: 2.5, sm: 3, md: 3.5 }} sx={{ maxWidth: 1600, mx: "auto" }}>
           {filteredProducts.map((product) => (
             <Grid item xs={12} sm={6} md={6} lg={3} key={product.id}>
               <Card
@@ -710,12 +968,12 @@ export default function Home() {
                     </Typography>
                   </Box>
 
-                  <CardContent sx={{ p: 2.8 }}>
-                    <Typography variant="body2" color="#64748B" sx={{ mb: 2.5, minHeight: 40 }}>
+                  <CardContent sx={{ p: 2.5 }}>
+                    <Typography variant="body2" color="#64748B" sx={{ mb: 2, minHeight: { xs: "auto", sm: 40 } }}>
                       {product.tagline}
                     </Typography>
 
-                    <Paper elevation={0} sx={{ p: 2, bgcolor: "#F8FAFC", borderRadius: 3, mb: 2.5, border: "1px solid #E2E8F0" }}>
+                    <Paper elevation={0} sx={{ p: 1.8, bgcolor: "#F8FAFC", borderRadius: 3, mb: 2, border: "1px solid #E2E8F0" }}>
                       <Stack spacing={1}>
                         <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                           <Typography variant="caption" color="#64748B" fontWeight={700}>AMOUNT RANGE</Typography>
@@ -771,24 +1029,24 @@ export default function Home() {
       </Box>
 
       {/* 5. WORKFLOW STEPS SECTION */}
-      <Box id="how-it-works" sx={{ bgcolor: "#FFFFFF", py: 8, px: { xs: 2, sm: 4, md: 6, lg: 8 }, borderTop: "1px solid #E2E8F0", borderBottom: "1px solid #E2E8F0", width: "100%" }}>
-        <Box sx={{ textAlign: "center", mb: 6 }}>
+      <Box id="how-it-works" sx={{ bgcolor: "#FFFFFF", py: { xs: 5, sm: 7, md: 8 }, px: { xs: 2, sm: 3, md: 5, lg: 8 }, borderTop: "1px solid #E2E8F0", borderBottom: "1px solid #E2E8F0", width: "100%", boxSizing: "border-box" }}>
+        <Box sx={{ textAlign: "center", mb: { xs: 4, sm: 6 } }}>
           <Chip label="Simple 4-Step Process" color="success" size="small" sx={{ fontWeight: 800, mb: 1 }} />
-          <Typography variant="h3" fontWeight={900} color="#0F172A" gutterBottom>
+          <Typography variant="h3" fontWeight={900} color="#0F172A" sx={{ fontSize: { xs: "1.75rem", sm: "2.25rem", md: "2.8rem" } }} gutterBottom>
             How PNRG Loan Disbursal Works
           </Typography>
-          <Typography variant="body1" color="#64748B">
+          <Typography variant="body1" color="#64748B" sx={{ fontSize: { xs: "0.9rem", sm: "1rem" } }}>
             From digital registration to doorstep loan disbursal in 4 simple steps
           </Typography>
         </Box>
 
-        <Grid container spacing={3} sx={{ maxWidth: 1600, mx: "auto" }}>
+        <Grid container spacing={{ xs: 2, sm: 2.5, md: 3 }} sx={{ maxWidth: 1600, mx: "auto" }}>
           {workflowSteps.map((ws, sIdx) => (
             <Grid item xs={12} sm={6} md={3} key={`ws-${sIdx}`}>
               <Paper
                 elevation={0}
                 sx={{
-                  p: 3.5,
+                  p: { xs: 2.5, sm: 3.5 },
                   borderRadius: 4,
                   border: "1px solid #E2E8F0",
                   height: "100%",
@@ -819,21 +1077,21 @@ export default function Home() {
       </Box>
 
       {/* 6. BORROWER TESTIMONIALS CAROUSEL */}
-      <Box sx={{ py: 8, px: { xs: 2, sm: 4, md: 6, lg: 8 }, width: "100%", bgcolor: "#F8FAFC" }}>
-        <Box sx={{ textAlign: "center", mb: 6 }}>
+      <Box sx={{ py: { xs: 5, sm: 7, md: 8 }, px: { xs: 2, sm: 3, md: 5, lg: 8 }, width: "100%", bgcolor: "#F8FAFC", boxSizing: "border-box" }}>
+        <Box sx={{ textAlign: "center", mb: { xs: 4, sm: 6 } }}>
           <Chip label="Real Borrower Stories" color="secondary" size="small" sx={{ fontWeight: 800, mb: 1 }} />
-          <Typography variant="h3" fontWeight={900} color="#0F172A" gutterBottom>
+          <Typography variant="h3" fontWeight={900} color="#0F172A" sx={{ fontSize: { xs: "1.75rem", sm: "2.25rem", md: "2.8rem" } }} gutterBottom>
             Trusted by Thousands Across India
           </Typography>
         </Box>
 
-        <Grid container spacing={3.5} sx={{ maxWidth: 1400, mx: "auto" }}>
+        <Grid container spacing={{ xs: 2.5, sm: 3, md: 3.5 }} sx={{ maxWidth: 1400, mx: "auto" }}>
           {testimonials.map((t, idx) => (
-            <Grid item xs={12} md={4} key={`test-${idx}`}>
+            <Grid item xs={12} sm={6} md={4} key={`test-${idx}`}>
               <Paper
                 elevation={0}
                 sx={{
-                  p: 3.5,
+                  p: { xs: 2.5, sm: 3.5 },
                   borderRadius: 4,
                   border: "1px solid #E2E8F0",
                   bgcolor: "#FFFFFF",
@@ -878,7 +1136,8 @@ export default function Home() {
         onClose={() => setEmiModalOpen(false)}
         maxWidth="md"
         fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 5, p: 2 } } }}
+        fullScreen={isMobile}
+        slotProps={{ paper: { sx: { borderRadius: isMobile ? 0 : 5, p: { xs: 1, sm: 2 } } } }}
       >
         <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <Stack direction="row" spacing={1.5} alignItems="center">
@@ -898,7 +1157,7 @@ export default function Home() {
         </DialogTitle>
 
         <DialogContent dividers sx={{ py: 3 }}>
-          <Grid container spacing={4}>
+          <Grid container spacing={{ xs: 2.5, sm: 3, md: 4 }}>
             <Grid item xs={12} md={7}>
               <Stack spacing={3}>
                 <Box>
@@ -951,7 +1210,7 @@ export default function Home() {
                   <Typography variant="caption" color="#166534" fontWeight={800} display="block" gutterBottom>
                     CALCULATED MONTHLY REPAYMENT
                   </Typography>
-                  <Typography variant="h3" fontWeight={900} color="#15803D" sx={{ mb: 2 }}>
+                  <Typography variant="h3" fontWeight={900} color="#15803D" sx={{ mb: 2, fontSize: { xs: "1.75rem", sm: "2.5rem" } }}>
                     ₹{monthlyEmi.toLocaleString("en-IN")}
                   </Typography>
                   <Divider sx={{ mb: 2 }} />
@@ -996,9 +1255,9 @@ export default function Home() {
       </Dialog>
 
       {/* 8. CONTACT HQ & RICH FOOTER */}
-      <Box id="contact-section" sx={{ bgcolor: "#0F172A", color: "#94A3B8", pt: 8, pb: 4, width: "100%" }}>
-        <Box sx={{ px: { xs: 2, sm: 4, md: 6, lg: 8 } }}>
-          <Grid container spacing={4} sx={{ mb: 6, maxWidth: 1600, mx: "auto" }}>
+      <Box id="contact-section" sx={{ bgcolor: "#0F172A", color: "#94A3B8", pt: { xs: 5, sm: 7, md: 8 }, pb: 4, width: "100%", boxSizing: "border-box" }}>
+        <Box sx={{ px: { xs: 2, sm: 3, md: 5, lg: 8 } }}>
+          <Grid container spacing={{ xs: 3, sm: 3.5, md: 4 }} sx={{ mb: 6, maxWidth: 1600, mx: "auto" }}>
             <Grid item xs={12} md={4}>
               <Stack direction="row" alignItems="center" spacing={1.8} sx={{ mb: 2 }}>
                 <Box

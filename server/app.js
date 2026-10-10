@@ -17,12 +17,28 @@ app.use(
   helmet({
     contentSecurityPolicy: false,
     crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginEmbedderPolicy: false,
+    frameguard: false,
   }),
 );
 
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
-app.use("/uploads", express.static(path.join(process.cwd(), "server", "uploads")));
-app.use("/uploads", express.static(path.join(process.cwd(), "server", "src", "uploads")));
+const uploadsOptions = {
+  setHeaders: (res) => {
+    res.removeHeader("X-Frame-Options");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+  },
+};
+
+const uploadsDir = path.join(process.cwd(), "uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+app.use("/uploads", express.static(uploadsDir, uploadsOptions));
+app.use("/uploads", express.static(path.join(process.cwd(), "server", "uploads"), uploadsOptions));
+app.use("/uploads", express.static(path.join(process.cwd(), "server", "src", "uploads"), uploadsOptions));
 
 app.use(
   cors({

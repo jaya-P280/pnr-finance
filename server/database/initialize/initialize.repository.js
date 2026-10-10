@@ -559,6 +559,46 @@ class InitializeRepository {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
       )`,
+
+      // --- DOCUMENT TYPES (DYNAMIC SLOTS CONFIGURABLE BY ADMIN) ---
+      `CREATE TABLE IF NOT EXISTS document_types (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        code VARCHAR(50) UNIQUE NOT NULL,
+        title VARCHAR(200) NOT NULL,
+        category VARCHAR(50) DEFAULT 'GENERAL',
+        description TEXT,
+        is_required_for_loan TINYINT(1) DEFAULT 0,
+        is_system TINYINT(1) DEFAULT 0,
+        status ENUM('ACTIVE', 'INACTIVE') DEFAULT 'ACTIVE',
+        created_by INT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE SET NULL
+      )`,
+
+      // --- CUSTOMER DOCUMENTS (UPLOADED FILES & APPROVALS) ---
+      `CREATE TABLE IF NOT EXISTS customer_documents (
+        document_id INT AUTO_INCREMENT PRIMARY KEY,
+        customer_id INT NOT NULL,
+        application_id INT NULL,
+        document_type_id INT NOT NULL,
+        document_type_code VARCHAR(50) NOT NULL,
+        document_title VARCHAR(200) NOT NULL,
+        file_url VARCHAR(500) NOT NULL,
+        file_name VARCHAR(255),
+        file_size INT,
+        mime_type VARCHAR(100),
+        status ENUM('PENDING', 'VERIFIED', 'REJECTED') DEFAULT 'PENDING',
+        verified_by INT NULL,
+        verified_at TIMESTAMP NULL,
+        rejection_reason TEXT NULL,
+        uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE,
+        FOREIGN KEY (application_id) REFERENCES loan_applications(application_id) ON DELETE SET NULL,
+        FOREIGN KEY (document_type_id) REFERENCES document_types(id) ON DELETE CASCADE,
+        FOREIGN KEY (verified_by) REFERENCES users(user_id) ON DELETE SET NULL
+      )`,
     ];
 
     let qIdx = 0;

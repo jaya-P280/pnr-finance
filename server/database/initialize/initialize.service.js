@@ -428,6 +428,65 @@ class InitializeService {
         logger.info(`Letters table has ${letterCount[0]?.total} records; sample seeding skipped.`);
       }
 
+      // ===== 15. Seed Default Document Slots/Types =====
+      const defaultDocTypes = [
+        {
+          code: "LOAN_AGREEMENT",
+          title: "Signed Loan Agreement Contract",
+          category: "LOAN_CONTRACT",
+          description: "Download, print, sign, and upload the signed agreement contract after loan approval.",
+          is_required_for_loan: 1,
+          is_system: 1,
+        },
+        {
+          code: "BANK_BOOK",
+          title: "Bank Passbook / Statement",
+          category: "BANKING",
+          description: "Upload front page of bank passbook or recent 3-month statement showing account number and IFSC.",
+          is_required_for_loan: 1,
+          is_system: 1,
+        },
+        {
+          code: "IDENTITY_PROOF",
+          title: "Identity Proof (Aadhaar / Voter ID / Passport)",
+          category: "IDENTITY",
+          description: "Government-issued photo identification proof.",
+          is_required_for_loan: 0,
+          is_system: 1,
+        },
+        {
+          code: "ADDRESS_PROOF",
+          title: "Address Proof (Electricity Bill / Ration Card)",
+          category: "RESIDENCE",
+          description: "Recent residential address proof document.",
+          is_required_for_loan: 0,
+          is_system: 1,
+        },
+        {
+          code: "INCOME_PROOF",
+          title: "Income / Business Proof (ITR / Pay Slip / Trade License)",
+          category: "INCOME",
+          description: "Proof of monthly income, business license, or salary slips.",
+          is_required_for_loan: 0,
+          is_system: 1,
+        },
+      ];
+
+      for (const dt of defaultDocTypes) {
+        const [existingDt] = await connection.execute(
+          `SELECT id FROM document_types WHERE code = ? LIMIT 1`,
+          [dt.code]
+        );
+        if (existingDt.length === 0) {
+          await connection.execute(
+            `INSERT INTO document_types (code, title, category, description, is_required_for_loan, is_system, status)
+             VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE')`,
+            [dt.code, dt.title, dt.category, dt.description, dt.is_required_for_loan, dt.is_system]
+          );
+        }
+      }
+      logger.info("Default Document Slots verified/seeded.");
+
       await repository.commit(connection);
       logger.info("Database initialization check completed cleanly.");
     } catch (error) {

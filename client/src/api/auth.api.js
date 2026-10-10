@@ -8,3 +8,7 @@ export const refresh = (refreshToken) => api.post(ENDPOINTS.AUTH.REFRESH, refres
 export const logout = (refreshToken) => api.post(ENDPOINTS.AUTH.LOGOUT, refreshToken ? { refreshToken } : {});
 export const getProfile = () => api.get(ENDPOINTS.AUTH.PROFILE);
 export const updateProfile = (data) => api.put(ENDPOINTS.AUTH.PROFILE, data);
+export const uploadProfileImage = (formData) =>
+  api.post(`${ENDPOINTS.AUTH.PROFILE}/profile-image`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
