@@ -2,7 +2,9 @@ import db from "../../database/db.js";
 
 class CollectionRepository {
   async beginTransaction() {
-    return await db.getConnection();
+    const connection = await db.getConnection();
+    await connection.beginTransaction();
+    return connection;
   }
   async commit(connection) {
     await connection.commit();

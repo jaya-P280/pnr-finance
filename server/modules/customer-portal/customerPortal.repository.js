@@ -495,10 +495,10 @@ class CustomerPortalRepository {
          cd.application_id AS application_id,
          cd.document_type_id AS documentTypeId,
          cd.document_type_id AS document_type_id,
-         cd.document_type_code AS documentTypeCode,
-         cd.document_type_code AS document_type_code,
-         cd.document_title AS documentTitle,
-         cd.document_title AS document_title,
+         dt.code AS documentTypeCode,
+         dt.code AS document_type_code,
+         dt.title AS documentTitle,
+         dt.title AS document_title,
          cd.file_url AS fileUrl,
          cd.file_url AS file_url,
          cd.file_name AS fileName,
@@ -546,8 +546,6 @@ class CustomerPortalRepository {
       await pool.execute(
         `UPDATE customer_documents SET
            application_id = COALESCE(?, application_id),
-           document_type_code = ?,
-           document_title = ?,
            file_url = ?,
            file_name = ?,
            file_size = ?,
@@ -558,8 +556,6 @@ class CustomerPortalRepository {
          WHERE document_id = ?`,
         [
           data.applicationId || null,
-          data.documentTypeCode,
-          data.documentTitle,
           data.fileUrl,
           data.fileName || null,
           data.fileSize || null,
@@ -570,14 +566,12 @@ class CustomerPortalRepository {
     } else {
       const [result] = await pool.execute(
         `INSERT INTO customer_documents
-           (customer_id, application_id, document_type_id, document_type_code, document_title, file_url, file_name, file_size, mime_type, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING')`,
+           (customer_id, application_id, document_type_id, file_url, file_name, file_size, mime_type, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING')`,
         [
           data.customerId,
           data.applicationId || null,
           data.documentTypeId,
-          data.documentTypeCode,
-          data.documentTitle,
           data.fileUrl,
           data.fileName || null,
           data.fileSize || null,
@@ -597,10 +591,10 @@ class CustomerPortalRepository {
          cd.application_id AS application_id,
          cd.document_type_id AS documentTypeId,
          cd.document_type_id AS document_type_id,
-         cd.document_type_code AS documentTypeCode,
-         cd.document_type_code AS document_type_code,
-         cd.document_title AS documentTitle,
-         cd.document_title AS document_title,
+         dt.code AS documentTypeCode,
+         dt.code AS document_type_code,
+         dt.title AS documentTitle,
+         dt.title AS document_title,
          cd.file_url AS fileUrl,
          cd.file_url AS file_url,
          cd.file_name AS fileName,
@@ -615,6 +609,7 @@ class CustomerPortalRepository {
          cd.uploaded_at AS uploadedAt,
          cd.uploaded_at AS uploaded_at
        FROM customer_documents cd
+       INNER JOIN document_types dt ON dt.id = cd.document_type_id
        WHERE cd.document_id = ?`,
       [docId]
     );

@@ -9,9 +9,10 @@ class CustomerDocumentsRepository {
         cd.customer_id AS customerId,
         cd.application_id AS applicationId,
         cd.document_type_id AS documentTypeId,
-        cd.document_type_code AS documentTypeCode,
-        cd.document_type_code AS document_type_code,
-        cd.document_title AS documentTitle,
+        dt.code AS documentTypeCode,
+        dt.code AS document_type_code,
+        dt.title AS documentTitle,
+        dt.title AS document_title,
         cd.file_url AS fileUrl,
         cd.file_url AS file_url,
         cd.file_name AS fileName,
@@ -76,7 +77,7 @@ class CustomerDocumentsRepository {
       queryParams.push(params.applicationId);
     }
     if (params.search) {
-      sql += ` AND (c.first_name LIKE ? OR c.last_name LIKE ? OR c.customer_code LIKE ? OR c.mobile_number LIKE ? OR cd.document_title LIKE ? OR la.application_number LIKE ?)`;
+      sql += ` AND (c.first_name LIKE ? OR c.last_name LIKE ? OR c.customer_code LIKE ? OR c.mobile_number LIKE ? OR dt.title LIKE ? OR la.application_number LIKE ?)`;
       const term = `%${params.search}%`;
       queryParams.push(term, term, term, term, term, term);
     }
@@ -95,9 +96,10 @@ class CustomerDocumentsRepository {
         cd.customer_id AS customerId,
         cd.application_id AS applicationId,
         cd.document_type_id AS documentTypeId,
-        cd.document_type_code AS documentTypeCode,
-        cd.document_type_code AS document_type_code,
-        cd.document_title AS documentTitle,
+        dt.code AS documentTypeCode,
+        dt.code AS document_type_code,
+        dt.title AS documentTitle,
+        dt.title AS document_title,
         cd.file_url AS fileUrl,
         cd.file_url AS file_url,
         cd.file_name AS fileName,
@@ -140,9 +142,10 @@ class CustomerDocumentsRepository {
         cd.customer_id AS customerId,
         cd.application_id AS applicationId,
         cd.document_type_id AS documentTypeId,
-        cd.document_type_code AS documentTypeCode,
-        cd.document_type_code AS document_type_code,
-        cd.document_title AS documentTitle,
+        dt.code AS documentTypeCode,
+        dt.code AS document_type_code,
+        dt.title AS documentTitle,
+        dt.title AS document_title,
         cd.file_url AS fileUrl,
         cd.file_url AS file_url,
         cd.file_name AS fileName,
@@ -179,7 +182,15 @@ class CustomerDocumentsRepository {
 
   async findById(documentId) {
     const [rows] = await pool.execute(
-      `SELECT * FROM customer_documents WHERE document_id = ?`,
+      `SELECT
+         cd.*,
+         dt.code AS documentTypeCode,
+         dt.code AS document_type_code,
+         dt.title AS documentTitle,
+         dt.title AS document_title
+       FROM customer_documents cd
+       INNER JOIN document_types dt ON dt.id = cd.document_type_id
+       WHERE cd.document_id = ?`,
       [documentId]
     );
     return rows[0] || null;

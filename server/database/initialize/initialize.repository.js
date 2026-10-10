@@ -29,7 +29,7 @@ class InitializeRepository {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         deleted_at TIMESTAMP NULL
-      )`,
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC`,
 
       // --- PERMISSION ---
       `CREATE TABLE IF NOT EXISTS permission (
@@ -38,7 +38,7 @@ class InitializeRepository {
         module_name VARCHAR(50) NOT NULL,
         description VARCHAR(255),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`,
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC`,
 
       // --- ROLE PERMISSIONS ---
       `CREATE TABLE IF NOT EXISTS role_permissions (
@@ -49,7 +49,7 @@ class InitializeRepository {
         FOREIGN KEY (role_id) REFERENCES roles(role_id) ON DELETE CASCADE,
         FOREIGN KEY (permission_id) REFERENCES permission(permission_id) ON DELETE CASCADE,
         UNIQUE KEY unique_role_perm (role_id, permission_id)
-      )`,
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC`,
 
       // --- BRANCHES ---
       `CREATE TABLE IF NOT EXISTS branches (
@@ -63,13 +63,15 @@ class InitializeRepository {
         phone VARCHAR(20),
         email VARCHAR(100),
         status ENUM('ACTIVE','INACTIVE') DEFAULT 'ACTIVE',
-        created_by INT,
+        created_by INT NULL,
+        updated_by INT NULL,
+        deleted_by INT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         deleted_at TIMESTAMP NULL
-      )`,
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC`,
 
-      // --- USERS (status = ACTIVE default, NO PENDING) ---
+      // --- USERS ---
       `CREATE TABLE IF NOT EXISTS users (
         user_id INT AUTO_INCREMENT PRIMARY KEY,
         employee_code VARCHAR(20) NOT NULL UNIQUE,
@@ -79,17 +81,19 @@ class InitializeRepository {
         password_hash VARCHAR(255) NOT NULL,
         mobile_number VARCHAR(20),
         role_id INT NOT NULL,
-        branch_id INT,
-        profile_image VARCHAR(500),
+        branch_id INT NULL,
+        profile_image VARCHAR(500) NULL,
         status ENUM('ACTIVE','INACTIVE') DEFAULT 'ACTIVE',
         is_first_login TINYINT(1) DEFAULT 1,
-        created_by INT,
+        created_by INT NULL,
+        updated_by INT NULL,
+        deleted_by INT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         deleted_at TIMESTAMP NULL,
-        FOREIGN KEY (role_id) REFERENCES roles(role_id),
-        FOREIGN KEY (branch_id) REFERENCES branches(branch_id)
-      )`,
+        FOREIGN KEY (role_id) REFERENCES roles(role_id) ON DELETE RESTRICT,
+        FOREIGN KEY (branch_id) REFERENCES branches(branch_id) ON DELETE SET NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC`,
 
       // --- REFRESH TOKENS ---
       `CREATE TABLE IF NOT EXISTS refresh_tokens (
@@ -101,15 +105,15 @@ class InitializeRepository {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
-      )`,
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC`,
 
       // --- AUDIT LOGS ---
       `CREATE TABLE IF NOT EXISTS audit_logs (
         log_id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT,
+        user_id INT NULL,
         role_name VARCHAR(50),
-        branch_id INT,
-        customer_id INT,
+        branch_id INT NULL,
+        customer_id INT NULL,
         action VARCHAR(100) NOT NULL,
         module VARCHAR(50) NOT NULL,
         entity_name VARCHAR(100),
@@ -128,7 +132,7 @@ class InitializeRepository {
         description TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
-      )`,
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC`,
 
       // --- COMPANY PROFILE ---
       `CREATE TABLE IF NOT EXISTS company_profile (
@@ -144,7 +148,7 @@ class InitializeRepository {
         logo_url VARCHAR(500),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      )`,
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC`,
 
       // --- SYSTEM SETTINGS ---
       `CREATE TABLE IF NOT EXISTS system_settings (
@@ -161,7 +165,7 @@ class InitializeRepository {
         self_registration TINYINT(1) DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      )`,
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC`,
 
       // --- CUSTOMERS ---
       `CREATE TABLE IF NOT EXISTS customers (
@@ -183,15 +187,15 @@ class InitializeRepository {
         state VARCHAR(100),
         pincode VARCHAR(20),
         status ENUM('ACTIVE','INACTIVE','BLACKLISTED') DEFAULT 'ACTIVE',
-        created_by INT,
+        created_by INT NULL,
         updated_by INT NULL,
         deleted_by INT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         deleted_at TIMESTAMP NULL,
-        FOREIGN KEY (branch_id) REFERENCES branches(branch_id),
-        FOREIGN KEY (created_by) REFERENCES users(user_id)
-      )`,
+        FOREIGN KEY (branch_id) REFERENCES branches(branch_id) ON DELETE RESTRICT,
+        FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE SET NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC`,
 
       // --- CUSTOMER KYC ---
       `CREATE TABLE IF NOT EXISTS customer_kyc (
@@ -208,10 +212,8 @@ class InitializeRepository {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE,
-        FOREIGN KEY (verified_by) REFERENCES users(user_id)
-      )`,
-
-
+        FOREIGN KEY (verified_by) REFERENCES users(user_id) ON DELETE SET NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC`,
 
       // --- CUSTOMER GROUPS ---
       `CREATE TABLE IF NOT EXISTS customer_groups (
@@ -223,14 +225,16 @@ class InitializeRepository {
         description TEXT,
         meeting_day VARCHAR(20),
         status ENUM('ACTIVE','INACTIVE','DISSOLVED') DEFAULT 'ACTIVE',
-        created_by INT,
+        created_by INT NULL,
+        updated_by INT NULL,
+        deleted_by INT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         deleted_at TIMESTAMP NULL,
-        FOREIGN KEY (branch_id) REFERENCES branches(branch_id),
-        FOREIGN KEY (field_officer_id) REFERENCES users(user_id),
-        FOREIGN KEY (created_by) REFERENCES users(user_id)
-      )`,
+        FOREIGN KEY (branch_id) REFERENCES branches(branch_id) ON DELETE RESTRICT,
+        FOREIGN KEY (field_officer_id) REFERENCES users(user_id) ON DELETE SET NULL,
+        FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE SET NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC`,
 
       // --- GROUP MEMBERS ---
       `CREATE TABLE IF NOT EXISTS group_members (
@@ -239,12 +243,13 @@ class InitializeRepository {
         customer_id INT NOT NULL,
         role ENUM('LEADER','MEMBER') DEFAULT 'MEMBER',
         joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        added_by INT,
+        added_by INT NULL,
+        deleted_by INT NULL,
         deleted_at TIMESTAMP NULL,
         FOREIGN KEY (group_id) REFERENCES customer_groups(group_id) ON DELETE CASCADE,
         FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE,
         UNIQUE KEY unique_group_member (group_id, customer_id)
-      )`,
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC`,
 
       // --- GROUP ATTENDANCE ---
       `CREATE TABLE IF NOT EXISTS group_attendance (
@@ -254,13 +259,13 @@ class InitializeRepository {
         meeting_date DATE NOT NULL,
         status ENUM('PRESENT','ABSENT','LATE') NOT NULL DEFAULT 'PRESENT',
         remarks TEXT,
-        recorded_by INT,
+        recorded_by INT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (group_id) REFERENCES customer_groups(group_id) ON DELETE CASCADE,
         FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE,
-        FOREIGN KEY (recorded_by) REFERENCES users(user_id),
+        FOREIGN KEY (recorded_by) REFERENCES users(user_id) ON DELETE SET NULL,
         UNIQUE KEY unique_attendance (group_id, customer_id, meeting_date)
-      )`,
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC`,
 
       // --- LOAN PRODUCTS ---
       `CREATE TABLE IF NOT EXISTS loan_products (
@@ -285,20 +290,21 @@ class InitializeRepository {
         holiday_excluded TINYINT(1) DEFAULT 0,
         include_gst TINYINT(1) DEFAULT 0,
         status ENUM('ACTIVE','INACTIVE') DEFAULT 'ACTIVE',
-        created_by INT,
+        created_by INT NULL,
         updated_by INT NULL,
+        deleted_by INT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         deleted_at TIMESTAMP NULL,
-        FOREIGN KEY (created_by) REFERENCES users(user_id)
-      )`,
+        FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE SET NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC`,
 
       // --- LOAN APPLICATIONS ---
       `CREATE TABLE IF NOT EXISTS loan_applications (
         application_id INT AUTO_INCREMENT PRIMARY KEY,
         application_number VARCHAR(20) NOT NULL UNIQUE,
         customer_id INT NOT NULL,
-        group_id INT,
+        group_id INT NULL,
         branch_id INT NOT NULL,
         loan_product_id INT NOT NULL,
         requested_amount DECIMAL(15,2) NOT NULL,
@@ -309,26 +315,26 @@ class InitializeRepository {
         purpose TEXT,
         remarks TEXT,
         application_status ENUM('DRAFT','PENDING','UNDER_REVIEW','VERIFIED','APPROVED','REJECTED','DISBURSED') DEFAULT 'PENDING',
-        verified_by INT,
+        verified_by INT NULL,
         verified_at TIMESTAMP NULL,
-        approved_by INT,
+        approved_by INT NULL,
         approved_at TIMESTAMP NULL,
         rejection_reason TEXT,
-        applied_by INT,
+        applied_by INT NULL,
         applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_by INT NULL,
+        deleted_by INT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         deleted_at TIMESTAMP NULL,
-        FOREIGN KEY (customer_id) REFERENCES customers(customer_id),
-        FOREIGN KEY (group_id) REFERENCES customer_groups(group_id),
-        FOREIGN KEY (branch_id) REFERENCES branches(branch_id),
-        FOREIGN KEY (loan_product_id) REFERENCES loan_products(loan_product_id),
-        FOREIGN KEY (verified_by) REFERENCES users(user_id),
-        FOREIGN KEY (approved_by) REFERENCES users(user_id),
-        FOREIGN KEY (applied_by) REFERENCES users(user_id)
-      )`,
-
-
+        FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE RESTRICT,
+        FOREIGN KEY (group_id) REFERENCES customer_groups(group_id) ON DELETE SET NULL,
+        FOREIGN KEY (branch_id) REFERENCES branches(branch_id) ON DELETE RESTRICT,
+        FOREIGN KEY (loan_product_id) REFERENCES loan_products(loan_product_id) ON DELETE RESTRICT,
+        FOREIGN KEY (verified_by) REFERENCES users(user_id) ON DELETE SET NULL,
+        FOREIGN KEY (approved_by) REFERENCES users(user_id) ON DELETE SET NULL,
+        FOREIGN KEY (applied_by) REFERENCES users(user_id) ON DELETE SET NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC`,
 
       // --- LOANS ---
       `CREATE TABLE IF NOT EXISTS loans (
@@ -337,7 +343,7 @@ class InitializeRepository {
         application_id INT NOT NULL UNIQUE,
         customer_id INT NOT NULL,
         branch_id INT NOT NULL,
-        group_id INT,
+        group_id INT NULL,
         loan_product_id INT NOT NULL,
         principal_amount DECIMAL(15,2) NOT NULL,
         disbursed_amount DECIMAL(15,2) NOT NULL,
@@ -352,16 +358,19 @@ class InitializeRepository {
         maturity_date DATE,
         status ENUM('ACTIVE','CLOSED','FORECLOSED','DEFAULTED') DEFAULT 'ACTIVE',
         remarks TEXT,
-        created_by INT,
+        created_by INT NULL,
+        updated_by INT NULL,
+        deleted_by INT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         deleted_at TIMESTAMP NULL,
-        FOREIGN KEY (application_id) REFERENCES loan_applications(application_id),
-        FOREIGN KEY (customer_id) REFERENCES customers(customer_id),
-        FOREIGN KEY (branch_id) REFERENCES branches(branch_id),
-        FOREIGN KEY (loan_product_id) REFERENCES loan_products(loan_product_id),
-        FOREIGN KEY (created_by) REFERENCES users(user_id)
-      )`,
+        FOREIGN KEY (application_id) REFERENCES loan_applications(application_id) ON DELETE RESTRICT,
+        FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE RESTRICT,
+        FOREIGN KEY (branch_id) REFERENCES branches(branch_id) ON DELETE RESTRICT,
+        FOREIGN KEY (group_id) REFERENCES customer_groups(group_id) ON DELETE SET NULL,
+        FOREIGN KEY (loan_product_id) REFERENCES loan_products(loan_product_id) ON DELETE RESTRICT,
+        FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE SET NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC`,
 
       // --- REPAYMENT SCHEDULES ---
       `CREATE TABLE IF NOT EXISTS repayment_schedules (
@@ -379,7 +388,7 @@ class InitializeRepository {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (loan_id) REFERENCES loans(loan_id) ON DELETE CASCADE
-      )`,
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC`,
 
       // --- LOAN TRANSACTIONS ---
       `CREATE TABLE IF NOT EXISTS loan_transactions (
@@ -391,11 +400,11 @@ class InitializeRepository {
         reference_type VARCHAR(50),
         reference_id INT,
         remarks TEXT,
-        created_by INT,
+        created_by INT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (loan_id) REFERENCES loans(loan_id) ON DELETE CASCADE,
-        FOREIGN KEY (created_by) REFERENCES users(user_id)
-      )`,
+        FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE SET NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC`,
 
       // --- COLLECTIONS ---
       `CREATE TABLE IF NOT EXISTS collections (
@@ -404,7 +413,7 @@ class InitializeRepository {
         loan_id INT NOT NULL,
         customer_id INT NOT NULL,
         branch_id INT NOT NULL,
-        collected_by INT,
+        collected_by INT NULL,
         collection_date DATE NOT NULL,
         installment_no INT,
         emi_amount DECIMAL(15,2) DEFAULT 0,
@@ -415,15 +424,17 @@ class InitializeRepository {
         reference_number VARCHAR(100),
         remarks TEXT,
         status ENUM('PENDING','COMPLETED','PARTIAL') DEFAULT 'COMPLETED',
-        created_by INT,
+        created_by INT NULL,
+        updated_by INT NULL,
+        deleted_by INT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (loan_id) REFERENCES loans(loan_id),
-        FOREIGN KEY (customer_id) REFERENCES customers(customer_id),
-        FOREIGN KEY (branch_id) REFERENCES branches(branch_id),
-        FOREIGN KEY (collected_by) REFERENCES users(user_id),
-        FOREIGN KEY (created_by) REFERENCES users(user_id)
-      )`,
+        FOREIGN KEY (loan_id) REFERENCES loans(loan_id) ON DELETE RESTRICT,
+        FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE RESTRICT,
+        FOREIGN KEY (branch_id) REFERENCES branches(branch_id) ON DELETE RESTRICT,
+        FOREIGN KEY (collected_by) REFERENCES users(user_id) ON DELETE SET NULL,
+        FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE SET NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC`,
 
       // --- TASKS ---
       `CREATE TABLE IF NOT EXISTS tasks (
@@ -434,17 +445,19 @@ class InitializeRepository {
         priority ENUM('LOW', 'MEDIUM', 'HIGH', 'URGENT') DEFAULT 'MEDIUM',
         status ENUM('PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED') DEFAULT 'PENDING',
         due_date DATE,
-        assigned_to INT,
-        branch_id INT,
-        customer_id INT,
-        created_by INT,
+        assigned_to INT NULL,
+        branch_id INT NULL,
+        customer_id INT NULL,
+        created_by INT NULL,
+        updated_by INT NULL,
+        deleted_by INT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (assigned_to) REFERENCES users(user_id),
-        FOREIGN KEY (branch_id) REFERENCES branches(branch_id),
-        FOREIGN KEY (customer_id) REFERENCES customers(customer_id),
-        FOREIGN KEY (created_by) REFERENCES users(user_id)
-      )`,
+        FOREIGN KEY (assigned_to) REFERENCES users(user_id) ON DELETE SET NULL,
+        FOREIGN KEY (branch_id) REFERENCES branches(branch_id) ON DELETE SET NULL,
+        FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE SET NULL,
+        FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE SET NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC`,
 
       // --- EXPENSES ---
       `CREATE TABLE IF NOT EXISTS expenses (
@@ -455,15 +468,17 @@ class InitializeRepository {
         payment_method ENUM('CASH','BANK_TRANSFER','CHEQUE','UPI') DEFAULT 'CASH',
         expense_date DATE NOT NULL,
         paid_to VARCHAR(200),
-        branch_id INT,
+        branch_id INT NULL,
         receipt_ref VARCHAR(100),
         description TEXT,
-        created_by INT,
+        created_by INT NULL,
+        updated_by INT NULL,
+        deleted_by INT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (branch_id) REFERENCES branches(branch_id),
-        FOREIGN KEY (created_by) REFERENCES users(user_id)
-      )`,
+        FOREIGN KEY (branch_id) REFERENCES branches(branch_id) ON DELETE SET NULL,
+        FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE SET NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC`,
 
       // --- INCOME ---
       `CREATE TABLE IF NOT EXISTS income (
@@ -474,15 +489,17 @@ class InitializeRepository {
         payment_method ENUM('CASH','BANK_TRANSFER','CHEQUE','UPI') DEFAULT 'CASH',
         income_date DATE NOT NULL,
         received_from VARCHAR(200),
-        branch_id INT,
+        branch_id INT NULL,
         receipt_ref VARCHAR(100),
         description TEXT,
-        created_by INT,
+        created_by INT NULL,
+        updated_by INT NULL,
+        deleted_by INT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (branch_id) REFERENCES branches(branch_id),
-        FOREIGN KEY (created_by) REFERENCES users(user_id)
-      )`,
+        FOREIGN KEY (branch_id) REFERENCES branches(branch_id) ON DELETE SET NULL,
+        FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE SET NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC`,
 
       // --- EMPLOYEE ATTENDANCE ---
       `CREATE TABLE IF NOT EXISTS employee_attendance (
@@ -495,13 +512,15 @@ class InitializeRepository {
         status ENUM('PRESENT','ABSENT','LATE','HALF_DAY','ON_LEAVE') DEFAULT 'PRESENT',
         remarks TEXT NULL,
         recorded_by INT NULL,
+        updated_by INT NULL,
+        deleted_by INT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
         FOREIGN KEY (branch_id) REFERENCES branches(branch_id) ON DELETE SET NULL,
         FOREIGN KEY (recorded_by) REFERENCES users(user_id) ON DELETE SET NULL,
         UNIQUE KEY unique_user_date (user_id, attendance_date)
-      )`,
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC`,
 
       // --- LETTERS ---
       `CREATE TABLE IF NOT EXISTS letters (
@@ -517,11 +536,13 @@ class InitializeRepository {
         signatory_name VARCHAR(200) NULL,
         signatory_title VARCHAR(100) NULL,
         created_by INT NULL,
+        updated_by INT NULL,
+        deleted_by INT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         deleted_at TIMESTAMP NULL,
         FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE SET NULL
-      )`,
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC`,
 
       // --- EMPLOYEE SALARIES ---
       `CREATE TABLE IF NOT EXISTS employee_salaries (
@@ -534,10 +555,13 @@ class InitializeRepository {
         tax_deduction DECIMAL(15,2) DEFAULT 0,
         net_salary DECIMAL(15,2) DEFAULT 0,
         effective_date DATE NULL,
+        created_by INT NULL,
+        updated_by INT NULL,
+        deleted_by INT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
-      )`,
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC`,
 
       // --- PAYROLL LOGS ---
       `CREATE TABLE IF NOT EXISTS payroll_logs (
@@ -556,9 +580,12 @@ class InitializeRepository {
         reference_no VARCHAR(100) NULL,
         remarks TEXT NULL,
         processed_by INT NULL,
+        created_by INT NULL,
+        updated_by INT NULL,
+        deleted_by INT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
-      )`,
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC`,
 
       // --- DOCUMENT TYPES (DYNAMIC SLOTS CONFIGURABLE BY ADMIN) ---
       `CREATE TABLE IF NOT EXISTS document_types (
@@ -574,16 +601,14 @@ class InitializeRepository {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE SET NULL
-      )`,
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC`,
 
-      // --- CUSTOMER DOCUMENTS (UPLOADED FILES & APPROVALS) ---
+      // --- CUSTOMER DOCUMENTS (UPLOADED FILES & APPROVALS - NORMALIZED 3NF) ---
       `CREATE TABLE IF NOT EXISTS customer_documents (
         document_id INT AUTO_INCREMENT PRIMARY KEY,
         customer_id INT NOT NULL,
         application_id INT NULL,
         document_type_id INT NOT NULL,
-        document_type_code VARCHAR(50) NOT NULL,
-        document_title VARCHAR(200) NOT NULL,
         file_url VARCHAR(500) NOT NULL,
         file_name VARCHAR(255),
         file_size INT,
@@ -596,9 +621,9 @@ class InitializeRepository {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE,
         FOREIGN KEY (application_id) REFERENCES loan_applications(application_id) ON DELETE SET NULL,
-        FOREIGN KEY (document_type_id) REFERENCES document_types(id) ON DELETE CASCADE,
+        FOREIGN KEY (document_type_id) REFERENCES document_types(id) ON DELETE RESTRICT,
         FOREIGN KEY (verified_by) REFERENCES users(user_id) ON DELETE SET NULL
-      )`,
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC`,
     ];
 
     let qIdx = 0;
@@ -612,78 +637,51 @@ class InitializeRepository {
       }
     }
     await this.reconcileLegacySchema(connection);
-    console.log("✓ All tables created/verified");
+    console.log("✓ All tables created/verified (ACID InnoDB compliant)");
   }
   async reconcileLegacySchema(connection) {
     try {
-      const upgrades = [
-        ["branches", "updated_by INT NULL"], ["branches", "deleted_by INT NULL"],
-        ["users", "updated_by INT NULL"], ["users", "deleted_by INT NULL"],
-        ["customers", "updated_by INT NULL"], ["customers", "deleted_by INT NULL"],
-        ["customers", "profile_image VARCHAR(500) NULL"],
-        ["customer_kyc", "aadhaar_number VARCHAR(12) NULL"], ["customer_kyc", "pan_number VARCHAR(10) NULL"],
-        ["customer_kyc", "aadhaar_verified TINYINT(1) DEFAULT 0"], ["customer_kyc", "pan_verified TINYINT(1) DEFAULT 0"],
-        ["customer_groups", "updated_by INT NULL"], ["customer_groups", "deleted_by INT NULL"],
-        ["group_members", "deleted_by INT NULL"],
-        ["loan_products", "updated_by INT NULL"], ["loan_products", "deleted_by INT NULL"],
-        ["loan_applications", "created_by INT NULL"], ["loan_applications", "updated_by INT NULL"], ["loan_applications", "deleted_by INT NULL"],
-        ["loans", "updated_by INT NULL"], ["loans", "deleted_by INT NULL"],
-        ["collections", "updated_by INT NULL"], ["collections", "deleted_by INT NULL"],
-        ["tasks", "updated_by INT NULL"], ["tasks", "deleted_by INT NULL"],
-        ["expenses", "updated_by INT NULL"], ["expenses", "deleted_by INT NULL"],
-        ["income", "updated_by INT NULL"], ["income", "deleted_by INT NULL"],
-        ["employee_attendance", "updated_by INT NULL"], ["employee_attendance", "deleted_by INT NULL"],
-        ["letters", "updated_by INT NULL"], ["letters", "deleted_by INT NULL"],
-        ["employee_salaries", "created_by INT NULL"], ["employee_salaries", "updated_by INT NULL"], ["employee_salaries", "deleted_by INT NULL"],
-        ["payroll_logs", "created_by INT NULL"], ["payroll_logs", "updated_by INT NULL"], ["payroll_logs", "deleted_by INT NULL"],
-        ["loan_products", "product_type VARCHAR(50) DEFAULT 'TERM_LOAN'"], ["loan_products", "interest_type VARCHAR(50) DEFAULT 'REDUCING'"],
-        ["loan_products", "minimum_amount DECIMAL(15,2) NULL"], ["loan_products", "maximum_amount DECIMAL(15,2) NULL"],
-        ["loan_products", "minimum_tenure INT NULL"], ["loan_products", "maximum_tenure INT NULL"],
-        ["loan_products", "processing_fee DECIMAL(15,2) DEFAULT 0"], ["loan_products", "insurance_fee_type VARCHAR(20) DEFAULT 'PERCENTAGE'"],
-        ["loan_products", "insurance_fee DECIMAL(15,2) DEFAULT 0"], ["loan_products", "penalty DECIMAL(15,2) DEFAULT 0"],
-        ["loan_products", "holiday_excluded TINYINT(1) DEFAULT 0"], ["loan_products", "include_gst TINYINT(1) DEFAULT 0"],
-        ["loan_applications", "interest_rate DECIMAL(5,2) NOT NULL DEFAULT 0"], ["loan_applications", "applied_by INT NULL"],
-        ["loan_applications", "applied_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP"], ["loan_applications", "remarks TEXT NULL"],
-        ["audit_logs", "role_name VARCHAR(50) NULL"], ["audit_logs", "branch_id INT NULL"],
-        ["audit_logs", "customer_id INT NULL"], ["audit_logs", "entity_name VARCHAR(100) NULL"],
-        ["audit_logs", "entity_id VARCHAR(100) NULL"], ["audit_logs", "http_method VARCHAR(10) NULL"],
-        ["audit_logs", "endpoint VARCHAR(255) NULL"], ["audit_logs", "request_params TEXT NULL"],
-        ["audit_logs", "request_body TEXT NULL"], ["audit_logs", "response_status INT NULL"],
-        ["audit_logs", "response_time_ms INT NULL"], ["audit_logs", "is_success TINYINT(1) DEFAULT 1"],
-        ["audit_logs", "error_message TEXT NULL"], ["audit_logs", "correlation_id VARCHAR(100) NULL"],
-      ];
-      for (const [table, definition] of upgrades) {
+      // 1. Drop duplicate columns from customers table (canonical data is strictly in customer_kyc)
+      const duplicateCustomerCols = ["aadhaar_number", "pan_number", "aadhaar_verified", "pan_verified"];
+      for (const col of duplicateCustomerCols) {
         try {
-          const column = definition.split(" ")[0];
-          const [rows] = await connection.query(`SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`, [table, column]);
-          if (!rows.length) await connection.query(`ALTER TABLE ${table} ADD COLUMN ${definition}`);
-        } catch { /* ignore column add error if already exists or fallback */ }
+          const [rows] = await connection.query(
+            `SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'customers' AND COLUMN_NAME = ?`,
+            [col]
+          );
+          if (rows.length) {
+            await connection.query(`ALTER TABLE customers DROP COLUMN ${col}`);
+            console.log(`✓ Removed duplicate column ${col} from customers table`);
+          }
+        } catch { /* ignore drop error */ }
       }
+
+      // 2. Drop duplicate columns from customer_documents table (canonical data is in document_types)
+      const duplicateDocCols = ["document_type_code", "document_title"];
+      for (const col of duplicateDocCols) {
+        try {
+          const [rows] = await connection.query(
+            `SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'customer_documents' AND COLUMN_NAME = ?`,
+            [col]
+          );
+          if (rows.length) {
+            await connection.query(`ALTER TABLE customer_documents DROP COLUMN ${col}`);
+            console.log(`✓ Removed duplicate column ${col} from customer_documents table`);
+          }
+        } catch { /* ignore drop error */ }
+      }
+
+      // 3. Drop redundant created_by on loan_applications (applied_by is canonical)
       try {
-        await connection.query(`ALTER TABLE loan_applications MODIFY COLUMN application_status ENUM('DRAFT','PENDING','UNDER_REVIEW','VERIFIED','APPROVED','REJECTED','DISBURSED') DEFAULT 'PENDING'`);
-      } catch { /* ignore */ }
-      try {
-        await connection.query(`ALTER TABLE loan_products MODIFY COLUMN processing_fee_type VARCHAR(20) DEFAULT 'PERCENTAGE'`);
-      } catch { /* ignore */ }
-      try {
-        await connection.query(`ALTER TABLE loan_products MODIFY COLUMN insurance_fee_type VARCHAR(20) DEFAULT 'PERCENTAGE'`);
-      } catch { /* ignore */ }
-      try {
-        await connection.query(`ALTER TABLE loan_products MODIFY COLUMN penalty_type VARCHAR(20) DEFAULT 'PERCENTAGE'`);
-      } catch { /* ignore */ }
-      try {
-        await connection.query(`ALTER TABLE loan_products MODIFY COLUMN recovery_frequency VARCHAR(50) DEFAULT 'MONTHLY'`);
-      } catch { /* ignore */ }
-      try {
-        await connection.query(`ALTER TABLE loan_applications MODIFY COLUMN recovery_frequency VARCHAR(50) DEFAULT 'MONTHLY'`);
-      } catch { /* ignore */ }
-      try {
-        const [legacyColumns] = await connection.query(`SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'loan_products' AND COLUMN_NAME IN ('min_amount', 'max_amount', 'min_tenure', 'max_tenure')`);
-        if (legacyColumns?.length === 4) {
-          await connection.query(`UPDATE loan_products SET minimum_amount = COALESCE(minimum_amount, min_amount), maximum_amount = COALESCE(maximum_amount, max_amount), minimum_tenure = COALESCE(minimum_tenure, min_tenure), maximum_tenure = COALESCE(maximum_tenure, max_tenure)`);
+        const [rows] = await connection.query(
+          `SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'loan_applications' AND COLUMN_NAME = 'created_by'`
+        );
+        if (rows.length) {
+          await connection.query(`ALTER TABLE loan_applications DROP COLUMN created_by`);
         }
       } catch { /* ignore */ }
 
+      // 4. Drop legacy obsolete tables and columns
       try {
         await connection.query(`DROP TABLE IF EXISTS loan_guarantors`);
         await connection.query(`DROP TABLE IF EXISTS customer_family`);
